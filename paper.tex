@@ -1,0 +1,112 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{mathtools}
+\usepackage{microtype}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage{cite}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=black,
+  citecolor=black,
+  urlcolor=blue
+}
+
+\newtheorem{definition}{Definition}
+\newtheorem{remark}{Remark}
+\newtheorem{proposition}{Proposition}
+
+\title{Deriving an Implication Frame from an LLM}
+\author{Bradley P.\ Allen\\University of Amsterdam}
+\date{Technical note, April 2026}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Hlobil and Brandom's implication-space semantics takes the material consequence relation $I$ over a set of bearers $B$ as given. This note shows how to derive, from a large language model $M$, an implication frame $\langle B, I_M \rangle$ via a top-$k$ condition on $M$'s bearer probabilities. The frame satisfies Containment by construction and leaves the framework's remaining structural commitments open.
+\end{abstract}
+
+\section{Setup}
+
+Let $V$ be a finite set of tokens and $\mathcal{L} = V^*$ the set of finite token sequences. A non-empty $B \subseteq \mathcal{L}$ is the set of \emph{bearers}.
+
+The construction below works within the implication-space semantics of Hlobil and Brandom \cite{hlobil2025}, to which the reader is referred for the following machinery used without restatement: the implication frame $\langle B, I \rangle$ with $I \subseteq \wp(B) \times \wp(B)$, $\langle \emptyset, \emptyset \rangle \notin I$, and $\langle B, B \rangle \in I$ \cite[Def.~62]{hlobil2025}; the range of subjunctive robustness $\mathrm{RSR}$ \cite[Def.~63]{hlobil2025}; implication equivalence $\approx$ \cite[Def.~64]{hlobil2025}; implicational role $R(\alpha) = \langle R^+(\alpha), R^-(\alpha) \rangle$ \cite[Def.~65]{hlobil2025}; conceptual content as a pair of roles \cite[Def.~66]{hlobil2025}; the NMMS clauses for the connectives \cite[Def.~70]{hlobil2025}; and Corollary~77, which establishes that a Containment-satisfying frame extended via NMMS yields classical propositional logic in the narrowly logical fragment of the extended consequence relation.
+
+An implication frame $\langle B, I \rangle$ \emph{obeys Containment} iff $\Gamma \cap \Delta \neq \emptyset$ implies $\langle \Gamma, \Delta \rangle \in I$. Containment is the only structural constraint the construction below will impose.
+
+\section{The Derivation}
+
+\begin{definition}[Bearer probabilities of an LLM]
+\label{def:mu}
+Let $M$ be a large language model with completion distribution $p_M : \mathcal{L} \to \Delta(\mathcal{L})$  assigning to each context $c \in \mathcal{L}$ a probability distribution over token sequences, and an expression relation $\mathrm{Expr} \subseteq \mathcal{L} \times B$ such that $\langle \sigma, \varphi \rangle \in \mathrm{Expr}$ iff $\sigma$ expresses $\varphi$. The \emph{bearer probabilities of $M$} are given by the function $\mu_M : \mathcal{L} \times B \to [0,1]$ where
+\[
+\mu_M(c)(\varphi) = \sum_{\sigma \in \mathcal{L} \,:\, (\sigma, \varphi) \in \mathrm{Expr}} p_M(c)(\sigma).
+\]
+That is, $\mu_M(c)(\varphi)$ is the probability under $p_M(c)$ that $M$'s completion of $c$ expresses $\varphi$.
+\end{definition}
+
+For $\Gamma \subseteq B$, let $\mathrm{Ctx}_\Gamma = \{c \in \mathcal{L} : (c, \gamma) \in \mathrm{Expr} \text{ for all } \gamma \in \Gamma\}$ denote the set of contexts that express every bearer in $\Gamma$. For $c \in L$ and $k \geq 1$, let $\mathrm{Top}_k(\mu_M(c)) \subseteq B$ denote the set of bearers $\varphi$ with $\mu_M(c)(\varphi) > 0$ that are among the $k$ with largest $\mu_M(c)(\varphi)$, with ties broken by a fixed convention on $B$. This set has at most $k$ elements and may have fewer if fewer than $k$ bearers have positive probability.
+
+\begin{definition}[Derived implication frame]
+\label{def:frame}
+Fix $k \geq 1$. Given an LLM $M$ with bearer probabilities $\mu_M$, the \emph{derived implication frame for $M$} is $\langle B, I_M \rangle$ where $\langle \Gamma, \Delta \rangle \in I_M$ iff at least one of the following holds:
+\begin{enumerate}[label=(\roman*)]
+\item $\Gamma \cap \Delta \neq \emptyset$; or
+\item $\exists c \in \mathrm{Ctx}_\Gamma$ such that $\Delta \cap \mathrm{Top}_k(\mu_M(c)) \neq \emptyset$.
+\end{enumerate}
+\end{definition}
+
+Clause (ii) is strictly stronger than ``the completion is possible'' (satisfied vacuously by any output of $M$ under positive-temperature sampling) and, for $k > 1$, strictly weaker than ``the completion is the single most probable output''.
+
+\begin{remark}[Stratification]
+\label{rem:stratification}
+Definition~\ref{def:frame} does not refer to $R$, $\approx$, or content. The content structure that arises from applying the Hlobil--Brandom construction to $I_M$ is therefore a consequence of the derivation, not a presupposition. Circularity that would arise from defining $I_M$ via content-equivalence of contexts is blocked at the bearer level.
+\end{remark}
+
+\begin{remark}[Containment by construction]
+\label{rem:containment}
+By clause (i) of Definition~\ref{def:frame}, $\langle B, I_M \rangle$ obeys Containment.
+\end{remark}
+
+\begin{remark}[Openness]
+\label{rem:openness}
+Containment is the only structural constraint imposed on $I_M$. The derived frame may be nonmonotonic, nontransitive, or non-contractive; whether it is so for a given $M$ is an empirical property of $\mu_M$, not something the construction forces or forbids.
+\end{remark}
+
+\begin{remark}[Parameters]
+\label{rem:parameters}
+The frame $I_M$ depends on $B$, $k$, and the expression relation $\mathrm{Expr}$. Different admissible choices yield different but equally well-formed derived frames. The structural properties recorded below hold for any admissible choice.
+\end{remark}
+
+\section{Discussion}
+
+With $\langle B, I_M \rangle$ in hand, the standard Hlobil--Brandom machinery applies without modification: $\mathrm{RSR}$, $\approx$, implicational roles, conceptual contents, and extensions of the material base with logical vocabulary are all obtained by their constructions operating on $\langle B, I_M \rangle$ as an ordinary implication frame. Nothing specific to the LLM origin of $I_M$ enters these constructions.
+
+\begin{proposition}[Classical core under NMMS]
+\label{prop:classical}
+Let $\langle B, I_M \rangle$ be a derived implication frame. The narrowly logical fragment of the consequence relation obtained by extending $\langle B, I_M \rangle$ via the NMMS clauses is classical propositional logic.
+\end{proposition}
+
+\begin{proof}
+By Remark~\ref{rem:containment}, $\langle B, I_M \rangle$ satisfies Containment. The result follows from Corollary~77 of Hlobil and Brandom \cite{hlobil2025}.
+\end{proof}
+
+The classical core holds for any $M$ and any admissible parameters; it is a property of the NMMS-extended consequence relation, not of $I_M$. The material base may be substructural while the extension carries a classical logical core.
+
+Implicational role inclusion and content inclusion \cite[Def.~90, 93]{hlobil2025} are likewise available in the derived frame: one can ask which bearers $M$ treats as intersubstitutable \emph{salva consequentia} and which contents are included in which others. These questions have determinate answers given $\langle B, I_M \rangle$ and characterize aspects of $M$'s behavior not directly visible in $\mu_M$.
+
+The construction thus provides a determinate answer to the question of LLM content: given $M$, a bearer set $B$, and admissible parameters, the content structure derived from $\langle B, I_M \rangle$ is well-defined and characterizes $M$'s material-inferential dispositions at the level of role and content identity.
+
+\begin{thebibliography}{9}
+
+\bibitem{hlobil2025}
+Hlobil, U., \& Brandom, R.~B. (2025). \emph{Reasons for Logic, Logic for Reasons: Pragmatics, Semantics, and Conceptual Roles}. Routledge.
+
+\end{thebibliography}
+
+\end{document}
