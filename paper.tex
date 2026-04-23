@@ -114,6 +114,31 @@ Then $\mu_M(c)(\varphi_1) = 0.80$ and $\mu_M(c)(\varphi_2) = 0.02$. Two things a
 Under top-$1$, $S(\mu_M(c)) = \{\varphi_1\}$. Under absolute threshold with $\tau = 0.5$, also $\{\varphi_1\}$. Under nucleus with $p = 0.7$, also $\{\varphi_1\}$ (the singleton already meets the cumulative-mass threshold). All three agree here; for a more diffuse $p_M(c)$ they would diverge. By clause (ii) of Definition~\ref{def:frame}, $\langle \Gamma, \{\varphi_1\} \rangle \in I_M$ for any $\Gamma$ with $c \in \mathrm{Ctx}_\Gamma$.
 \end{example}
 
+\begin{example}[Stop sign and the range of subjunctive robustness]
+\label{ex:stopsign}
+Following Simonelli's discussion of GPT-4.1 \cite{simonelli2026}, take $B$ to contain $s_a = {}$``$a$ is a stop sign'', $r_a = {}$``$a$ is red'', $n = {}$``it is nighttime'', and $b_a = {}$``$a$ has been painted blue''. Three of Simonelli's prompts witness three premise sets:
+\begin{center}
+\begin{tabular}{lll}
+\hline
+$\Gamma$ & $c \in \mathrm{Ctx}_\Gamma$ & top completion expresses $r_a$?\\
+\hline
+$\{s_a\}$ & ``Are stop signs red?'' & yes\\
+$\{s_a, n\}$ & ``Is a stop sign at night still red?'' & yes\\
+$\{s_a, b_a\}$ & ``Is a stop sign that's been painted blue still red?'' & no\\
+\hline
+\end{tabular}
+\end{center}
+Under top-$1$, clause (ii) of Definition~\ref{def:frame} delivers
+\[
+\langle\{s_a\}, \{r_a\}\rangle \in I_M, \quad \langle\{s_a, n\}, \{r_a\}\rangle \in I_M, \quad \langle\{s_a, b_a\}, \{r_a\}\rangle \notin I_M
+\]
+(the last is not rescued by clause (i), since $\{s_a, b_a\} \cap \{r_a\} = \emptyset$). Applying the Hlobil--Brandom range-of-subjunctive-robustness construction \cite[Def.~63]{hlobil2025} then yields
+\[
+\{n\} \in \mathrm{RSR}(\langle\{s_a\}, \{r_a\}\rangle), \qquad \{b_a\} \notin \mathrm{RSR}(\langle\{s_a\}, \{r_a\}\rangle).
+\]
+This is the defeasibility pattern Simonelli identifies as the mark of GPT-4.1's mastery of the material inferential rule $s_a \vdash r_a$; the construction turns the anecdotal evidence into a definite procedure for probing the RSR.
+\end{example}
+
 \begin{remark}[Stratification]
 \label{rem:stratification}
 Definition~\ref{def:frame} does not refer to $R$, $\approx$, or content. The content structure that arises from applying the Hlobil--Brandom construction to $I_M$ is therefore a consequence of the derivation, not a presupposition. Circularity that would arise from defining $I_M$ via content-equivalence of contexts is blocked at the bearer level.
@@ -143,6 +168,25 @@ Implicational role inclusion and content inclusion \cite[Def.~90, 93]{hlobil2025
 
 The construction thus provides a determinate answer to the question of LLM content: given $M$, a bearer set $B$, and admissible parameters, the content structure derived from $\langle B, I_M \rangle$ is well-defined and characterizes $M$'s material-inferential dispositions at the level of role and content identity.
 
+\section{Probing inferential mastery}
+
+The construction yields not just a frame but a definite testing procedure. Fix a target implication $\langle X, A \rangle$ and a finite \emph{probe set} $\mathcal{Y} \subseteq \wp(B)$ of candidate side premises. For each $Y \in \mathcal{Y}$, the \emph{probed verdict} is the clause-(ii) outcome:
+\[
+\rho_M^S(Y) \;=\; 1 \iff \exists c \in \mathrm{Ctx}_{X \cup Y}, \; A \cap S(\mu_M(c)) \neq \emptyset.
+\]
+Equivalently, $\rho_M^S(Y) = 1$ iff $Y \in \mathrm{RSR}(\langle X, A \rangle)$ as derived from $I_M$. The function $\rho_M^S$ probes the RSR at the points specified by $\mathcal{Y}$; it does not enumerate it (the RSR is in general infinite).
+
+Comparing $\rho_M^S$ against a reference $\rho^* : \mathcal{Y} \to \{0,1\}$---the analyst's intended RSR membership, or human-annotated ground truth---yields a \emph{mastery score} of $M$ with respect to $(X, A, \mathcal{Y}, \rho^*, S)$. Standard agreement statistics (F1, Cohen's $\kappa$) apply.
+
+A high mastery score on a hand-picked $\mathcal{Y}$ does not by itself separate genuine inferential mastery from sophisticated pattern matching. Three dimensions of structure on $\mathcal{Y}$ operationalize the distinction:
+\begin{enumerate}[label=(\arabic*)]
+\item \emph{Surface-paraphrase robustness}. For each $Y$, draw multiple $c \in \mathrm{Ctx}_{X \cup Y}$ that paraphrase the same bearer content. Measure verdict consistency across paraphrases; low consistency indicates verdicts ride on surface features.
+\item \emph{Distributional novelty stratification}. Partition $\mathcal{Y}$ by the rarity of $Y$ in plausible training corpora. A genuine master should exhibit roughly flat performance across strata; a pattern matcher should degrade sharply on novel $Y$.
+\item \emph{Closure consistency}. Cross-check that probed verdicts respect global properties of $I_M$ the analyst regards as defensible---specific monotonicity or non-monotonicity patterns, content-equivalence implications. Locally correct but globally inconsistent verdicts signal pattern matching without global inferential structure.
+\end{enumerate}
+
+Strict inferentialism, of the sort the construction inherits from Hlobil and Brandom, holds that there is no further fact beyond inferential behavior: if $M$ consistently passes every probe in every well-posed $\mathcal{Y}$, $M$ has mastered the rule. On that view, the contrast between mastery and pattern matching is operationalized as \emph{brittleness}: (1)--(3) measure brittleness rather than some hidden property behind behavior.
+
 \begin{thebibliography}{9}
 
 \bibitem{hlobil2025}
@@ -153,6 +197,9 @@ Foley, R. (1992). The epistemology of belief and the epistemology of degrees of 
 
 \bibitem{holtzman2020}
 Holtzman, A., Buys, J., Du, L., Forbes, M., \& Choi, Y. (2020). The curious case of neural text degeneration. In \emph{International Conference on Learning Representations}.
+
+\bibitem{simonelli2026}
+Simonelli, R. (2026). Sapience without sentience: An inferentialist approach to LLMs. \emph{Asian Journal of Philosophy} (forthcoming).
 
 \end{thebibliography}
 
