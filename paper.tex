@@ -17,6 +17,7 @@
 \newtheorem{definition}{Definition}
 \newtheorem{remark}{Remark}
 \newtheorem{proposition}{Proposition}
+\newtheorem{example}{Example}
 
 \title{Deriving an Implication Frame from an LLM}
 \author{Bradley P.\ Allen\\University of Amsterdam}
@@ -85,6 +86,33 @@ Clause (ii) of Definition~\ref{def:frame} is non-trivial under any of these inst
 \label{rem:methodological}
 The choice of selection function is a substantive methodological commitment the construction itself is silent on. Top-$k$ is engineering convenience: $k$ is chosen for tractability and has no independent principled basis. Absolute threshold operationalizes the Lockean thesis from formal epistemology---that credence above a fixed threshold counts as commitment \cite{foley1992}---and inherits its known difficulties (the lottery and preface paradoxes). Nucleus matches the regime under which deployed LLMs generate text \cite{holtzman2020}, but adapts cardinality to context rather than answering to an independent epistemic norm. The downstream structural properties of $I_M$, and the content structure derived from it, depend on $S$.
 \end{remark}
+
+\begin{example}[Capital-of-France]
+\label{ex:capital}
+Take $c = {}$``The capital of France is'' and let $B$ contain
+\begin{align*}
+\varphi_1 &= \text{``Paris is the capital of France''},\\
+\varphi_2 &= \text{``Lyon is the capital of France''}.
+\end{align*}
+Suppose $p_M(c)$ assigns positive mass to several completions:
+\begin{center}
+\begin{tabular}{lcc}
+\hline
+$\sigma$ & $p_M(c)(\sigma)$ & expresses\\
+\hline
+``Paris.'' & $0.60$ & $\varphi_1$\\
+``Paris, of course.'' & $0.15$ & $\varphi_1$\\
+``the city of Paris.'' & $0.05$ & $\varphi_1$\\
+``Lyon.'' & $0.02$ & $\varphi_2$\\
+``a beautiful country.'' & $0.10$ & ---\\
+(other) & $0.08$ & ---\\
+\hline
+\end{tabular}
+\end{center}
+Then $\mu_M(c)(\varphi_1) = 0.80$ and $\mu_M(c)(\varphi_2) = 0.02$. Two things are visible: (a) $\mathrm{Expr}$ collapses three surface forms into one bearer-level number; (b) $\mu_M(c)(\varphi_1) + \mu_M(c)(\varphi_2) = 0.82 < 1$, since the remaining mass lands outside $E_{\varphi_1} \cup E_{\varphi_2}$ (cf.\ Remark~\ref{rem:expression-events}).
+
+Under top-$1$, $S(\mu_M(c)) = \{\varphi_1\}$. Under absolute threshold with $\tau = 0.5$, also $\{\varphi_1\}$. Under nucleus with $p = 0.7$, also $\{\varphi_1\}$ (the singleton already meets the cumulative-mass threshold). All three agree here; for a more diffuse $p_M(c)$ they would diverge. By clause (ii) of Definition~\ref{def:frame}, $\langle \Gamma, \{\varphi_1\} \rangle \in I_M$ for any $\Gamma$ with $c \in \mathrm{Ctx}_\Gamma$.
+\end{example}
 
 \begin{remark}[Stratification]
 \label{rem:stratification}
