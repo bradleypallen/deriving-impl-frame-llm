@@ -27,7 +27,7 @@
 \maketitle
 
 \begin{abstract}
-Hlobil and Brandom's implication-space semantics takes the material consequence relation $I$ over a set of bearers $B$ as given. This note shows how to derive, from a large language model $M$, an implication frame $\langle B, I_M \rangle$ via a top-$k$ condition on $M$'s bearer probabilities. The frame satisfies Containment by construction and leaves the framework's remaining structural commitments open.
+Hlobil and Brandom's implication-space semantics takes the material consequence relation $I$ over a set of bearers $B$ as given. This note shows how to derive, from a large language model $M$, an implication frame $\langle B, I_M \rangle$ via a selection function applied to $M$'s bearer expression probabilities. The frame satisfies Containment by construction and leaves the framework's remaining structural commitments open.
 \end{abstract}
 
 \section{Setup}
@@ -53,23 +53,38 @@ be the event that a completion expresses $\varphi$. The \emph{bearer expression 
 That is, $\mu_M(c)(\varphi)$ is the probability under $p_M(c)$ that $M$'s completion of $c$ expresses $\varphi$.
 \end{definition}
 
-\begin{remark}[Not a distribution on $B$]
-\label{rem:not-pmf}
-For fixed $c$, the assignment $\varphi \mapsto \mu_M(c)(\varphi)$ is not in general a probability distribution on $B$. The events $E_\varphi$ may overlap (a single $\sigma$ may express several bearers) and need not cover $\mathcal{L}$ (some $\sigma$ may express no bearer in $B$), so $\sum_{\varphi \in B} \mu_M(c)(\varphi)$ may exceed or fall short of $1$. Each $\mu_M(c)(\varphi)$ is the probability of a separate event in $\mathcal{L}$ under $p_M(c)$.
+\begin{remark}[Expression events]
+\label{rem:expression-events}
+Each $\mu_M(c)(\varphi)$ is the probability of a separate event in $\mathcal{L}$ under $p_M(c)$. The events $E_\varphi$ may overlap (a single $\sigma$ may express several bearers) and need not cover $\mathcal{L}$ (some $\sigma$ may express no bearer in $B$), so $\sum_{\varphi \in B} \mu_M(c)(\varphi)$ may exceed or fall short of $1$.
 \end{remark}
 
-For $\Gamma \subseteq B$, let $\mathrm{Ctx}_\Gamma = \{c \in \mathcal{L} : (c, \gamma) \in \mathrm{Expr} \text{ for all } \gamma \in \Gamma\}$ denote the set of contexts that express every bearer in $\Gamma$. For $c \in \mathcal{L}$ and $k \geq 1$, let $\mathrm{Top}_k(\mu_M(c)) \subseteq B$ denote the set of bearers $\varphi$ with $\mu_M(c)(\varphi) > 0$ that are among the $k$ with largest $\mu_M(c)(\varphi)$, with ties broken by a fixed convention on $B$. This set has at most $k$ elements and may have fewer if fewer than $k$ bearers have positive probability.
+For $\Gamma \subseteq B$, let $\mathrm{Ctx}_\Gamma = \{c \in \mathcal{L} : (c, \gamma) \in \mathrm{Expr} \text{ for all } \gamma \in \Gamma\}$ denote the set of contexts that express every bearer in $\Gamma$. A \emph{selection function} is a map $S$ that takes a function $f : B \to [0,1]$ to a subset $S(f) \subseteq B$. Fix throughout an admissible selection function $S$; we write $I_M$ for the frame so derived.
 
 \begin{definition}[Derived implication frame]
 \label{def:frame}
-Fix $k \geq 1$. Given an LLM $M$ with bearer expression probabilities $\mu_M$, the \emph{derived implication frame for $M$} is $\langle B, I_M \rangle$ where $\langle \Gamma, \Delta \rangle \in I_M$ iff at least one of the following holds:
+Given an LLM $M$ with bearer expression probabilities $\mu_M$ and a selection function $S$, the \emph{derived implication frame for $M$} is $\langle B, I_M \rangle$ where $\langle \Gamma, \Delta \rangle \in I_M$ iff at least one of the following holds:
 \begin{enumerate}[label=(\roman*)]
 \item $\Gamma \cap \Delta \neq \emptyset$; or
-\item $\exists c \in \mathrm{Ctx}_\Gamma$ such that $\Delta \cap \mathrm{Top}_k(\mu_M(c)) \neq \emptyset$.
+\item $\exists c \in \mathrm{Ctx}_\Gamma$ such that $\Delta \cap S(\mu_M(c)) \neq \emptyset$.
 \end{enumerate}
 \end{definition}
 
-Clause (ii) is strictly stronger than ``the completion is possible'' (satisfied vacuously by any output of $M$ under positive-temperature sampling) and, for $k > 1$, strictly weaker than ``the completion is the single most probable output''.
+\begin{definition}[Admissible selection functions]
+\label{def:selection}
+The construction admits a range of selection functions; three natural instances are:
+\begin{itemize}
+\item \emph{Top-$k$}: for $k \geq 1$, $\mathrm{Top}_k(\mu_M(c))$ is the set of bearers $\varphi$ with $\mu_M(c)(\varphi) > 0$ among the $k$ with largest $\mu_M(c)(\varphi)$, ties broken by a fixed convention on $B$.
+\item \emph{Absolute threshold}: for $\tau \in (0, 1]$, $\mathrm{Thr}_\tau(\mu_M(c)) = \{\varphi \in B : \mu_M(c)(\varphi) > \tau\}$.
+\item \emph{Nucleus} (top-$p$): for $p \in (0, 1]$, ordering bearers $\varphi_1, \varphi_2, \ldots$ by descending $\mu_M(c)(\varphi)$ with ties broken by a fixed convention, $\mathrm{Nuc}_p(\mu_M(c)) = \{\varphi_1, \ldots, \varphi_n\}$ where $n$ is the smallest index with $\sum_{i=1}^n \mu_M(c)(\varphi_i) \geq p$, or all bearers with positive mass if no such $n$ exists. Cumulative mass is taken in absolute terms; by Remark~\ref{rem:expression-events}, $\mu_M(c)$ is not a pmf on $B$.
+\end{itemize}
+\end{definition}
+
+Clause (ii) of Definition~\ref{def:frame} is non-trivial under any of these instances: it requires positive support from $M$ for some $\delta \in \Delta$, strictly stronger than ``the completion is possible'' (vacuous under positive-temperature sampling) and, when $S(\mu_M(c))$ is non-singleton, strictly weaker than ``the completion is the single most probable output''.
+
+\begin{remark}[Methodological commitment of $S$]
+\label{rem:methodological}
+The choice of selection function is a substantive methodological commitment the construction itself is silent on. Top-$k$ is engineering convenience: $k$ is chosen for tractability and has no independent principled basis. Absolute threshold operationalizes the Lockean thesis from formal epistemology---that credence above a fixed threshold counts as commitment \cite{foley1992}---and inherits its known difficulties (the lottery and preface paradoxes). Nucleus matches the regime under which deployed LLMs generate text \cite{holtzman2020}, but adapts cardinality to context rather than answering to an independent epistemic norm. The downstream structural properties of $I_M$, and the content structure derived from it, depend on $S$.
+\end{remark}
 
 \begin{remark}[Stratification]
 \label{rem:stratification}
@@ -104,6 +119,12 @@ The construction thus provides a determinate answer to the question of LLM conte
 
 \bibitem{hlobil2025}
 Hlobil, U., \& Brandom, R.~B. (2025). \emph{Reasons for Logic, Logic for Reasons: Pragmatics, Semantics, and Conceptual Roles}. Routledge.
+
+\bibitem{foley1992}
+Foley, R. (1992). The epistemology of belief and the epistemology of degrees of belief. \emph{American Philosophical Quarterly}, 29(2), 111--124.
+
+\bibitem{holtzman2020}
+Holtzman, A., Buys, J., Du, L., Forbes, M., \& Choi, Y. (2020). The curious case of neural text degeneration. In \emph{International Conference on Learning Representations}.
 
 \end{thebibliography}
 
