@@ -193,7 +193,17 @@ A benchmark of $N$ target implications, each with a probe set $\mathcal{Y}_i$ of
 
 A defensible first-cut benchmark uses $N \approx 50$--$100$ and $M \approx 20$--$50$ (e.g., $3$--$5$ paraphrases $\times$ $5$--$10$ perturbation types), totalling $\approx 1000$--$5000$ probes. This yields confidence-interval half-widths of $1$--$3\%$ on aggregate accuracy and adequate power ($\beta = 0.80$, $\alpha = 0.05$) to detect mastery gaps of $\Delta \approx 0.10$ between models or strata even after cluster derating.
 
-The framework slots into two existing measurement traditions. From psychometrics, item response theory \cite{embretson2000} jointly estimates per-model mastery and per-probe difficulty, and standard reliability and validity machinery applies directly: paraphrase robustness as alternate-forms reliability, closure consistency as internal consistency, brittleness as a construct-validity threat. From experimental syntax, factorial $2 \times 2$ designs that isolate super-additive interactions \cite{sprouse2012} translate to crossing $\{$base, $+$defeater $d\}$ with $\{$model $M_1$, $M_2\}$, or with $\{$+$d$, $+$neutral $n\}$, to quantify a defeater's specific contribution above baseline.
+The framework slots into two existing measurement traditions. From psychometrics, item response theory \cite{embretson2000} jointly estimates per-model mastery and per-probe difficulty, and standard reliability and validity machinery applies directly: paraphrase robustness as alternate-forms reliability, closure consistency as internal consistency, brittleness as a construct-validity threat. The factorial-design tradition in experimental syntax \cite{sprouse2012} likewise supplies templates for isolating a candidate $Y$'s specific effect on $\rho_M^S$ from generic perturbation confounds.
+
+\subsection*{Threats to validity}
+
+Four threats warrant explicit acknowledgement:
+\begin{enumerate}[label=(\arabic*)]
+\item \emph{Judge bias.} The expression relation $\mathrm{Expr}$ is operationalized by an external classifier whose false-positive and false-negative rates propagate into $\hat{\mu}_M$. Calibration against human-annotated samples is required, with judge error rates reported alongside mastery scores.
+\item \emph{Existential generosity in clause (ii).} $I_M$ records an inference whenever support holds in \emph{some} $c \in \mathrm{Ctx}_\Gamma$, leaving the construction sensitive to favorable phrasings. The paraphrase-robustness control above addresses this methodologically; a tighter formalization would promote it into the clause itself.
+\item \emph{Reference dependence.} The mastery score measures agreement with $\rho^*$, which is the analyst's intended RSR rather than a model-independent ground truth. Multi-annotator protocols, inter-annotator agreement statistics, and open publication of references mitigate but do not eliminate this gap.
+\item \emph{External validity is unverified.} Whether mastery scores predict downstream behavior---hallucination rates, task performance, robustness to perturbation---is currently a conjecture; predictive-validity studies belong on the roadmap.
+\end{enumerate}
 
 \begin{thebibliography}{9}
 
