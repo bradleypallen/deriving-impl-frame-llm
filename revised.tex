@@ -1,0 +1,288 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{mathtools}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+
+\newtheorem{definition}{Definition}
+\newtheorem{remark}{Remark}
+\newtheorem{example}{Example}
+
+\title{Note on Simonelli's Stop Sign Dialogue: An Implication-Space Methodology for the Empirical Evaluation of LLM Inferential Mastery}
+\author{Bradley P. Allen \\ University of Amsterdam}
+\date{15 May 2026}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Simonelli \cite{simonelli2026} argues that a large language model's handling of a defeasible inference --- endorsing it under various side premises, withdrawing endorsement under others --- can be read as evidence that the model has mastered the inference's material content, on inferentialist grounds. His evidence is an anecdotal dialogue with GPT-4.1 about stop signs. This note formalizes the dialogue. Given a language model $M$ and a set of bearers $B$, we use $M$'s endorsement verdicts at constructed contexts to build an implication frame $\langle B, I_M \rangle$, then evaluate $M$'s agreement with a labeled benchmark of inferential examples. The resulting procedure generalizes beyond Simonelli's example: it is, in effect, a methodology for inferentialist evaluation of LLMs, applicable wherever the inferential structure of a domain admits expert labeling. The methodology surfaces commitments the inferentialist program has tended to leave implicit, in particular how content attribution is determined and the operationalization of mastery claims.
+\end{abstract}
+
+\section{Introduction}
+
+The question whether large language models understand what they are saying has, in recent inferentialist work, taken a determinate philosophical shape. Simonelli \cite{simonelli2026} argues that on a global strong inferentialist account of concept possession, where mastery of inferential role is sufficient for possession of all concepts, LLMs trained on linguistic data can in principle be sapient without being sentient. His central piece of evidence is a dialogue with GPT-4.1 about stop signs: the model endorses the inference from \emph{$a$ is a stop sign} to \emph{$a$ is red} under various side conditions (nighttime, non-reflective material), but withdraws endorsement when the sign has been painted blue. Simonelli reads this defeasibility pattern as the mark of mastery of the underlying material inferential rule, in the sense made precise by Hlobil and Brandom \cite{hlobil2025}: the model handles not just the inference but its range of subjunctive robustness.
+
+This note formalizes that dialogue. Given $M$, a bearer set $B$, an expression function $\delta$ mapping bearers to natural-language statements, and a context-construction function $\mathrm{ctx}$ mapping premise sets to natural-language contexts, we use $M$'s endorsement verdicts at constructed contexts to derive an implication frame $\langle B, I_M \rangle$ to which the standard Hlobil--Brandom constructions apply. A procedure evaluates the agreement of $M$'s verdicts with the verdicts recorded in a labelled benchmark.
+
+The construction has a second, broader interest. The procedure it specifies is general: given a domain admitting expert labelling of inferential examples, the construction yields a way of characterizing $M$'s mastery of the domain's material inferences as agreement between $M$'s verdicts and the labels. This is, in effect, an inferentialist methodology for LLM evaluation. Where standard LLM factuality evaluation measures models against labelled question-answer pairs and reports aggregate accuracy \cite{wei2024,bang2025}, the methodology developed here measures models against labelled inferences and reports inter-annotator agreement. The trajectory of the paper is thus from Simonelli's anecdote to a general procedure, with the formalization in service of both.
+
+The construction also surfaces commitments the inferentialist program has tended to leave implicit. Most notably: that content-attribution to a system is relative to a carving of the domain into bearers supplied by an analyst, i.e., a participant in the discursive practice associated with the domain; that the choice between characterizing $M$'s generative and evaluative behavior is a substantive philosophical commitment, not a technicality; and that mastery-claims about $M$ are operational claims about agreement with a benchmark composed of examples of discursive practice, not metaphysical claims about $M$'s content as such. These commitments are not novel to the LLM case --- they are arguably present in the inferentialist program from the start --- but the LLM case forces them into view. We return to these points in the discussion.
+
+\section{Preliminaries}
+
+Let $V$ be a finite vocabulary of tokens, and let $L = V^*$ be the set of finite sequences built from them. Following Hlobil and Brandom \cite[Def.\ 61]{hlobil2025}, let $B$ be a non-empty set of bearers --- the items that play implicational roles, left abstract here.
+
+The construction lives inside the implication-space semantics of \cite{hlobil2025}. The reader is assumed to be familiar with the following machinery from that work, used here without restatement: the implication frame $\langle B, I \rangle$, where $I \subseteq \wp(B) \times \wp(B)$, $\langle \emptyset, \emptyset \rangle \notin I$, and $\langle B, B \rangle \in I$ \cite[Def.\ 62]{hlobil2025}; the range of subjunctive robustness, $\mathrm{RSR}$ \cite[Def.\ 63]{hlobil2025}; implication equivalence $\approx$ \cite[Def.\ 64]{hlobil2025}; the implicational role $R(\alpha) = \langle R^+(\alpha), R^-(\alpha) \rangle$ \cite[Def.\ 65]{hlobil2025}; conceptual content as a pair of roles \cite[Def.\ 66]{hlobil2025}; the NMMS clauses for the connectives \cite[Def.\ 70]{hlobil2025}; and Corollary 77, which says that a frame satisfying Containment, once extended via NMMS, yields classical propositional logic in the narrowly logical fragment of the resulting consequence relation.
+
+The methodology of querying a model at natural-language contexts is adopted from prior work on LLM-grounded interpretations \cite{allen2025nesy} and on bilateral modal logic for LLM factuality evaluation \cite{allen2026bbl}. The earlier work probes whether a model's commitment to a single proposition is supported, refuted, or absent; the present construction applies the same prompting methodology --- verification prompts, repeated sampling, majority vote --- to the question whether a model endorses an inference from premises to consequents.
+
+An implication frame $\langle B, I \rangle$ satisfies Containment when any premise set and conclusion set that share a bearer count as a valid implication --- that is, $\Gamma \cap \Delta \neq \emptyset$ implies $\langle \Gamma, \Delta \rangle \in I$. Containment is the only structural constraint the construction below imposes.
+
+\section{Construction}
+
+The construction proceeds in three steps. First, we fix a way of representing each bearer and each premise and conclusion set as natural language. Second, we use the model to produce a verdict on each candidate implication given the natural language expression of each candidate implication as context. Third, we read these verdicts as frame membership.
+
+\begin{definition}[Expression of bearers, premise sets and conclusion sets]
+Let $M$ be a large language model. We assume a function $\delta : B \to L$ assigning to each bearer $\varphi \in B$ a natural-language statement that expresses $\varphi$, a function $\mathrm{ctx}_\Gamma : \wp(B) \to L$ assigning to each finite premise set $\Gamma \subseteq B$ a natural-language context that expresses a conjunction of each bearer in $\Gamma$, and a function $\mathrm{ctx}_\Delta : \wp(B) \to L$ assigning to each finite conclusion set $\Delta \subseteq B$ a natural-language context that expresses a disjunction of each bearer in $\Delta$.
+\end{definition}
+
+Each of $\delta$, $\mathrm{ctx}_\Gamma$ and $\mathrm{ctx}_\Delta$ are analyst-supplied. $\delta$ specifies how each bearer is to be put into words; $\mathrm{ctx}_\Gamma$ and $\mathrm{ctx}_\Delta$ specify how a set of bearers is to be packaged as a token sequence. For example, for $\Gamma = \{\varphi_1, \ldots, \varphi_n\}$, the simplest choice of $\mathrm{ctx}_\Gamma(\Gamma)$ is a conjunction ``$\delta(\varphi_1)$ and \ldots\ and $\delta(\varphi_n)$'', and for $\Delta = \{\psi_1, \ldots, \psi_n\}$, the simplest choice of $\mathrm{ctx}_\Delta(\Delta)$ is a disjunction ``$\delta(\psi_1)$ or \ldots\ or $\delta(\psi_n)$'', but other constructions are admissible.
+
+\begin{definition}[Endorsement of candidate implications]
+The endorsement verdict of $M$ on a candidate implication $\langle \Gamma, \Delta \rangle$ is a value $E_M(\langle \Gamma, \Delta \rangle) \in \{\text{good}, \text{bad}, \text{abstain}\}$, computed by majority vote over repeated sampling of $M$'s responses to a verification prompt \cite{allen2025nesy} that presents $\mathrm{ctx}_\Gamma(\Gamma)$ together with $\mathrm{ctx}_\Delta(\Delta)$. Unparseable responses are mapped to abstain.
+\end{definition}
+
+\begin{definition}[Derived implication frame]
+\label{def:frame}
+Given $M$, an expression function $\delta$, context-construction functions $\mathrm{ctx}_\Gamma$, $\mathrm{ctx}_\Delta$, and the endorsement function $E_M$, the derived implication frame for $M$ is $\langle B, I_M \rangle$, where $\langle \Gamma, \Delta \rangle \in I_M$ iff at least one of the following holds:
+\begin{enumerate}
+\item[(i)] $\Gamma \cap \Delta \neq \emptyset$; or
+\item[(ii)] $E_M(\langle \Gamma, \Delta \rangle) = \text{good}$.
+\end{enumerate}
+\end{definition}
+
+\begin{remark}[Relation to dialogue probing]
+Simonelli's dialogue with GPT-4.1 \cite{simonelli2026} is endorsement-probing of this kind, with $\mathrm{ctx}_\Gamma$, $\mathrm{ctx}_\Delta$, the verification prompt, and the sample size all left implicit in the choice of conversational interaction with the LLM. The construction makes each explicit and replaces single-sample reading with majority vote over repeated samples. What Simonelli does anecdotally, the construction does as a determinate procedure.
+\end{remark}
+
+\begin{remark}[Bearers and propositions]
+A bearer $\varphi \in B$ in this construction is propositional content, individuated by the natural-language statement $\delta(\varphi)$ that expresses it. Two statements that should be treated as expressing the same bearer must be related by $\delta$; the construction does not adjudicate when distinct surface forms express the same content.
+\end{remark}
+
+\begin{remark}[Containment by construction]
+By clause (i) of Definition 3, $\langle B, I_M \rangle$ obeys Containment.
+\end{remark}
+
+\begin{example}[Stop signs and the range of subjunctive robustness]
+Following Simonelli's discussion of GPT-4.1 \cite{simonelli2026}, let $B = \{sa, ra, n, nr, ba \}$, $\delta(sa) = $ ``$a$ is a stop sign'', $\delta(ra) = $ ``$a$ is red'', $\delta(n) = $ ``it is nighttime'', $\delta(nr) = $ ``$a$ is not made with reflective material'', and $\delta(ba) = $ ``$a$ has been painted blue''. The following table models Simonelli's dialogue with GPT-4.1:
+
+\begin{center}
+\begin{tabularx}{\textwidth}{c l L c c}
+\toprule
+$i$ & $\Gamma_i$ & $\mathrm{ctx}_\Gamma(\Gamma_i)$ & $E_M(\langle \Gamma_i, \{ ra \} \rangle)$ \\
+\midrule
+0 & $\{sa\}$ & ``$a$ is a stop sign'' & good \\
+1 & $\{sa, n\}$ & ``$a$ is a stop sign and it is nighttime'' & good \\
+2 & $\{sa, nr, n\}$ & ``$a$ is a stop sign and $a$ is not made with reflective material and it is nighttime'' & good \\
+3 & $\{sa, ba\}$ & ``$a$ is a stop sign and $a$ has been painted blue'' & bad \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+Row 2 recovers the move Simonelli's dialogue makes at its third turn: the model treats redness as a property of the sign that persists independently of whether it is visibly red under headlights. Row 3 shows the inference defeated (clause (i) fails since $\{sa, ba\} \cap \{ra\} = \emptyset$). Applying Definition \ref{def:frame} and the Hlobil--Brandom RSR construction \cite[Def.\ 63]{hlobil2025}:
+\[
+\{n\} \in \mathrm{RSR}(\langle \{sa\}, \{ra\} \rangle), \quad \{nr, n\} \in \mathrm{RSR}(\langle \{sa\}, \{ra\} \rangle), \quad \{ba\} \notin \mathrm{RSR}(\langle \{sa\}, \{ra\} \rangle).
+\]
+This is the defeasibility pattern Simonelli identifies as the mark of GPT-4.1's mastery of the inferential relation $sa \vdash ra$.
+\end{example}
+
+\section{Evaluation methodology}
+
+The construction yields not just an implication frame but a procedure, modeled on binary classification with abstention \cite{el-yaniv2010}, for evaluating $M$'s inferential mastery against a labeled benchmark that reflects discursive practice relative to a given domain of discourse.
+
+\begin{definition}[Benchmarks]
+Given a set of bearers $B$ and a set of analysts $\{a_1, \ldots, a_m\}$, a benchmark is a finite set $\beta = \{(I_1, V_1), \ldots, (I_n, V_n)\}$, where each $I_i \in \wp(B) \times \wp(B)$ is an implication and each $V_i = (v_{i,1}, \ldots, v_{i,m})$ is a tuple of endorsement verdicts $v_{i,j} \in \{\mathrm{good}, \mathrm{bad}, \mathrm{abstain}\}$, with $v_{i,j}$ the verdict of analyst $a_j$ on $I_i$ coherent with $a_j$'s discursive practice in the domain.
+\end{definition}
+
+\begin{definition}[Evaluation of a model on a benchmark]
+Given a model $M$ and a benchmark $\beta$, an evaluation of $M$ over $\beta$ is the finite set
+\[
+\eta = \{(I_1, V_1, E_M(I_1)), \ldots, (I_n, V_n, E_M(I_n))\}.
+\]
+\end{definition}
+
+We characterize $M$'s inferential mastery relative to $\eta$ along three distinct axes: coverage, which measures the rate at which $M$ produces substantive verdicts; Cohen's kappa, which measures $M$'s agreement with a reference analyst position; and Fleiss' kappa, which measures $M$'s coherence with a community of analyst practice. Cohen's and Fleiss' kappa are restricted to items where $M$ produces a substantive verdict, separating the question of whether $M$ participates from the question of how well it participates when it does.
+
+\begin{definition}[Coverage]
+Given an evaluation $\eta$, the coverage of $M$ over $\eta$ is
+\[
+\mathrm{cov}(\eta) = \frac{|\{i : E_M(I_i) \neq \mathrm{abstain}\}|}{n}.
+\]
+The coverage of analyst $a_j$ over $\eta$ is analogously
+\[
+\mathrm{cov}_j(\eta) = \frac{|\{i : v_{i,j} \neq \mathrm{abstain}\}|}{n}.
+\]
+\end{definition}
+
+\begin{definition}[Substantive index]
+The substantive index of an evaluation $\eta$ with respect to a reference verdict function $r : \{1, \ldots, n\} \to \{\mathrm{good}, \mathrm{bad}, \mathrm{abstain}\}$ is
+\[
+S(\eta, r) = \{i : E_M(I_i) \in \{\mathrm{good}, \mathrm{bad}\} \wedge r(i) \in \{\mathrm{good}, \mathrm{bad}\}\}.
+\]
+\end{definition}
+
+\begin{definition}[Analyst consensus]
+Given a benchmark $\beta$, the consensus verdict on implication $I_i$ is
+\[
+c_i = \begin{cases}
+\mathrm{good} & \text{if } |\{j : v_{i,j} = \mathrm{good}\}| > |\{j : v_{i,j} = \mathrm{bad}\}| \\
+\mathrm{bad} & \text{if } |\{j : v_{i,j} = \mathrm{bad}\}| > |\{j : v_{i,j} = \mathrm{good}\}| \\
+\mathrm{abstain} & \text{otherwise.}
+\end{cases}
+\]
+\end{definition}
+
+\begin{definition}[Cohen's kappa]
+Given an evaluation $\eta$ and a reference verdict function $r$ (the consensus $c_i$ or a single analyst's verdicts $v_{i,j}$), let $S = S(\eta, r)$ and $n_S = |S|$. The observed agreement between $M$ and $r$ over $S$ is
+\[
+p_o = \frac{|\{i \in S : E_M(I_i) = r(i)\}|}{n_S},
+\]
+and the chance-expected agreement is
+\[
+p_e = \sum_{c \in \{\mathrm{good}, \mathrm{bad}\}} p_M(c) \cdot p_r(c),
+\]
+where
+\[
+p_M(c) = \frac{|\{i \in S : E_M(I_i) = c\}|}{n_S}, \quad p_r(c) = \frac{|\{i \in S : r(i) = c\}|}{n_S}.
+\]
+Cohen's kappa is
+\[
+\kappa_C(\eta, r) = \frac{p_o - p_e}{1 - p_e}.
+\]
+\end{definition}
+
+\begin{definition}[Fleiss' kappa]
+Given an evaluation $\eta$ over a benchmark with $m$ analysts, $M$ is treated as the $(m+1)$th annotator. Let $S_F = \{i : E_M(I_i) \in \{\mathrm{good}, \mathrm{bad}\} \wedge v_{i,j} \in \{\mathrm{good}, \mathrm{bad}\} \text{ for all } j\}$ be the subset of items where all annotators produce substantive verdicts, and let $n_F = |S_F|$. For each $i \in S_F$ and each $c \in \{\mathrm{good}, \mathrm{bad}\}$, let
+\[
+n_{i,c} = |\{j : v_{i,j} = c\}| + \mathbb{1}[E_M(I_i) = c]
+\]
+be the number of annotators (including $M$) who assigned $c$ to $I_i$. The per-item agreement is
+\[
+P_i = \frac{1}{(m+1) \cdot m} \sum_c n_{i,c} \cdot (n_{i,c} - 1),
+\]
+and the mean observed agreement is
+\[
+\bar{P} = \frac{1}{n_F} \sum_{i \in S_F} P_i.
+\]
+The chance-expected agreement is
+\[
+\bar{P}_e = \sum_c p_c^2, \quad p_c = \frac{\sum_{i \in S_F} n_{i,c}}{n_F \cdot (m+1)}.
+\]
+Fleiss' kappa is
+\[
+\kappa_F(\eta) = \frac{\bar{P} - \bar{P}_e}{1 - \bar{P}_e}.
+\]
+The inter-analyst Fleiss' kappa, $\kappa_F^*(\beta)$, is computed analogously over the analyst verdicts alone, with $m$ rather than $m+1$ annotators and with $n_{i,c} = |\{j : v_{i,j} = c\}|$.
+\end{definition}
+
+\begin{remark}[Interpreting Fleiss' kappa against the inter-analyst baseline]
+The inter-analyst Fleiss' kappa $\kappa_F^*(\beta)$ provides a baseline for interpreting $\kappa_C(\eta, r)$ and $\kappa_F(\eta)$. An evaluation in which $M$'s agreement with analysts approaches the analysts' agreement with each other characterizes $M$ as participating in domain practice at a level comparable to competent practitioners. An evaluation in which the inclusion of $M$ in $\kappa_F$ substantially lowers agreement relative to $\kappa_F^*$ characterizes $M$ as diverging from competent practice in ways that detract from inter-annotator coherence.
+\end{remark}
+
+\begin{remark}[RSR-targeted benchmarks]
+A benchmark $\beta$ is RSR-targeted for a target inference $\langle X, A \rangle$ when it consists of items $I_i = \langle X \cup Y_i, A \rangle$ for various side-premise extensions $Y_i$, with analyst verdicts $v_{i,j}$ recording whether each $Y_i$ preserves endorsement of $A$ from $X$. The agreement measures of an evaluation $\eta$ over an RSR-targeted benchmark characterize $M$'s mastery of the RSR of $\langle X, A \rangle$: $M$ agrees with the analysts' RSR-membership verdicts to the extent that $\kappa_C(\eta, r)$ approaches $\kappa_F^*(\beta)$. This is the philosophically central case in light of Simonelli's reading of defeasibility as the mark of mastery, and Example~1 above is a small RSR-targeted benchmark of this kind.
+\end{remark}
+
+We have taken the construction from a piece of formal machinery to an evaluation methodology. Given a labeled dataset of inferential examples in a domain --- target inferences paired with systematic variations of target implications and analyst-supplied endorsement verdicts --- the construction yields measures of $M$'s mastery of the domain's material inferences. The measures are decomposable: coverage, Cohen's kappa, and Fleiss' kappa for a given $\eta$ can be reported by target implication, by type of variation (defeater, irrelevant addition, weakening), and by other features of the dataset. The decomposition surfaces aspects of $M$'s behavior that aggregate metrics elide.
+
+Benchmarks may be drawn from analysts' own competence in everyday inferences where this is uncontroversial, from authoritative sources in specialized domains, from codified knowledge bases such as ontologies, or stipulated for experimental purposes. In each case it is constructed and finite, and its choice is constitutive of what mastery-claims about $M$ amount to. The construction provides machinery for the comparison; it does not adjudicate which benchmarks are appropriate.
+
+\section{Discussion}
+
+The construction is at once a formalization of Simonelli's dialogue and a general procedure for inferentialist evaluation of LLMs. We close by drawing out what each tells us about the inferentialist program more broadly.
+
+\begin{remark}[The analyst's role]
+The construction depends on analyst-supplied inputs that play distinct roles. The bearer set $B$, the expression function $\delta$, the context-construction functions $\mathrm{ctx}_\Gamma$ and $\mathrm{ctx}_\Delta$, and the verification prompt jointly determine the frame $\langle B, I_M \rangle$ the construction yields for a given $M$. The benchmark $\beta$, with its tuples of analyst verdicts $V_i$ coherent with each analyst's discursive practice in the domain, determines what frame membership is compared against and is what makes the analysts' inferential practice operationally available for the agreement measurement. Different choices yield different characterizations.
+
+This relativity is not novel to the LLM case. The Hlobil--Brandom framework presupposes a way of carving the discursive practice into bearers and roles, and the carving is always supplied by analysts. In the human case the supplying tends to be tacit, drawn from the analysts' own grasp of the language. The LLM case forces the carving into view: there is no shared linguistic competence to fall back on, so $\delta$, $\mathrm{ctx}_\Gamma$, $\mathrm{ctx}_\Delta$, and the benchmark must be explicitly produced. What the construction surfaces, then, is a feature the framework has always had --- content-attribution is relative to a way of parsing the practice --- made explicit by a case that does not let it remain implicit.
+\end{remark}
+
+\begin{remark}[Generative versus evaluative behavior]
+The construction extracts $I_M$ from $M$'s evaluative behavior --- what $M$ endorses, via $E_M$, when asked to judge candidate implications $\langle \Gamma, \Delta \rangle$ presented through $\mathrm{ctx}_\Gamma$ and $\mathrm{ctx}_\Delta$. This is a different aspect of $M$ than its generative behavior --- what $M$ tends to produce when completing a context freely. The two need not coincide: a model may produce a sequence expressing $\varphi$ with high probability in free completion yet decline to endorse $\langle \Gamma, \{\varphi\} \rangle$ as a good implication when asked directly, and vice versa. Both are inferentialist characterizations of $M$, but they characterize different aspects of its behavior.
+
+The choice to base the construction on evaluative behavior is not arbitrary. Endorsement of a candidate implication is dialectically structured in a way free completion is not: when $M$ endorses $\langle \Gamma, \Delta \rangle$ as good, $M$ is, at minimum, taking up a position in response to a question about the inferential relation between premise and conclusion sets, in a way that a free completion does not. The Brandomian framework on which the Hlobil--Brandom machinery rests treats this dialectical structure --- the speech act of assertion and the commitments it carries --- as the fundamental unit of inferential analysis. Characterizing $M$ via $E_M$ rather than via its completion distribution preserves this structure.
+
+The choice has a consequence the inferentialist program should acknowledge. $M$'s participation in the dialectical practice the framework analyzes is asymmetric: $M$ participates when prompted, does not initiate, does not sustain commitments across sessions. The endorsements the construction records are endorsements-when-asked, not standing commitments; and the coverage measure $\mathrm{cov}(\eta)$ records the rate at which $M$ takes up substantive positions when prompted, not a rate of voluntary participation in discursive practice. Whether this counts as the kind of participation inferentialist analysis presupposes is a question the program now has to engage. The construction is neutral on the answer but makes the question unavoidable.
+\end{remark}
+
+\begin{remark}[Two dimensions of variation]
+The construction probes $M$'s inferential behavior along one axis: variation in which implication $\langle \Gamma, \Delta \rangle$ is evaluated. This axis includes the antecedent variation that builds up RSR around a target inference --- considering $\langle X \cup Y, A \rangle$ for various side-premise extensions $Y$ --- and also conclusion variation and joint variation in both premise and conclusion sets, all of which the multisuccedent construction supports uniformly.
+
+A second axis is orthogonal: variation in the surface form of fixed implications. The expression function $\delta$ and the context-construction functions $\mathrm{ctx}_\Gamma$ and $\mathrm{ctx}_\Delta$ are analyst-supplied, and nothing in the construction requires that they map each bearer or each set to a unique natural-language expression. The analyst can supply families of meaning-preserving variants: $\delta(\varphi)$ may be replaced by a set $\{\delta^1(\varphi), \ldots, \delta^k(\varphi)\}$ of paraphrases of the bearer $\varphi$, and similarly for $\mathrm{ctx}_\Gamma$ and $\mathrm{ctx}_\Delta$. Querying $E_M(\langle \Gamma, \Delta \rangle)$ at each variant produces a family of verdicts whose stability characterizes the robustness of $M$'s endorsement under paraphrase --- whether the verdict tracks the implication's content or features of its surface expression.
+
+The two axes are complementary. The implication axis characterizes the structural patterns of $M$'s endorsements across the space of implications; the paraphrase axis characterizes whether $M$'s verdict at any given implication is robust to the analyst's specific choices of $\delta$, $\mathrm{ctx}_\Gamma$, and $\mathrm{ctx}_\Delta$. A full inferentialist characterization of $M$'s commitment to a material implication would combine both. The present note develops the implication axis; the paraphrase axis is an extension supported by generalizing the analyst's expression functions to families of meaning-preserving variants.
+\end{remark}
+
+\begin{remark}[The operational character of mastery claims]
+Once the benchmark is made explicit as a set of analyst-labeled implications $\beta$, mastery-claims about $M$ become operational. To say $M$ has mastered the inferential structure of a domain relative to $\beta$ is to say the coverage and kappa measures of the evaluation $\eta$ meet whatever thresholds the analyst chooses --- that $M$ takes up substantive positions at rates comparable to the analysts in $\beta$, and that those positions cohere with analyst practice at agreement levels approaching the inter-analyst baseline $\kappa_F^*(\beta)$. There is no residual question of whether $M$ really has mastery beyond agreement with the benchmark, because the benchmark is what mastery is being measured against and the analysts' discursive practice is what the benchmark records.
+
+This is the deflationary reading of inferentialist content-attribution. On the strong inferentialist line that content is inferential role, the operational reading is not a softening of the program but a clarification of what its claims amount to. The frame $\langle B, I_M \rangle$ does not capture $M$'s content as such; it characterizes $M$'s evaluative behavior under analyst-chosen content-individuation. The benchmark $\beta$ does not record worldly facts about the domain; it records the inferential verdicts of analysts whose discursive practice in the domain is what mastery is being measured against. Whether better choices of $B$, $\delta$, $\mathrm{ctx}_\Gamma$, $\mathrm{ctx}_\Delta$, and $\beta$ yield characterizations that converge on something deserving the name of $M$'s content is an empirical and methodological question the construction supports but does not answer.
+
+This is, we suggest, the empirically tractable form the inferentialist program takes when applied to systems whose participation in discursive practice is asymmetric and analyst-mediated. The program does not lose its content; it loses the pretense that the analyst's role can remain implicit. What replaces the pretense is a methodology in which the analyst's role is explicit at every stage --- in the carving of bearers, the construction of contexts, the production of benchmark verdicts coherent with discursive practice, and the choice of thresholds at which agreement counts as mastery --- and in which mastery-claims are accordingly understood as claims about how $M$'s evaluative behavior compares to the discursive practice the analyst is articulating, not claims about $M$'s content in some practice-independent sense.
+\end{remark}
+
+\begin{remark}[Classical core]
+The derived frame has a classical logical core regardless of how $M$ actually behaves. By Remark 3, $\langle B, I_M \rangle$ satisfies Containment, so Corollary 77 of \cite{hlobil2025} applies: extending the frame via the NMMS clauses yields classical propositional logic in the narrowly logical fragment. The material base --- $I_M$ proper --- may turn out to be nonmonotonic, nontransitive, or non-contractive; whether it is, for any given $M$, is an empirical question the construction neither forces nor forbids. With $\langle B, I_M \rangle$ in hand, the standard Hlobil--Brandom machinery applies without modification: $\mathrm{RSR}$, $\approx$, implicational roles, conceptual contents, and extensions with logical vocabulary all proceed by their constructions operating on $\langle B, I_M \rangle$ as an ordinary implication frame. Implicational role inclusion and content inclusion \cite[Def.\ 90, 93]{hlobil2025} are likewise available: one can ask which bearers $M$ treats as intersubstitutable salva consequentia and which contents are included in which others.
+\end{remark}
+
+\section{Concluding remarks}
+
+Simonelli, following his stop sign dialogue with GPT-4.1, states "There is, to be sure, a way to more systematically test this sort of material inferential knowledge, and developing and conducting such a test is likely a worthwhile project" \cite[p.~19]{simonelli2026}. Though Simonelli takes his anecdotal evidence to already suggest robust mastery, the systematic test he flags as worthwhile is precisely what the present methodology supplies. With it, mastery of a material implication becomes something that can be measured against a specified benchmark, with results decomposable by implication and by variation type. Differences between models become measurable as differences in coverage and kappa across these decompositions rather than as differences in aggregate score. The agreement of an LLM's evaluative behavior with the inferential practice articulated by a community of analysts becomes characterizable as the construction's measurements specify it, relative to the benchmark and the carving the analysts supply. And the question of what role LLMs can play in the game of giving and asking for reasons --- a question that has tended to be treated as a matter for conceptual settlement --- becomes one a research program can productively pursue.
+
+What the methodology cannot do is settle, on its own, whether the characterizations it produces capture anything about $M$ in a stronger sense than agreement with the chosen benchmark. Whether the inferentialist program is committed to such a stronger sense, or whether the operational reading is what its claims have always come to, is a question the present construction surfaces but does not resolve. The construction makes the question harder to evade.
+
+\begin{thebibliography}{9}
+
+\bibitem{allen2025nesy}
+Allen, B.~P., Chhikara, P., Ferguson, T.~M., Ilievski, F., \& Groth, P. (2025).
+Sound and Complete Neurosymbolic Reasoning with LLM-Grounded Interpretations.
+In \textit{Proceedings of the 19th International Conference on Neurosymbolic Learning and Reasoning}, PMLR 284, 392--419.
+
+\bibitem{allen2026bbl}
+Allen, B.~P. (2026).
+$\mathbf{B}_{\mathrm{BL}}$: A Bilateral Modal Logic for LLM Factuality Evaluation.
+Extended abstract, \textit{TLLM 2026}, Tsinghua University.
+
+\bibitem{bang2025}
+Bang, Y., Ji, Z., Schelten, A., Hartshorn, A., Fowler, T., Zhang, C., Cancedda, N., \& Fung, P. (2025). HalluLens: LLM Hallucination Benchmark. arXiv preprint arXiv:2504.17550. 
+
+\bibitem{el-yaniv2010}
+El-Yaniv, R., \& Wiener, Y. (2010).
+On the Foundations of Noise-free Selective Classification.
+\textit{Journal of Machine Learning Research}, 11(5).
+
+\bibitem{hlobil2025}
+Hlobil, U., \& Brandom, R.~B. (2025).
+\textit{Reasons for Logic, Logic for Reasons: Pragmatics, Semantics, and Conceptual Roles}.
+Routledge.
+
+\bibitem{simonelli2026}
+Simonelli, R. (2026).
+Sapience without Sentience: An Inferentialist Approach to LLMs.
+\textit{Asian Journal of Philosophy}, 5(1), 1--48.
+
+\bibitem{wei2024}
+Wei, J, Karina, N., Chung, H. W., Jiao, Y. J., Papay, S., Glaese, A., Schulman, J., \& Fedus, W. (2024). Measuring short-form factuality in large language models. arXiv preprint arXiv:2411.04368.
+
+\end{thebibliography}
+
+\end{document}

@@ -19,21 +19,21 @@
 \newtheorem{proposition}{Proposition}
 \newtheorem{example}{Example}
 
-\title{An Inferentialist Approach to LLM Evaluation}
+\title{Deriving Implication Frames from Large Language Models}
 \author{Bradley P.\ Allen\\University of Amsterdam}
-\date{Technical note, April 2026}
+\date{\today}
 
 \begin{document}
 
 \maketitle
 
 \begin{abstract}
-This note proposes an inferentialist framework for LLM evaluation: from a large language model $M$ and a set of bearers $B$, derive an implication frame $\langle B, I_M \rangle$ via a selection function on $M$'s bearer expression probabilities, then probe the resulting range of subjunctive robustness as a measure of $M$'s mastery of material inferential rules. The frame satisfies Containment by construction; the probing procedure is amenable to standard psychometric and factorial-design analysis.
+This technical note develops formal machinery that operationalizes a central concept of inferentialist semantics, as articulated by Hlobil and Brandom---the range of subjunctive robustness---for use in empirical evaluation of large language models (LLMs). From a large language model $M$ and a set of bearers $B$, the construction derives an implication frame $\langle B, I_M \rangle$ via a selection function on $M$'s bearer expression probabilities, then probes the resulting range of subjunctive robustness as a measure of $M$'s mastery of a given material implication. The frame satisfies Containment by construction, and the standard Hlobil-Brandom constructions apply without modification.
 \end{abstract}
 
 \section{Setup}
 
-Let $V$ be a finite set of tokens and $\mathcal{L} = V^*$ the set of finite token sequences. A non-empty $B \subseteq \mathcal{L}$ is the set of \emph{bearers}.
+Let $V$ be a finite set of tokens and $\mathcal{L} = V^*$ the set of finite token sequences. Following Hlobil and Brandom \cite[Def.~61]{hlobil2025}, let $B$ be a non-empty set of \emph{bearers} of implicational roles, abstracted from any particular embodiment. 
 
 The construction below works within the implication-space semantics of Hlobil and Brandom \cite{hlobil2025}, to which the reader is referred for the following machinery used without restatement: the implication frame $\langle B, I \rangle$ with $I \subseteq \wp(B) \times \wp(B)$, $\langle \emptyset, \emptyset \rangle \notin I$, and $\langle B, B \rangle \in I$ \cite[Def.~62]{hlobil2025}; the range of subjunctive robustness $\mathrm{RSR}$ \cite[Def.~63]{hlobil2025}; implication equivalence $\approx$ \cite[Def.~64]{hlobil2025}; implicational role $R(\alpha) = \langle R^+(\alpha), R^-(\alpha) \rangle$ \cite[Def.~65]{hlobil2025}; conceptual content as a pair of roles \cite[Def.~66]{hlobil2025}; the NMMS clauses for the connectives \cite[Def.~70]{hlobil2025}; and Corollary~77, which establishes that a Containment-satisfying frame extended via NMMS yields classical propositional logic in the narrowly logical fragment of the extended consequence relation.
 
@@ -43,7 +43,7 @@ An implication frame $\langle B, I \rangle$ \emph{obeys Containment} iff $\Gamma
 
 \begin{definition}[Bearer expression probabilities of an LLM]
 \label{def:mu}
-Let $M$ be a large language model with completion distribution $p_M : \mathcal{L} \to \Delta(\mathcal{L})$ assigning to each context $c \in \mathcal{L}$ a probability distribution over token sequences, and let $\mathrm{Expr} \subseteq \mathcal{L} \times B$ be an expression relation such that $\langle \sigma, \varphi \rangle \in \mathrm{Expr}$ iff $\sigma$ expresses $\varphi$. For each $\varphi \in B$, let
+Let $M$ be a large language model with completion function $p_M : \mathcal{L} \to \Delta(\mathcal{L})$ assigning to each context $c \in \mathcal{L}$ a probability distribution over token sequences, and let $\mathrm{Expr} \subseteq \mathcal{L} \times B$ be an expression relation such that $\langle \sigma, \varphi \rangle \in \mathrm{Expr}$ iff $\sigma$ expresses $\varphi$. For each $\varphi \in B$, let
 \[
 E_\varphi = \{\sigma \in \mathcal{L} : (\sigma, \varphi) \in \mathrm{Expr}\}
 \]
@@ -70,7 +70,12 @@ Given an LLM $M$ with bearer expression probabilities $\mu_M$ and a selection fu
 \end{enumerate}
 \end{definition}
 
-\begin{definition}[Admissible selection functions]
+\begin{remark}[Existential by design]
+Clause (ii) of Definition~\ref{def:frame} is existential over $c \in \mathit{Ctx}_\Gamma$: $\langle \Gamma, \Delta \rangle \in I_M$ iff \emph{some} premise-expressing context yields $\Delta$-mass under $S$. A universal variant---requiring $\Delta$-mass under every $c \in \mathit{Ctx}_\Gamma$, or every $c$ in some specified subset---is formally available and would yield a tighter frame $I_M^\forall \subseteq I_M$. The two correspond to different conceptions of what it is for $M$ to endorse an inference: clause (ii) treats endorsement as the \emph{availability} of inferential disposition under some appropriate framing, while a universal variant would treat endorsement as the \emph{uniformity} of that disposition across framings. The construction takes no position on which conception is correct; both yield Containment-satisfying frames and both admit the downstream Hlobil--Brandom constructions. 
+% The choice between them interacts with the brittleness controls discussed in Section~\ref{sec:probing}.
+\end{remark}
+
+\begin{definition}[Selection functions]
 \label{def:selection}
 The construction admits a range of selection functions; three natural instances are:
 \begin{itemize}
@@ -84,7 +89,12 @@ Clause (ii) of Definition~\ref{def:frame} is non-trivial under any of these inst
 
 \begin{remark}[Methodological commitment of $S$]
 \label{rem:methodological}
-The choice of selection function is a substantive methodological commitment the construction itself is silent on. Top-$k$ is engineering convenience: $k$ is chosen for tractability and has no independent principled basis. Absolute threshold operationalizes the Lockean thesis from formal epistemology---that credence above a fixed threshold counts as commitment \cite{foley1992}---and inherits its known difficulties (the lottery and preface paradoxes). Nucleus matches the regime under which deployed LLMs generate text \cite{holtzman2020}, but adapts cardinality to context rather than answering to an independent epistemic norm. The downstream structural properties of $I_M$, and the content structure derived from it, depend on $S$.
+The choice of selection function is a substantive methodological commitment that falls to the analyst. Top-$k$ is engineering convenience: $k$ is chosen for tractability and has no independent principled basis. Absolute threshold operationalizes the Lockean thesis from formal epistemology---that credence above a fixed threshold counts as commitment \cite{foley1992}---and inherits its known difficulties (the lottery and preface paradoxes). Nucleus matches the regime under which deployed LLMs generate text \cite{holtzman2019}, but adapts cardinality to context rather than answering to an independent epistemic norm. The downstream structural properties of $I_M$, and the content structure derived from it, depend on $S$.
+\end{remark}
+
+\begin{remark}[Bearers in the construction]
+\label{rem:bearersassentences}
+In the construction developed here, bearers are taken to be propositional contents, with the expression relation $\mathit{Expr}$ pairing token sequences that express these contents. The examples below illustrate this choice.
 \end{remark}
 
 \begin{example}[Capital-of-France]
@@ -128,7 +138,7 @@ $\{s_a, b_a\}$ & ``Is a stop sign that's been painted blue still red?'' & no\\
 \hline
 \end{tabular}
 \end{center}
-Under top-$1$, clause (ii) of Definition~\ref{def:frame} delivers
+$M$'s top completion thus tracks $\{r_a\}$ under the $\{s_a\}$ and $\{s_a, n\}$ framings but not under $\{s_a, b_a\}$. Under top-$1$, clause (ii) of Definition~\ref{def:frame} delivers
 \[
 \langle\{s_a\}, \{r_a\}\rangle \in I_M, \quad \langle\{s_a, n\}, \{r_a\}\rangle \in I_M, \quad \langle\{s_a, b_a\}, \{r_a\}\rangle \notin I_M
 \]
@@ -150,60 +160,37 @@ By clause (i) of Definition~\ref{def:frame}, $\langle B, I_M \rangle$ obeys Cont
 \end{remark}
 
 \section{Discussion}
+\label{sec:discussion}
+
+\begin{remark}[Stance on measurement]
+The construction does not identify $I_M$ with $M$'s content. The claim is rather that $I_M$ is the inferentialist-semantic characterization of $M$'s behavior under content-individuation supplied by the analyst---the bearer set $B$, the expression relation $\mathit{Expr}$, and the selection function $S$. The stratification noted in Remark~\ref{rem:stratification} ensures that the downstream content structure ($R$, $\approx$, conceptual content) is derived from $I_M$ rather than presupposed in its construction, but it does not eliminate the analyst's role in fixing the inputs. Whether the resulting characterization captures $M$'s content in any stronger sense---whether, for instance, $M$ itself individuates the bearers of $B$, or grasps the role-pairs that emerge from $I_M$---is a question this construction does not address. The construction provides a determinate object for inferentialist-semantic analysis of $M$; it does not settle the further question of what relationship that object bears to $M$'s content as such.
+\end{remark}
 
 With $\langle B, I_M \rangle$ in hand, the standard Hlobil--Brandom machinery applies without modification: $\mathrm{RSR}$, $\approx$, implicational roles, conceptual contents, and extensions of the material base with logical vocabulary are all obtained by their constructions operating on $\langle B, I_M \rangle$ as an ordinary implication frame. Nothing specific to the LLM origin of $I_M$ enters these constructions.
 
-\begin{proposition}[Classical core under NMMS]
-\label{prop:classical}
-Let $\langle B, I_M \rangle$ be a derived implication frame. The narrowly logical fragment of the consequence relation obtained by extending $\langle B, I_M \rangle$ via the NMMS clauses is classical propositional logic.
-\end{proposition}
-
-\begin{proof}
-By Remark~\ref{rem:containment}, $\langle B, I_M \rangle$ satisfies Containment. The result follows from Corollary~77 of Hlobil and Brandom \cite{hlobil2025}.
-\end{proof}
-
-The classical core holds for any $M$ and any admissible parameters; it is a property of the NMMS-extended consequence relation, not of $I_M$. The material base may be substructural while the extension carries a classical logical core: whether $I_M$ is in fact nonmonotonic, nontransitive, or non-contractive is an empirical property of $\mu_M$, not something the construction forces or forbids.
+\begin{remark}[Classical core]
+By Remark~\ref{rem:containment}, $\langle B, I_M \rangle$ satisfies Containment, so Corollary~77 of Hlobil and Brandom~\cite{hlobil2025} applies: the narrowly logical fragment of the consequence relation obtained by extending $\langle B, I_M \rangle$ via the NMMS clauses is classical propositional logic. This holds for any $M$ and any admissible parameters; it is a property of the NMMS-extended consequence relation, not of $I_M$. The material base may be substructural while the extension carries a classical logical core: whether $I_M$ is in fact nonmonotonic, nontransitive, or non-contractive is an empirical property of $\mu_M$, not something the construction forces or forbids.
+\end{remark}
 
 Implicational role inclusion and content inclusion \cite[Def.~90, 93]{hlobil2025} are likewise available in the derived frame: one can ask which bearers $M$ treats as intersubstitutable \emph{salva consequentia} and which contents are included in which others. These questions have determinate answers given $\langle B, I_M \rangle$ and characterize aspects of $M$'s behavior not directly visible in $\mu_M$.
 
-The construction thus provides a determinate answer to the question of LLM content: given $M$, a bearer set $B$, and admissible parameters, the content structure derived from $\langle B, I_M \rangle$ is well-defined and characterizes $M$'s material-inferential dispositions at the level of role and content identity.
+The construction thus provides a determinate inferentialist-semantic characterization of $M$: given $M$, a bearer set $B$, and admissible parameters, the content structure derived from $\langle B, I_M \rangle$ is well-defined and characterizes $M$'s material-inferential dispositions at the level of role and content identity. In addition, the construction yields not just a frame but a definite probing procedure. 
 
-\section{Probing inferential mastery}
-
-The construction yields not just a frame but a definite testing procedure. Fix a target implication $\langle X, A \rangle$ and a finite \emph{probe set} $\mathcal{Y} \subseteq \wp(B)$ of candidate side premises. For each $Y \in \mathcal{Y}$, the \emph{probed verdict} is the clause-(ii) outcome:
+\begin{definition}
+Let $\langle X, A \rangle$ be a target implication and $\mathcal{Y} \subseteq \wp(B)$ be a finite \emph{probe set} of candidate side premises. For each $Y \in \mathcal{Y}$, the \emph{probed verdict} is the clause-(ii) outcome:
 \[
 \rho_M^S(Y) \;=\; 1 \iff \exists c \in \mathrm{Ctx}_{X \cup Y}, \; A \cap S(\mu_M(c)) \neq \emptyset.
 \]
-Equivalently, $\rho_M^S(Y) = 1$ iff $Y \in \mathrm{RSR}(\langle X, A \rangle)$ as derived from $I_M$. The function $\rho_M^S$ probes the RSR at the points specified by $\mathcal{Y}$; it does not enumerate it (the RSR is in general infinite).
+Equivalently, $\rho_M^S(Y) = 1$ iff $Y \in \mathrm{RSR}(\langle X, A \rangle)$ as derived from $I_M$. The function $\rho_M^S$ probes the RSR at the points specified by $\mathcal{Y}$; it does not enumerate it (the RSR is in general countably infinite). 
+\end{definition}
 
-Comparing $\rho_M^S$ against a reference $\rho^* : \mathcal{Y} \to \{0,1\}$---the analyst's intended RSR membership, or human-annotated ground truth---yields a \emph{mastery score} of $M$ with respect to $(X, A, \mathcal{Y}, \rho^*, S)$. Standard agreement statistics (F1, Cohen's $\kappa$) apply.
+\begin{remark}[Probing versus defining]
+Note that $\rho^S_M$ as deployed evaluates the existential at a particular $c$ rather than searching $\mathrm{Ctx}_{X \cup Y}$; a positive verdict witnesses $I_M$-membership, while a negative verdict reflects the chosen $c$ rather than ranging over the existential. The relationship between $\rho^S_M$ under a given choice of $c$ and the frame $I_M$ as defined is itself a question this note leaves open. 
+\end{remark}
 
-A high mastery score on a hand-picked $\mathcal{Y}$ does not by itself separate genuine inferential mastery from sophisticated pattern matching. Three dimensions of structure on $\mathcal{Y}$ operationalize the distinction:
-\begin{enumerate}[label=(\arabic*)]
-\item \emph{Surface-paraphrase robustness}. For each $Y$, draw multiple $c \in \mathrm{Ctx}_{X \cup Y}$ that paraphrase the same bearer content. Measure verdict consistency across paraphrases; low consistency indicates verdicts ride on surface features.
-\item \emph{Distributional novelty stratification}. Partition $\mathcal{Y}$ by the rarity of $Y$ in plausible training corpora. A genuine master should exhibit roughly flat performance across strata; a pattern matcher should degrade sharply on novel $Y$.
-\item \emph{Closure consistency}. Cross-check that probed verdicts respect global properties of $I_M$ the analyst regards as defensible---specific monotonicity or non-monotonicity patterns, content-equivalence implications. Locally correct but globally inconsistent verdicts signal pattern matching without global inferential structure.
-\end{enumerate}
-
-Strict inferentialism, of the sort the construction inherits from Hlobil and Brandom, holds that there is no further fact beyond inferential behavior: if $M$ consistently passes every probe in every well-posed $\mathcal{Y}$, $M$ has mastered the rule. On that view, the contrast between mastery and pattern matching is operationalized as \emph{brittleness}: (1)--(3) measure brittleness rather than some hidden property behind behavior.
-
-\subsection*{Statistical structure}
-
-A benchmark of $N$ target implications, each with a probe set $\mathcal{Y}_i$ of $M_i$ side premises, yields $\sum_i M_i$ Bernoulli verdicts. Probe sets are typically curated rather than IID-sampled---targets stratified by defeasibility type, probes by perturbation type (paraphrase, novelty, defeater family)---so the aggregate mastery score estimates $M$'s competence over the stratified population the benchmark defines, not over $\wp(B)$. Aggregate accuracy has Wald-type standard error $\sqrt{\hat{p}(1-\hat{p})/n}$, with two adjustments: probes within a target are correlated, so effective sample size is typically $2$--$5\times$ smaller than nominal (cluster-robust standard errors or per-target random-effects models are appropriate); and per-target scores require multiple-comparison correction (Bonferroni or FDR), while aggregate scores do not.
-
-A defensible first-cut benchmark uses $N \approx 50$--$100$ and $M \approx 20$--$50$ (e.g., $3$--$5$ paraphrases $\times$ $5$--$10$ perturbation types), totalling $\approx 1000$--$5000$ probes. This yields confidence-interval half-widths of $1$--$3\%$ on aggregate accuracy and adequate power ($\beta = 0.80$, $\alpha = 0.05$) to detect mastery gaps of $\Delta \approx 0.10$ between models or strata even after cluster derating.
-
-The framework slots into two existing measurement traditions. From psychometrics, item response theory \cite{embretson2000} jointly estimates per-model mastery and per-probe difficulty, and standard reliability and validity machinery applies directly: paraphrase robustness as alternate-forms reliability, closure consistency as internal consistency, brittleness as a construct-validity threat. The factorial-design tradition in experimental syntax \cite{sprouse2012} likewise supplies templates for isolating a candidate $Y$'s specific effect on $\rho_M^S$ from generic perturbation confounds.
-
-\subsection*{Threats to validity}
-
-Four threats warrant explicit acknowledgement:
-\begin{enumerate}[label=(\arabic*)]
-\item \emph{Judge bias.} The expression relation $\mathrm{Expr}$ is operationalized by an external classifier whose false-positive and false-negative rates propagate into $\hat{\mu}_M$. Calibration against human-annotated samples is required, with judge error rates reported alongside mastery scores.
-\item \emph{Existential generosity in clause (ii).} $I_M$ records an inference whenever support holds in \emph{some} $c \in \mathrm{Ctx}_\Gamma$, leaving the construction sensitive to favorable phrasings. The paraphrase-robustness control above addresses this methodologically; a tighter formalization would promote it into the clause itself.
-\item \emph{Reference dependence.} The mastery score measures agreement with $\rho^*$, which is the analyst's intended RSR rather than a model-independent ground truth. Multi-annotator protocols, inter-annotator agreement statistics, and open publication of references mitigate but do not eliminate this gap.
-\item \emph{External validity is unverified.} Whether mastery scores predict downstream behavior---hallucination rates, task performance, robustness to perturbation---is currently a conjecture; predictive-validity studies belong on the roadmap.
-\end{enumerate}
+\begin{remark}[Sensitivity to inputs]
+The construction depends on analyst-supplied inputs at several points: the bearer set $B$, the expression relation $\mathrm{Expr}$, the selection function $S$, and (where the construction is applied to probe the RSR) a reference standard against which $M$'s verdicts are compared. The resulting frame $\langle B, I_M \rangle$, and the content structure derived from it via the standard Hlobil--Brandom constructions, are sensitive to these choices. Different bearer sets carve $M$'s behavior at different joints; different selection functions yield tighter or more permissive frames; different reference standards register $M$'s agreement with different intended verdict patterns. The construction provides a determinate object for inferentialist-semantic analysis given the inputs, but does not adjudicate which inputs are correct.
+\end{remark}
 
 \begin{thebibliography}{9}
 
@@ -213,17 +200,17 @@ Hlobil, U., \& Brandom, R.~B. (2025). \emph{Reasons for Logic, Logic for Reasons
 \bibitem{foley1992}
 Foley, R. (1992). The epistemology of belief and the epistemology of degrees of belief. \emph{American Philosophical Quarterly}, 29(2), 111--124.
 
-\bibitem{holtzman2020}
-Holtzman, A., Buys, J., Du, L., Forbes, M., \& Choi, Y. (2020). The curious case of neural text degeneration. In \emph{International Conference on Learning Representations}.
+\bibitem{holtzman2019}
+Holtzman, A., Buys, J., Du, L., Forbes, M., \& Choi, Y. (2019). The curious case of neural text degeneration. \emph{arXiv preprint arXiv:1904.09751}.
 
 \bibitem{simonelli2026}
-Simonelli, R. (2026). Sapience without sentience: An inferentialist approach to LLMs. \emph{Asian Journal of Philosophy} (forthcoming).
+Simonelli, R. 2026. Sapience without Sentience: An Inferentialist Approach to LLMs. \emph{Asian Journal of Philosophy}, 5(1): 1--48.
 
-\bibitem{embretson2000}
-Embretson, S.~E., \& Reise, S.~P. (2000). \emph{Item Response Theory for Psychologists}. Lawrence Erlbaum.
+% \bibitem{furr2014}
+% Furr, R. M., \& Bacharach, V. R. (2014). \textit{Psychometrics: An Introduction} (2nd ed.). Sage.
 
-\bibitem{sprouse2012}
-Sprouse, J., Wagers, M., \& Phillips, C. (2012). A test of the relation between working-memory capacity and syntactic island effects. \emph{Language}, 88(1), 82--123.
+% \bibitem{sprouse2017}
+% Sprouse, J., \& Almeida, D. (2017). Design sensitivity and statistical power in acceptability judgment experiments. \textit{Glossa: A Journal of General Linguistics}, 2(1), 14.
 
 \end{thebibliography}
 
