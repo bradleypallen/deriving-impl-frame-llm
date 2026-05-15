@@ -8,6 +8,7 @@
 \usepackage{booktabs}
 \usepackage{array}
 \usepackage{tabularx}
+\usepackage{url}
 
 \newcolumntype{L}{>{\raggedright\arraybackslash}X}
 
@@ -31,31 +32,31 @@ Simonelli \cite{simonelli2026} argues that a large language model's handling of 
 
 The question whether large language models understand what they are saying has, in recent inferentialist work, taken a determinate philosophical shape. Simonelli \cite{simonelli2026} argues that on a global strong inferentialist account of concept possession, where mastery of inferential role is sufficient for possession of all concepts, LLMs trained on linguistic data can in principle be sapient without being sentient. His central piece of evidence is a dialogue with GPT-4.1 about stop signs: the model endorses the inference from \emph{$a$ is a stop sign} to \emph{$a$ is red} under various side conditions (nighttime, non-reflective material), but withdraws endorsement when the sign has been painted blue. Simonelli reads this defeasibility pattern as the mark of mastery of the underlying material inferential rule, in the sense made precise by Hlobil and Brandom \cite{hlobil2025}: the model handles not just the inference but its range of subjunctive robustness.
 
-This note formalizes that dialogue. Given $M$, a bearer set $B$, an expression function $\delta$ mapping bearers to natural-language statements, and a context-construction function $\mathrm{ctx}$ mapping premise sets to natural-language contexts, we use $M$'s endorsement verdicts at constructed contexts to derive an implication frame $\langle B, I_M \rangle$ to which the standard Hlobil--Brandom constructions apply. A procedure evaluates the agreement of $M$'s verdicts with the verdicts recorded in a labelled benchmark.
+This note formalizes that dialogue. Given a model $M$, a bearer set $B$, an expression function $\delta$ mapping bearers to natural-language statements, and context-construction functions $\mathrm{ctx}_\Gamma$, $\mathrm{ctx}_\Delta$ that package premise sets and conclusion sets, respectively, as natural-language contexts, we use $M$'s endorsement verdicts at constructed contexts to derive an implication frame $\langle B, I_M \rangle$ to which the standard Hlobil--Brandom constructions apply. A procedure evaluates the agreement of $M$'s verdicts with the verdicts recorded in a labeled benchmark.
 
-The construction has a second, broader interest. The procedure it specifies is general: given a domain admitting expert labelling of inferential examples, the construction yields a way of characterizing $M$'s mastery of the domain's material inferences as agreement between $M$'s verdicts and the labels. This is, in effect, an inferentialist methodology for LLM evaluation. Where standard LLM factuality evaluation measures models against labelled question-answer pairs and reports aggregate accuracy \cite{wei2024,bang2025}, the methodology developed here measures models against labelled inferences and reports inter-annotator agreement. The trajectory of the paper is thus from Simonelli's anecdote to a general procedure, with the formalization in service of both.
+The construction has a second, broader interest. The procedure it specifies is general: given a domain admitting expert labeling of inferential examples, the construction yields a way of characterizing $M$'s mastery of the domain's material inferences as agreement between $M$'s verdicts and the labels. This is, in effect, an inferentialist methodology for LLM evaluation. Where standard LLM factuality evaluation measures models against labeled question-answer pairs and reports aggregate accuracy \cite{wei2024,bang2025}, the methodology developed here measures models against labeled inferences and reports inter-annotator agreement. The trajectory of the paper is thus from Simonelli's anecdote to a general procedure, with the formalization in service of both.
 
 The construction also surfaces commitments the inferentialist program has tended to leave implicit. Most notably: that content-attribution to a system is relative to a carving of the domain into bearers supplied by an analyst, i.e., a participant in the discursive practice associated with the domain; that the choice between characterizing $M$'s generative and evaluative behavior is a substantive philosophical commitment, not a technicality; and that mastery-claims about $M$ are operational claims about agreement with a benchmark composed of examples of discursive practice, not metaphysical claims about $M$'s content as such. These commitments are not novel to the LLM case --- they are arguably present in the inferentialist program from the start --- but the LLM case forces them into view. We return to these points in the discussion.
 
 \section{Preliminaries}
 
-Let $V$ be a finite vocabulary of tokens, and let $L = V^*$ be the set of finite sequences built from them. Following Hlobil and Brandom \cite[Def.\ 61]{hlobil2025}, let $B$ be a non-empty set of bearers --- the items that play implicational roles, left abstract here.
+Let $V$ be a finite vocabulary of tokens, and let $L = V^*$ be the set of finite sequences built from them. Following Hlobil and Brandom \cite[Def.~61]{hlobil2025}, let $B$ be a non-empty set of bearers --- the items that play implicational roles, left abstract here.
 
-The construction lives inside the implication-space semantics of \cite{hlobil2025}. The reader is assumed to be familiar with the following machinery from that work, used here without restatement: the implication frame $\langle B, I \rangle$, where $I \subseteq \wp(B) \times \wp(B)$, $\langle \emptyset, \emptyset \rangle \notin I$, and $\langle B, B \rangle \in I$ \cite[Def.\ 62]{hlobil2025}; the range of subjunctive robustness, $\mathrm{RSR}$ \cite[Def.\ 63]{hlobil2025}; implication equivalence $\approx$ \cite[Def.\ 64]{hlobil2025}; the implicational role $R(\alpha) = \langle R^+(\alpha), R^-(\alpha) \rangle$ \cite[Def.\ 65]{hlobil2025}; conceptual content as a pair of roles \cite[Def.\ 66]{hlobil2025}; the NMMS clauses for the connectives \cite[Def.\ 70]{hlobil2025}; and Corollary 77, which says that a frame satisfying Containment, once extended via NMMS, yields classical propositional logic in the narrowly logical fragment of the resulting consequence relation.
+The construction lives inside the implication-space semantics of \cite{hlobil2025}. The reader is assumed to be familiar with the following machinery from that work, used here without restatement: the implication frame $\langle B, I \rangle$, where $I \subseteq \wp(B) \times \wp(B)$, $\langle \emptyset, \emptyset \rangle \notin I$, and $\langle B, B \rangle \in I$ \cite[Def.~62]{hlobil2025}; and the range of subjunctive robustness, $\mathrm{RSR}$ \cite[Def.~63]{hlobil2025}. Further machinery from \cite{hlobil2025} --- implication equivalence $\approx$ \cite[Def.~64]{hlobil2025}, the implicational role $R(\alpha) = \langle R^+(\alpha), R^-(\alpha) \rangle$ \cite[Def.~65]{hlobil2025}, conceptual content as a pair of roles \cite[Def.~66]{hlobil2025}, the NMMS clauses for the connectives \cite[Def.~70]{hlobil2025}, and Corollary~77, which says that a frame including all instances of Containment, once its language is extended by interpreting logical vocabulary via the NMMS clauses, yields classical propositional logic in the narrowly logical fragment of the resulting consequence relation --- is invoked only in Remark~\ref{rem:classical-core} and is referenced there as needed.
 
-The methodology of querying a model at natural-language contexts is adopted from prior work on LLM-grounded interpretations \cite{allen2025nesy} and on bilateral modal logic for LLM factuality evaluation \cite{allen2026bbl}. The earlier work probes whether a model's commitment to a single proposition is supported, refuted, or absent; the present construction applies the same prompting methodology --- verification prompts, repeated sampling, majority vote --- to the question whether a model endorses an inference from premises to consequents.
+The methodology of querying a model to obtain an evaluation of a statement is adopted from prior work on LLM-grounded interpretations \cite{allen2025nesy} and on bilateral modal logic for LLM factuality evaluation \cite{allen2026bbl}. The earlier work probes whether a model's commitment to a single proposition is supported, refuted, or absent; the present construction applies the same prompting methodology --- verification prompts, repeated sampling, majority vote --- to the question whether a model endorses an inference from premises to consequents.
 
-An implication frame $\langle B, I \rangle$ satisfies Containment when any premise set and conclusion set that share a bearer count as a valid implication --- that is, $\Gamma \cap \Delta \neq \emptyset$ implies $\langle \Gamma, \Delta \rangle \in I$. Containment is the only structural constraint the construction below imposes.
+An implication frame $\langle B, I \rangle$ satisfies \emph{Containment} when any premise set and conclusion set that share a bearer count as a valid implication --- that is, $\Gamma \cap \Delta \neq \emptyset$ implies $\langle \Gamma, \Delta \rangle \in I$. Containment is the only structural constraint the construction below imposes.
 
 \section{Construction}
 
 The construction proceeds in three steps. First, we fix a way of representing each bearer and each premise and conclusion set as natural language. Second, we use the model to produce a verdict on each candidate implication given the natural language expression of each candidate implication as context. Third, we read these verdicts as frame membership.
 
 \begin{definition}[Expression of bearers, premise sets and conclusion sets]
-Let $M$ be a large language model. We assume a function $\delta : B \to L$ assigning to each bearer $\varphi \in B$ a natural-language statement that expresses $\varphi$, a function $\mathrm{ctx}_\Gamma : \wp(B) \to L$ assigning to each finite premise set $\Gamma \subseteq B$ a natural-language context that expresses a conjunction of each bearer in $\Gamma$, and a function $\mathrm{ctx}_\Delta : \wp(B) \to L$ assigning to each finite conclusion set $\Delta \subseteq B$ a natural-language context that expresses a disjunction of each bearer in $\Delta$.
+Let $M$ be a large language model. We assume a function $\delta : B \to L$ assigning to each bearer $\varphi \in B$ a natural-language statement that expresses $\varphi$, a function $\mathrm{ctx}_\Gamma : \wp(B) \to L$ assigning to each premise set $\Gamma \subseteq B$ a natural-language context that expresses a conjunction of the bearers in $\Gamma$, and a function $\mathrm{ctx}_\Delta : \wp(B) \to L$ assigning to each conclusion set $\Delta \subseteq B$ a natural-language context that expresses a disjunction of the bearers in $\Delta$.
 \end{definition}
 
-Each of $\delta$, $\mathrm{ctx}_\Gamma$ and $\mathrm{ctx}_\Delta$ are analyst-supplied. $\delta$ specifies how each bearer is to be put into words; $\mathrm{ctx}_\Gamma$ and $\mathrm{ctx}_\Delta$ specify how a set of bearers is to be packaged as a token sequence. For example, for $\Gamma = \{\varphi_1, \ldots, \varphi_n\}$, the simplest choice of $\mathrm{ctx}_\Gamma(\Gamma)$ is a conjunction ``$\delta(\varphi_1)$ and \ldots\ and $\delta(\varphi_n)$'', and for $\Delta = \{\psi_1, \ldots, \psi_n\}$, the simplest choice of $\mathrm{ctx}_\Delta(\Delta)$ is a disjunction ``$\delta(\psi_1)$ or \ldots\ or $\delta(\psi_n)$'', but other constructions are admissible.
+Each of $\delta$, $\mathrm{ctx}_\Gamma$ and $\mathrm{ctx}_\Delta$ is analyst-supplied. $\delta$ specifies how each bearer is to be put into words; $\mathrm{ctx}_\Gamma$ and $\mathrm{ctx}_\Delta$ specify how a set of bearers is to be packaged as a token sequence. For example, for $\Gamma = \{\varphi_1, \ldots, \varphi_n\}$, the simplest choice of $\mathrm{ctx}_\Gamma(\Gamma)$ is a conjunction ``$\delta(\varphi_1)$ and \ldots\ and $\delta(\varphi_n)$'', and for $\Delta = \{\psi_1, \ldots, \psi_n\}$, the simplest choice of $\mathrm{ctx}_\Delta(\Delta)$ is a disjunction ``$\delta(\psi_1)$ or \ldots\ or $\delta(\psi_n)$'', but other constructions are admissible.
 
 \begin{definition}[Endorsement of candidate implications]
 The endorsement verdict of $M$ on a candidate implication $\langle \Gamma, \Delta \rangle$ is a value $E_M(\langle \Gamma, \Delta \rangle) \in \{\text{good}, \text{bad}, \text{abstain}\}$, computed by majority vote over repeated sampling of $M$'s responses to a verification prompt \cite{allen2025nesy} that presents $\mathrm{ctx}_\Gamma(\Gamma)$ together with $\mathrm{ctx}_\Delta(\Delta)$. Unparseable responses are mapped to abstain.
@@ -68,6 +69,7 @@ Given $M$, an expression function $\delta$, context-construction functions $\mat
 \item[(i)] $\Gamma \cap \Delta \neq \emptyset$; or
 \item[(ii)] $E_M(\langle \Gamma, \Delta \rangle) = \text{good}$.
 \end{enumerate}
+By stipulation, $\langle \emptyset, \emptyset \rangle \notin I_M$, matching the condition on implication frames in \cite[Def.~62]{hlobil2025}.
 \end{definition}
 
 \begin{remark}[Relation to dialogue probing]
@@ -75,7 +77,7 @@ Simonelli's dialogue with GPT-4.1 \cite{simonelli2026} is endorsement-probing of
 \end{remark}
 
 \begin{remark}[Bearers and propositions]
-A bearer $\varphi \in B$ in this construction is propositional content, individuated by the natural-language statement $\delta(\varphi)$ that expresses it. Two statements that should be treated as expressing the same bearer must be related by $\delta$; the construction does not adjudicate when distinct surface forms express the same content.
+A bearer $\varphi \in B$ in this construction is a propositional content-bearer, individuated by the natural-language statement $\delta(\varphi)$ that expresses it. Two statements that should be treated as expressing the same bearer must be related by $\delta$; the construction does not adjudicate when distinct surface forms express the same content.
 \end{remark}
 
 \begin{remark}[Containment by construction]
@@ -88,19 +90,19 @@ Following Simonelli's discussion of GPT-4.1 \cite{simonelli2026}, let $B = \{sa,
 \begin{center}
 \begin{tabularx}{\textwidth}{c l L c c}
 \toprule
-$i$ & $\Gamma_i$ & $\mathrm{ctx}_\Gamma(\Gamma_i)$ & $E_M(\langle \Gamma_i, \{ ra \} \rangle)$ \\
+$i$ & $\Gamma_i$ & $\mathrm{ctx}_\Gamma(\Gamma_i)$ & $E_M(\langle \Gamma_i, \{ ra \} \rangle)$ & Analyst verdict \\
 \midrule
-0 & $\{sa\}$ & ``$a$ is a stop sign'' & good \\
-1 & $\{sa, n\}$ & ``$a$ is a stop sign and it is nighttime'' & good \\
-2 & $\{sa, nr, n\}$ & ``$a$ is a stop sign and $a$ is not made with reflective material and it is nighttime'' & good \\
-3 & $\{sa, ba\}$ & ``$a$ is a stop sign and $a$ has been painted blue'' & bad \\
+0 & $\{sa\}$ & ``$a$ is a stop sign'' & good & good \\
+1 & $\{sa, n\}$ & ``$a$ is a stop sign and it is nighttime'' & good & good \\
+2 & $\{sa, nr, n\}$ & ``$a$ is a stop sign and $a$ is not made with reflective material and it is nighttime'' & good & good \\
+3 & $\{sa, ba\}$ & ``$a$ is a stop sign and $a$ has been painted blue'' & bad & bad \\
 \bottomrule
 \end{tabularx}
 \end{center}
 
 Row 2 recovers the move Simonelli's dialogue makes at its third turn: the model treats redness as a property of the sign that persists independently of whether it is visibly red under headlights. Row 3 shows the inference defeated (clause (i) fails since $\{sa, ba\} \cap \{ra\} = \emptyset$). Applying Definition \ref{def:frame} and the Hlobil--Brandom RSR construction \cite[Def.\ 63]{hlobil2025}:
 \[
-\{n\} \in \mathrm{RSR}(\langle \{sa\}, \{ra\} \rangle), \quad \{nr, n\} \in \mathrm{RSR}(\langle \{sa\}, \{ra\} \rangle), \quad \{ba\} \notin \mathrm{RSR}(\langle \{sa\}, \{ra\} \rangle).
+\langle \{n\}, \emptyset \rangle \in \mathrm{RSR}(\langle \{sa\}, \{ra\} \rangle), \langle \{nr, n\}, \emptyset \rangle \in \mathrm{RSR}(\langle \{sa\}, \{ra\} \rangle), \langle \{ba\}, \emptyset \rangle \notin \mathrm{RSR}(\langle \{sa\}, \{ra\} \rangle).
 \]
 This is the defeasibility pattern Simonelli identifies as the mark of GPT-4.1's mastery of the inferential relation $sa \vdash ra$.
 \end{example}
@@ -110,7 +112,7 @@ This is the defeasibility pattern Simonelli identifies as the mark of GPT-4.1's 
 The construction yields not just an implication frame but a procedure, modeled on binary classification with abstention \cite{el-yaniv2010}, for evaluating $M$'s inferential mastery against a labeled benchmark that reflects discursive practice relative to a given domain of discourse.
 
 \begin{definition}[Benchmarks]
-Given a set of bearers $B$ and a set of analysts $\{a_1, \ldots, a_m\}$, a benchmark is a finite set $\beta = \{(I_1, V_1), \ldots, (I_n, V_n)\}$, where each $I_i \in \wp(B) \times \wp(B)$ is an implication and each $V_i = (v_{i,1}, \ldots, v_{i,m})$ is a tuple of endorsement verdicts $v_{i,j} \in \{\mathrm{good}, \mathrm{bad}, \mathrm{abstain}\}$, with $v_{i,j}$ the verdict of analyst $a_j$ on $I_i$ coherent with $a_j$'s discursive practice in the domain.
+Given a set of bearers $B$ and a set of analysts $\{a_1, \ldots, a_m\}$, a benchmark is a finite set $\beta = \{(I_1, V_1), \ldots, (I_n, V_n)\}$, where each $I_i \in \wp(B) \times \wp(B)$ is an implication and each $V_i = (v_{i,1}, \ldots, v_{i,m})$ is a tuple of endorsement verdicts $v_{i,j} \in \{\mathrm{good}, \mathrm{bad}, \mathrm{abstain}\}$, where $v_{i,j}$ is the verdict of analyst $a_j$ on $I_i$, coherent with $a_j$'s discursive practice in the domain.
 \end{definition}
 
 \begin{definition}[Evaluation of a model on a benchmark]
@@ -120,7 +122,7 @@ Given a model $M$ and a benchmark $\beta$, an evaluation of $M$ over $\beta$ is 
 \]
 \end{definition}
 
-We characterize $M$'s inferential mastery relative to $\eta$ along three distinct axes: coverage, which measures the rate at which $M$ produces substantive verdicts; Cohen's kappa, which measures $M$'s agreement with a reference analyst position; and Fleiss' kappa, which measures $M$'s coherence with a community of analyst practice. Cohen's and Fleiss' kappa are restricted to items where $M$ produces a substantive verdict, separating the question of whether $M$ participates from the question of how well it participates when it does.
+We characterize $M$'s inferential mastery relative to $\eta$ along three distinct axes: coverage, which measures the rate at which $M$ produces substantive verdicts; Cohen's kappa, which measures $M$'s agreement with a reference analyst position; and Fleiss' kappa, which measures $M$'s coherence with a community of analyst practice. Cohen's and Fleiss' kappa are restricted to items where $M$ and the relevant reference annotators all produce substantive verdicts, separating the question of whether $M$ participates from the question of how well it participates when it does.
 
 \begin{definition}[Coverage]
 Given an evaluation $\eta$, the coverage of $M$ over $\eta$ is
@@ -171,7 +173,7 @@ Cohen's kappa is
 \end{definition}
 
 \begin{definition}[Fleiss' kappa]
-Given an evaluation $\eta$ over a benchmark with $m$ analysts, $M$ is treated as the $(m+1)$th annotator. Let $S_F = \{i : E_M(I_i) \in \{\mathrm{good}, \mathrm{bad}\} \wedge v_{i,j} \in \{\mathrm{good}, \mathrm{bad}\} \text{ for all } j\}$ be the subset of items where all annotators produce substantive verdicts, and let $n_F = |S_F|$. For each $i \in S_F$ and each $c \in \{\mathrm{good}, \mathrm{bad}\}$, let
+Given an evaluation $\eta$ over a benchmark with $m$ analysts, $M$ is treated as the $(m+1)$th annotator (we reserve "analyst" for the human labelers and "annotator" for the human-plus-M ensemble). Let $S_F = \{i : E_M(I_i) \in \{\mathrm{good}, \mathrm{bad}\} \wedge v_{i,j} \in \{\mathrm{good}, \mathrm{bad}\} \text{ for all } j\}$ be the subset of items where all annotators produce substantive verdicts, and let $n_F = |S_F|$. For each $i \in S_F$ and each $c \in \{\mathrm{good}, \mathrm{bad}\}$, let
 \[
 n_{i,c} = |\{j : v_{i,j} = c\}| + \mathbb{1}[E_M(I_i) = c]
 \]
@@ -195,14 +197,14 @@ The inter-analyst Fleiss' kappa, $\kappa_F^*(\beta)$, is computed analogously ov
 \end{definition}
 
 \begin{remark}[Interpreting Fleiss' kappa against the inter-analyst baseline]
-The inter-analyst Fleiss' kappa $\kappa_F^*(\beta)$ provides a baseline for interpreting $\kappa_C(\eta, r)$ and $\kappa_F(\eta)$. An evaluation in which $M$'s agreement with analysts approaches the analysts' agreement with each other characterizes $M$ as participating in domain practice at a level comparable to competent practitioners. An evaluation in which the inclusion of $M$ in $\kappa_F$ substantially lowers agreement relative to $\kappa_F^*$ characterizes $M$ as diverging from competent practice in ways that detract from inter-annotator coherence.
+The inter-analyst Fleiss' kappa $\kappa_F^*(\beta)$ provides a baseline for interpreting $\kappa_C(\eta, r)$ and $\kappa_F(\eta)$. An evaluation in which $M$'s agreement with analysts approaches the analysts' agreement with each other characterizes $M$ as participating in domain practice at a level comparable to competent practitioners. An evaluation in which the inclusion of $M$ in $\kappa_F$ substantially lowers agreement relative to $\kappa_F^*$ characterizes $M$ as diverging from competent practice in ways that detract from inter-annotator coherence. The baseline $\kappa^*_F(\beta)$ requires $m \geq 2$ analysts and a benchmark on which the analysts do not unanimously agree on every item; benchmarks that fail either condition leave $\kappa^*_F(\beta)$ undefined and the comparison with $\kappa_C(\eta, r)$ and $\kappa_F(\eta)$ unavailable.
 \end{remark}
 
 \begin{remark}[RSR-targeted benchmarks]
 A benchmark $\beta$ is RSR-targeted for a target inference $\langle X, A \rangle$ when it consists of items $I_i = \langle X \cup Y_i, A \rangle$ for various side-premise extensions $Y_i$, with analyst verdicts $v_{i,j}$ recording whether each $Y_i$ preserves endorsement of $A$ from $X$. The agreement measures of an evaluation $\eta$ over an RSR-targeted benchmark characterize $M$'s mastery of the RSR of $\langle X, A \rangle$: $M$ agrees with the analysts' RSR-membership verdicts to the extent that $\kappa_C(\eta, r)$ approaches $\kappa_F^*(\beta)$. This is the philosophically central case in light of Simonelli's reading of defeasibility as the mark of mastery, and Example~1 above is a small RSR-targeted benchmark of this kind.
 \end{remark}
 
-We have taken the construction from a piece of formal machinery to an evaluation methodology. Given a labeled dataset of inferential examples in a domain --- target inferences paired with systematic variations of target implications and analyst-supplied endorsement verdicts --- the construction yields measures of $M$'s mastery of the domain's material inferences. The measures are decomposable: coverage, Cohen's kappa, and Fleiss' kappa for a given $\eta$ can be reported by target implication, by type of variation (defeater, irrelevant addition, weakening), and by other features of the dataset. The decomposition surfaces aspects of $M$'s behavior that aggregate metrics elide.
+In summary, we have taken the construction from a piece of formal machinery to an evaluation methodology. Given a labeled dataset of inferential examples in a domain — implications paired with analyst-supplied endorsement verdicts — the construction yields measures of $M$'s mastery of the domain's material inferences. The measures are decomposable: coverage, Cohen's kappa, and Fleiss' kappa for a given $\eta$ can be reported by target implication, by type of variation (defeater, irrelevant addition, weakening), and by other features of the dataset. The decomposition surfaces aspects of $M$'s behavior that aggregate metrics elide.
 
 Benchmarks may be drawn from analysts' own competence in everyday inferences where this is uncontroversial, from authoritative sources in specialized domains, from codified knowledge bases such as ontologies, or stipulated for experimental purposes. In each case it is constructed and finite, and its choice is constitutive of what mastery-claims about $M$ amount to. The construction provides machinery for the comparison; it does not adjudicate which benchmarks are appropriate.
 
@@ -241,12 +243,13 @@ This is, we suggest, the empirically tractable form the inferentialist program t
 \end{remark}
 
 \begin{remark}[Classical core]
-The derived frame has a classical logical core regardless of how $M$ actually behaves. By Remark 3, $\langle B, I_M \rangle$ satisfies Containment, so Corollary 77 of \cite{hlobil2025} applies: extending the frame via the NMMS clauses yields classical propositional logic in the narrowly logical fragment. The material base --- $I_M$ proper --- may turn out to be nonmonotonic, nontransitive, or non-contractive; whether it is, for any given $M$, is an empirical question the construction neither forces nor forbids. With $\langle B, I_M \rangle$ in hand, the standard Hlobil--Brandom machinery applies without modification: $\mathrm{RSR}$, $\approx$, implicational roles, conceptual contents, and extensions with logical vocabulary all proceed by their constructions operating on $\langle B, I_M \rangle$ as an ordinary implication frame. Implicational role inclusion and content inclusion \cite[Def.\ 90, 93]{hlobil2025} are likewise available: one can ask which bearers $M$ treats as intersubstitutable salva consequentia and which contents are included in which others.
+\label{rem:classical-core}
+The derived frame has a classical logical core regardless of how $M$ actually behaves. By Remark 3, $\langle B, I_M \rangle$ satisfies Containment, so Corollary 77 of \cite{hlobil2025} applies: once the language is extended by interpreting logical vocabulary via the NMMS clauses, classical propositional logic is included in the narrowly logical fragment of the resulting consequence relation. The material base --- $I_M$ proper --- may turn out to be nonmonotonic, nontransitive, or non-contractive; whether it is, for any given $M$, is an empirical question the construction neither forces nor forbids. With $\langle B, I_M \rangle$ in hand, the standard Hlobil--Brandom machinery applies without modification: $\mathrm{RSR}$, $\approx$, implicational roles, conceptual contents, and extensions with logical vocabulary all proceed by their constructions operating on $\langle B, I_M \rangle$ as an ordinary implication frame. Implicational role inclusion and content inclusion \cite[Def.\ 90, 93]{hlobil2025} are likewise available: one can ask which bearers $M$ treats as intersubstitutable \emph{salva consequentia} and which contents are included in which others.
 \end{remark}
 
 \section{Concluding remarks}
 
-Simonelli, following his stop sign dialogue with GPT-4.1, states "There is, to be sure, a way to more systematically test this sort of material inferential knowledge, and developing and conducting such a test is likely a worthwhile project" \cite[p.~19]{simonelli2026}. Though Simonelli takes his anecdotal evidence to already suggest robust mastery, the systematic test he flags as worthwhile is precisely what the present methodology supplies. With it, mastery of a material implication becomes something that can be measured against a specified benchmark, with results decomposable by implication and by variation type. Differences between models become measurable as differences in coverage and kappa across these decompositions rather than as differences in aggregate score. The agreement of an LLM's evaluative behavior with the inferential practice articulated by a community of analysts becomes characterizable as the construction's measurements specify it, relative to the benchmark and the carving the analysts supply. And the question of what role LLMs can play in the game of giving and asking for reasons --- a question that has tended to be treated as a matter for conceptual settlement --- becomes one a research program can productively pursue.
+Simonelli, following his stop sign dialogue with GPT-4.1, states ``There is, to be sure, a way to more systematically test this sort of material inferential knowledge, and developing and conducting such a test is likely a worthwhile project'' \cite[p.~19]{simonelli2026}. Though Simonelli takes his anecdotal evidence to suggest robust mastery, the systematic test he flags as worthwhile is precisely what the present methodology supplies. With it, mastery of a material implication becomes something that can be measured against a specified benchmark, with results decomposable by implication and by variation type. Differences between models become measurable as differences in coverage and kappa across these decompositions rather than as differences in aggregate score. The agreement of an LLM's evaluative behavior with the inferential practice articulated by a community of analysts becomes characterizable as the construction's measurements specify it, relative to the benchmark and the carving the analysts supply. And the question of what role LLMs can play in the game of giving and asking for reasons --- a question that has tended to be treated as a matter for conceptual settlement --- becomes one a research program can productively pursue.
 
 What the methodology cannot do is settle, on its own, whether the characterizations it produces capture anything about $M$ in a stronger sense than agreement with the chosen benchmark. Whether the inferentialist program is committed to such a stronger sense, or whether the operational reading is what its claims have always come to, is a question the present construction surfaces but does not resolve. The construction makes the question harder to evade.
 
@@ -255,12 +258,12 @@ What the methodology cannot do is settle, on its own, whether the characterizati
 \bibitem{allen2025nesy}
 Allen, B.~P., Chhikara, P., Ferguson, T.~M., Ilievski, F., \& Groth, P. (2025).
 Sound and Complete Neurosymbolic Reasoning with LLM-Grounded Interpretations.
-In \textit{Proceedings of the 19th International Conference on Neurosymbolic Learning and Reasoning}, PMLR 284, 392--419.
+In \textit{Proceedings of the 19th International Conference on Neurosymbolic Learning and Reasoning}, PMLR 284, 392--419. \url{https://proceedings.mlr.press/v284/allen25a.html}
 
 \bibitem{allen2026bbl}
 Allen, B.~P. (2026).
 $\mathbf{B}_{\mathrm{BL}}$: A Bilateral Modal Logic for LLM Factuality Evaluation.
-Extended abstract, \textit{TLLM 2026}, Tsinghua University.
+Extended abstract, \textit{TLLM 2026}, Tsinghua University. \url{https://philpapers.org/rec/ALLBAB-6}
 
 \bibitem{bang2025}
 Bang, Y., Ji, Z., Schelten, A., Hartshorn, A., Fowler, T., Zhang, C., Cancedda, N., \& Fung, P. (2025). HalluLens: LLM Hallucination Benchmark. arXiv preprint arXiv:2504.17550. 
