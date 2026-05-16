@@ -1,0 +1,413 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://allen.is/infereval/schema/evaluation-1.0.json",
+  "title": "infereval evaluation (eta)",
+  "$defs": {
+    "EndorsementConfig": {
+      "additionalProperties": false,
+      "description": "Configuration governing how :math:`E_M` is computed.",
+      "properties": {
+        "n_samples": {
+          "default": 5,
+          "title": "N Samples",
+          "type": "integer"
+        },
+        "tie_break": {
+          "default": "abstain",
+          "enum": [
+            "abstain",
+            "good",
+            "bad",
+            "first"
+          ],
+          "title": "Tie Break",
+          "type": "string"
+        },
+        "verification_prompt_id": {
+          "default": "default-v1",
+          "title": "Verification Prompt Id",
+          "type": "string"
+        },
+        "context_builder_premise_id": {
+          "default": "conjunction-and-v1",
+          "title": "Context Builder Premise Id",
+          "type": "string"
+        },
+        "context_builder_conclusion_id": {
+          "default": "disjunction-or-v1",
+          "title": "Context Builder Conclusion Id",
+          "type": "string"
+        }
+      },
+      "title": "EndorsementConfig",
+      "type": "object"
+    },
+    "EvaluationItem": {
+      "additionalProperties": false,
+      "description": "One row of the evaluation :math:`\\eta`: implication + analyst verdicts + :math:`E_M`.",
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "premises": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Premises",
+          "type": "array"
+        },
+        "conclusions": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Conclusions",
+          "type": "array"
+        },
+        "analyst_verdicts": {
+          "items": {
+            "$ref": "#/$defs/Verdict"
+          },
+          "title": "Analyst Verdicts",
+          "type": "array"
+        },
+        "model_verdict": {
+          "$ref": "#/$defs/Verdict"
+        },
+        "samples": {
+          "items": {
+            "$ref": "#/$defs/SampleRecord"
+          },
+          "title": "Samples",
+          "type": "array"
+        },
+        "majority_vote": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/MajorityVote"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "tags": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Tags",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "premises",
+        "conclusions",
+        "analyst_verdicts",
+        "model_verdict"
+      ],
+      "title": "EvaluationItem",
+      "type": "object"
+    },
+    "MajorityVote": {
+      "additionalProperties": false,
+      "description": "Tally of parsed verdicts plus the resolved majority and tie-break flag.",
+      "properties": {
+        "good": {
+          "default": 0,
+          "title": "Good",
+          "type": "integer"
+        },
+        "bad": {
+          "default": 0,
+          "title": "Bad",
+          "type": "integer"
+        },
+        "abstain": {
+          "default": 0,
+          "title": "Abstain",
+          "type": "integer"
+        },
+        "verdict": {
+          "$ref": "#/$defs/Verdict"
+        },
+        "tie_broken": {
+          "default": false,
+          "title": "Tie Broken",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "verdict"
+      ],
+      "title": "MajorityVote",
+      "type": "object"
+    },
+    "ModelInfo": {
+      "additionalProperties": false,
+      "description": "Identity of the model under evaluation and the decoding params used.",
+      "properties": {
+        "provider": {
+          "title": "Provider",
+          "type": "string"
+        },
+        "model_id": {
+          "title": "Model Id",
+          "type": "string"
+        },
+        "params": {
+          "$ref": "#/$defs/ProviderParams"
+        }
+      },
+      "required": [
+        "provider",
+        "model_id"
+      ],
+      "title": "ModelInfo",
+      "type": "object"
+    },
+    "ProviderParams": {
+      "additionalProperties": true,
+      "description": "Decoding parameters passed to a provider sample call.",
+      "properties": {
+        "temperature": {
+          "default": 1.0,
+          "title": "Temperature",
+          "type": "number"
+        },
+        "max_tokens": {
+          "default": 32,
+          "title": "Max Tokens",
+          "type": "integer"
+        },
+        "top_p": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Top P"
+        },
+        "seed": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Seed"
+        },
+        "stop": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Stop",
+          "type": "array"
+        }
+      },
+      "title": "ProviderParams",
+      "type": "object"
+    },
+    "SampleRecord": {
+      "additionalProperties": false,
+      "description": "One sampled response from the provider plus its parsed verdict.",
+      "properties": {
+        "sample_index": {
+          "title": "Sample Index",
+          "type": "integer"
+        },
+        "raw_response": {
+          "title": "Raw Response",
+          "type": "string"
+        },
+        "parsed_verdict": {
+          "$ref": "#/$defs/Verdict"
+        },
+        "parse_status": {
+          "default": "ok",
+          "enum": [
+            "ok",
+            "unparseable",
+            "sample_failed"
+          ],
+          "title": "Parse Status",
+          "type": "string"
+        },
+        "request_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Request Id"
+        },
+        "wall_time_ms": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Wall Time Ms"
+        },
+        "usage": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SampleUsage"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "sample_index",
+        "raw_response",
+        "parsed_verdict"
+      ],
+      "title": "SampleRecord",
+      "type": "object"
+    },
+    "SampleUsage": {
+      "additionalProperties": true,
+      "description": "Token usage for a single provider call (provider-specific keys allowed).",
+      "properties": {
+        "input_tokens": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Input Tokens"
+        },
+        "output_tokens": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Output Tokens"
+        }
+      },
+      "title": "SampleUsage",
+      "type": "object"
+    },
+    "Verdict": {
+      "description": "Endorsement verdict :math:`E_M(\\langle \\Gamma, \\Delta \\rangle)`.\n\nString-valued so JSON serialization yields ``\"good\"`` / ``\"bad\"`` / ``\"abstain\"``\ndirectly. The ``(str, Enum)`` pattern is used in place of\n:class:`enum.StrEnum` for Python 3.10 compatibility.",
+      "enum": [
+        "good",
+        "bad",
+        "abstain"
+      ],
+      "title": "Verdict",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "An evaluation :math:`\\eta` of a model against a benchmark.",
+  "properties": {
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "id": {
+      "title": "Id",
+      "type": "string"
+    },
+    "benchmark_id": {
+      "title": "Benchmark Id",
+      "type": "string"
+    },
+    "benchmark_hash": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Benchmark Hash"
+    },
+    "model": {
+      "$ref": "#/$defs/ModelInfo"
+    },
+    "endorsement_config": {
+      "$ref": "#/$defs/EndorsementConfig"
+    },
+    "framework_version": {
+      "default": "0.1.0",
+      "title": "Framework Version",
+      "type": "string"
+    },
+    "started_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Started At"
+    },
+    "finished_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Finished At"
+    },
+    "items": {
+      "items": {
+        "$ref": "#/$defs/EvaluationItem"
+      },
+      "title": "Items",
+      "type": "array"
+    }
+  },
+  "required": [
+    "id",
+    "benchmark_id",
+    "model",
+    "items"
+  ],
+  "type": "object"
+}
