@@ -1,0 +1,308 @@
+"""Endorsement function :math:`E_M`: sampling, parsing, majority vote.
+
+The endorser issues ``n_samples`` provider calls with the same verification
+prompt, parses each response into a :class:`Verdict`, and aggregates them
+into a single :math:`E_M` verdict via deterministic majority vote.
+
+Tie-break policy (the paper underdetermines this; we lock conservative
+defaults):
+
+- If :class:`Verdict.ABSTAIN` is among the tied verdicts, abstain wins
+  (matches revised.tex's treatment of abstain as the safe fallback).
+- Otherwise, a pure GOOD/BAD tie is decided by the configured
+  ``tie_break`` policy (``"abstain"`` by default, also ``"good"``,
+  ``"bad"``, ``"first"``).
+
+Provider sample failures (after retries) are counted as abstain with
+``parse_status = "sample_failed"`` and do not abort the endorsement.
+"""
+
+from __future__ import annotations
+
+import logging
+from collections import Counter
+from collections.abc import Mapping
+from dataclasses import dataclass, field
+from typing import Literal
+
+from .context import ContextBuilder, strip_tex_math
+from .evaluation import (
+    EndorsementConfig,
+    MajorityVote,
+    ProviderParams,
+    SampleRecord,
+    SampleUsage,
+)
+from .logging_setup import log_event, prompt_hash
+from .prompts import (
+    DEFAULT_VERIFICATION_PROMPT,
+    VerificationPrompt,
+    parse_verdict,
+)
+from .providers.base import (
+    Provider,
+    ProviderSampleError,
+    SampleRequest,
+)
+from .types import Bearer, Implication, Verdict
+
+log = logging.getLogger(__name__)
+
+
+TieBreak = Literal["abstain", "good", "bad", "first"]
+
+
+# ---- Majority vote --------------------------------------------------------
+
+
+def majority_vote(
+    verdicts: list[Verdict],
+    tie_break: TieBreak = "abstain",
+) -> tuple[Verdict, bool]:
+    """Aggregate per-sample verdicts into a single verdict.
+
+    Returns ``(chosen_verdict, tie_broken_flag)``.
+
+    Tie rules (in order):
+
+    1. If ``verdicts`` is empty, return ``(ABSTAIN, False)``.
+    2. If exactly one verdict has the max count, return it.
+    3. Tie: if ABSTAIN is among the tied set, return ABSTAIN.
+    4. Otherwise (pure GOOD/BAD tie), apply ``tie_break``.
+    """
+    if not verdicts:
+        return Verdict.ABSTAIN, False
+
+    counts = Counter(verdicts)
+    max_count = max(counts.values())
+    top = [v for v in counts if counts[v] == max_count]
+
+    if len(top) == 1:
+        return top[0], False
+
+    # Tie. ABSTAIN wins any tie it is part of.
+    if Verdict.ABSTAIN in top:
+        return Verdict.ABSTAIN, True
+
+    # Pure GOOD/BAD tie. Apply tie_break.
+    if tie_break == "abstain":
+        return Verdict.ABSTAIN, True
+    if tie_break == "good":
+        return Verdict.GOOD, True
+    if tie_break == "bad":
+        return Verdict.BAD, True
+    if tie_break == "first":
+        for v in verdicts:
+            if v in top:
+                return v, True
+        return top[0], True  # unreachable, defensive
+    # Unknown tie_break: fall back to abstain (Literal forbids this at type level).
+    return Verdict.ABSTAIN, True
+
+
+# ---- EndorsementRecord ----------------------------------------------------
+
+
+@dataclass
+class EndorsementRecord:
+    """Result of one :func:`endorse` call.
+
+    This is the in-memory analog of an evaluation file's per-item record;
+    :func:`infereval.evaluation.evaluate` converts it to an
+    :class:`infereval.evaluation.EvaluationItem` for serialization.
+    """
+
+    implication: Implication
+    samples: list[SampleRecord]
+    counts: dict[Verdict, int]
+    verdict: Verdict
+    tie_broken: bool
+    premise_context: str
+    """The full natural-language premise context shown to the model."""
+    conclusion_context: str
+    """The full natural-language conclusion context shown to the model."""
+    rendered_user_prompt: str = field(default="", repr=False)
+
+    def to_majority_vote(self) -> MajorityVote:
+        """Project counts + verdict into a Pydantic :class:`MajorityVote`."""
+        return MajorityVote(
+            good=self.counts.get(Verdict.GOOD, 0),
+            bad=self.counts.get(Verdict.BAD, 0),
+            abstain=self.counts.get(Verdict.ABSTAIN, 0),
+            verdict=self.verdict,
+            tie_broken=self.tie_broken,
+        )
+
+
+# ---- Helpers -------------------------------------------------------------
+
+
+def _expressions_for(
+    bearer_ids: frozenset[str],
+    bearers: Mapping[str, Bearer],
+    *,
+    strip_tex: bool,
+) -> list[str]:
+    """Return the bearer expressions for ``bearer_ids``, sorted by id."""
+    out: list[str] = []
+    for bid in sorted(bearer_ids):
+        expr = bearers[bid].expression
+        if strip_tex:
+            expr = strip_tex_math(expr)
+        out.append(expr)
+    return out
+
+
+def _usage_from_mapping(usage: Mapping[str, int] | None) -> SampleUsage | None:
+    if not usage:
+        return None
+    return SampleUsage.model_validate(dict(usage))
+
+
+# ---- The main entry point: endorse() --------------------------------------
+
+
+def endorse(
+    implication: Implication,
+    bearers: Mapping[str, Bearer],
+    provider: Provider,
+    config: EndorsementConfig,
+    params: ProviderParams,
+    *,
+    premise_builder: ContextBuilder,
+    conclusion_builder: ContextBuilder,
+    verification_prompt: VerificationPrompt = DEFAULT_VERIFICATION_PROMPT,
+    strip_tex: bool = True,
+    request_id_prefix: str | None = None,
+) -> EndorsementRecord:
+    """Compute :math:`E_M(\\langle \\Gamma, \\Delta \\rangle)` for one implication.
+
+    Issues ``config.n_samples`` calls to ``provider`` with the verification
+    prompt built from ``premise_builder`` and ``conclusion_builder``,
+    parses each response, and aggregates via :func:`majority_vote`.
+
+    Provider sample failures (after the provider's own retries are
+    exhausted) are recorded as ``sample_failed`` and contribute an
+    ``ABSTAIN`` verdict to the vote.
+    """
+    premise_exprs = _expressions_for(implication.premises, bearers, strip_tex=strip_tex)
+    conclusion_exprs = _expressions_for(implication.conclusions, bearers, strip_tex=strip_tex)
+    premise_ctx = premise_builder(premise_exprs)
+    conclusion_ctx = conclusion_builder(conclusion_exprs)
+    user_text = verification_prompt.build_user(premise_ctx, conclusion_ctx)
+
+    parser = verification_prompt.compile_parser()
+    sample_records: list[SampleRecord] = []
+    verdicts: list[Verdict] = []
+    user_prompt_hash = prompt_hash(user_text)
+    premise_ids = sorted(implication.premises)
+    conclusion_ids = sorted(implication.conclusions)
+
+    log_event(
+        log,
+        "item.started",
+        item_id=implication.id,
+        n_samples=config.n_samples,
+        tie_break=config.tie_break,
+        premise_ids=premise_ids,
+        conclusion_ids=conclusion_ids,
+        prompt_hash=user_prompt_hash,
+        verification_prompt_id=verification_prompt.id,
+    )
+
+    for i in range(config.n_samples):
+        rid = f"{request_id_prefix}:sample-{i}" if request_id_prefix else None
+        req = SampleRequest(
+            prompt=user_text,
+            system=verification_prompt.system,
+            temperature=params.temperature,
+            max_tokens=params.max_tokens,
+            top_p=params.top_p,
+            seed=params.seed,
+            stop=params.stop,
+            request_id=rid,
+        )
+        try:
+            result = provider.sample(req)
+            verdict, status = parse_verdict(result.text, parser)
+            record = SampleRecord(
+                sample_index=i,
+                raw_response=result.text,
+                parsed_verdict=verdict,
+                parse_status=status,
+                request_id=result.request_id,
+                wall_time_ms=result.wall_time_ms,
+                usage=_usage_from_mapping(result.usage),
+            )
+            log_event(
+                log,
+                "sample.completed",
+                item_id=implication.id,
+                sample_index=i,
+                provider=result.provider,
+                model_id=result.model_id,
+                request_id=result.request_id,
+                prompt_hash=user_prompt_hash,
+                raw_response=result.text,
+                parsed_verdict=str(verdict),
+                parse_status=status,
+                wall_time_ms=result.wall_time_ms,
+                input_tokens=result.usage.get("input_tokens") if result.usage else None,
+                output_tokens=result.usage.get("output_tokens") if result.usage else None,
+            )
+        except ProviderSampleError as exc:
+            log_event(
+                log,
+                "sample.failed",
+                item_id=implication.id,
+                sample_index=i,
+                prompt_hash=user_prompt_hash,
+                err=str(exc),
+            )
+            verdict = Verdict.ABSTAIN
+            record = SampleRecord(
+                sample_index=i,
+                raw_response="",
+                parsed_verdict=Verdict.ABSTAIN,
+                parse_status="sample_failed",
+                request_id=rid,
+                wall_time_ms=None,
+                usage=None,
+            )
+        sample_records.append(record)
+        verdicts.append(verdict)
+
+    final, tie_broken = majority_vote(verdicts, tie_break=config.tie_break)
+    counts: dict[Verdict, int] = {v: 0 for v in Verdict}
+    for v in verdicts:
+        counts[v] += 1
+
+    log_event(
+        log,
+        "item.completed",
+        item_id=implication.id,
+        verdict=str(final),
+        tie_broken=tie_broken,
+        good=counts[Verdict.GOOD],
+        bad=counts[Verdict.BAD],
+        abstain=counts[Verdict.ABSTAIN],
+    )
+
+    return EndorsementRecord(
+        implication=implication,
+        samples=sample_records,
+        counts=counts,
+        verdict=final,
+        tie_broken=tie_broken,
+        premise_context=premise_ctx,
+        conclusion_context=conclusion_ctx,
+        rendered_user_prompt=user_text,
+    )
+
+
+__all__ = [
+    "EndorsementRecord",
+    "TieBreak",
+    "endorse",
+    "majority_vote",
+]

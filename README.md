@@ -1,0 +1,142 @@
+# infereval
+
+Inferentialist evaluation of LLMs: derive an implication frame from a language model's endorsement verdicts, then measure inferential mastery against an analyst-labeled benchmark via coverage and Cohen's / Fleiss' kappa.
+
+`infereval` is the executable companion to *Note on Simonelli's Stop Sign Dialogue: An Implication-Space Methodology for the Empirical Evaluation of LLM Inferential Mastery* (Allen, 2026 — `revised.tex` in this repo). The framework formalizes the procedure β → η → (cov, κ_C, κ_F, κ_F\*) for any analyst-supplied benchmark.
+
+## Status
+
+Alpha (0.1.0). Methodology defaults are locked; the JSON schemas are versioned independently (`schema_version: "1.0"`) and promised stable from 1.0 onward.
+
+## Install
+
+```
+pip install infereval
+```
+
+Provider SDKs are optional extras (the framework runs without them — use the mock or replay providers):
+
+```
+pip install 'infereval[anthropic]'   # Anthropic Claude
+pip install 'infereval[openai]'      # OpenAI + OpenRouter (OpenAI-API-compatible)
+pip install 'infereval[all]'
+```
+
+From source (editable):
+
+```
+git clone https://github.com/bradleypallen/infereval
+cd infereval
+python -m venv .venv
+source .venv/bin/activate
+pip install -e '.[dev]'
+```
+
+## 60-second quickstart
+
+Inspect the bundled stop-sign benchmark (Example 1 of the paper), then run an evaluation against the deterministic replay fixture — no API key needed:
+
+```
+# 1. Look at the benchmark.
+infereval describe examples/stop_sign/benchmark.json
+
+# 2. Validate it against the JSON schema.
+infereval validate examples/stop_sign/benchmark.json
+
+# 3. Run a deterministic evaluation against the committed replay fixture.
+infereval evaluate examples/stop_sign/benchmark.json \
+    --replay-from tests/fixtures/stop_sign_replay.jsonl \
+    --output /tmp/eta.json \
+    --n-samples 5 \
+    --log /tmp/run.jsonl
+
+# 4. Compute metrics.
+infereval metrics /tmp/eta.json --benchmark examples/stop_sign/benchmark.json
+```
+
+To run against a real model, replace step 3 with:
+
+```
+export ANTHROPIC_API_KEY=...
+infereval evaluate examples/stop_sign/benchmark.json \
+    --provider anthropic --model claude-haiku-4-5-20251001 \
+    --output /tmp/eta.json --n-samples 5 --log /tmp/run.jsonl
+```
+
+The JSONL run log under `/tmp/run.jsonl` records one event per provider call (prompt hash, raw response, parsed verdict, usage, timing) so the evaluation is auditable end to end.
+
+## What this is and isn't
+
+**This is:** a research tool that formalizes Simonelli's stop-sign dialogue into a repeatable evaluation procedure. Given (i) a bearer set, (ii) expression and context-construction functions, (iii) a benchmark of implications labeled by one or more analysts, the framework drives an LLM through endorsement-probing for each implication and reports the resulting agreement with analyst practice along three axes:
+
+- **Coverage** — how often the model takes a substantive position (`cov(η)`).
+- **Cohen's kappa** — agreement against a chosen reference (analyst consensus `c_i` or a single analyst `v_{:,j}`).
+- **Fleiss' kappa** — agreement with the model treated as the `(m+1)`th annotator, alongside the inter-analyst baseline `κ_F*(β)` (Remark 5 of the paper).
+
+Each metric can be decomposed by tag or by RSR target.
+
+**This is not:** a factuality benchmark, a leaderboard, or an answer to whether LLMs are sapient. The methodology is *carving-relative*: results depend on the analyst-supplied bearer carving, context construction, and benchmark. The framework provides the machinery; the analyst supplies the practice the machinery is comparing against. See the Discussion of `revised.tex` for what carving-relativity buys and costs.
+
+## API surface
+
+```python
+from infereval import (
+    Verdict, Bearer, Implication,           # core data types
+    DerivedFrame,                            # ⟨B, I_M⟩ per Definition 3
+)
+from infereval.benchmark import Benchmark
+from infereval.evaluation import Evaluation, evaluate, EndorsementConfig, ProviderParams
+from infereval.providers import get_provider
+from infereval.metrics import MetricsReport
+
+bench = Benchmark.load("examples/stop_sign/benchmark.json")
+provider = get_provider("anthropic", "claude-haiku-4-5-20251001")
+eta = evaluate(bench, provider,
+               config=EndorsementConfig(n_samples=5),
+               params=ProviderParams(temperature=1.0),
+               log_path="/tmp/run.jsonl")
+report = MetricsReport(eta=eta, benchmark=bench)
+print(report.to_dict())
+```
+
+## Locked methodology defaults
+
+These are framework defaults, overridable per evaluation:
+
+| Setting | Default |
+|---|---|
+| `n_samples` | 5 (odd, clean 3-way majority) |
+| Tie-break | `abstain` (configurable: `good`, `bad`, `first`) |
+| Verification prompt | `default-v1` (GOOD/BAD/ABSTAIN tokens with brief glosses) |
+| TeX in expressions | Stripped at prompt time; LaTeX-source-friendly in benchmark JSON |
+| Cohen's kappa reference | Analyst consensus `c_i` (override with `--reference analyst:<id>`) |
+| Provider seed | Honored by OpenAI; ignored (with one-time warning) by Anthropic |
+
+See `CLAUDE.md` and the paper for the full list and the rationale behind each choice.
+
+## Development
+
+```
+pip install -e '.[dev]'
+pytest                                # all unit + replay tests
+pytest -m live                        # opt-in live provider tests (requires API keys)
+mypy src/infereval
+ruff check src tests
+```
+
+Live provider tests require `RUN_LIVE_PROVIDER_TESTS=1` and the relevant API key in the environment. They are skipped by default.
+
+## Citation
+
+```bibtex
+@unpublished{allen2026inferential,
+  author = {Allen, Bradley P.},
+  title  = {Note on {S}imonelli's Stop Sign Dialogue: An Implication-Space Methodology for the Empirical Evaluation of {LLM} Inferential Mastery},
+  year   = {2026},
+  note   = {University of Amsterdam}
+}
+```
+
+## License
+
+MIT — see [LICENSE](LICENSE).

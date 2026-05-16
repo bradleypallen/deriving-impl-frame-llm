@@ -1,0 +1,149 @@
+{
+  "schema_version": "1.0",
+  "id": "stop-sign-example-1",
+  "title": "Stop-sign RSR (Example 1 of Allen 2026)",
+  "domain": "everyday-physical-objects",
+  "description": "Formalization of Simonelli's GPT-4.1 stop-sign dialogue (revised.tex Example 1). A single-analyst RSR-targeted benchmark for the target inference <{sa}, {ra}> (a is a stop sign implies a is red), with three accepted side extensions (n, nr, n+nr) and one defeater (ba).",
+  "bearers": {
+    "sa": {
+      "expression": "$a$ is a stop sign",
+      "paraphrases": []
+    },
+    "ra": {
+      "expression": "$a$ is red",
+      "paraphrases": []
+    },
+    "n": {
+      "expression": "it is nighttime",
+      "paraphrases": []
+    },
+    "nr": {
+      "expression": "$a$ is not made with reflective material",
+      "paraphrases": []
+    },
+    "ba": {
+      "expression": "$a$ has been painted blue",
+      "paraphrases": []
+    }
+  },
+  "analysts": [
+    {
+      "id": "paper-author",
+      "display_name": "Allen (Example 1 row)",
+      "notes": "Verdicts recorded in the analyst column of Example 1, Table 1 of revised.tex."
+    }
+  ],
+  "context_builders": {
+    "premise": {
+      "kind": "template",
+      "template": "{expressions}",
+      "joiner": " and "
+    },
+    "conclusion": {
+      "kind": "template",
+      "template": "{expressions}",
+      "joiner": " or "
+    }
+  },
+  "items": [
+    {
+      "id": "row-0",
+      "premises": [
+        "sa"
+      ],
+      "conclusions": [
+        "ra"
+      ],
+      "analyst_verdicts": [
+        "good"
+      ],
+      "tags": [
+        "base-inference"
+      ],
+      "rsr_target": {
+        "X": [
+          "sa"
+        ],
+        "A": [
+          "ra"
+        ]
+      }
+    },
+    {
+      "id": "row-1",
+      "premises": [
+        "n",
+        "sa"
+      ],
+      "conclusions": [
+        "ra"
+      ],
+      "analyst_verdicts": [
+        "good"
+      ],
+      "tags": [
+        "irrelevant-addition",
+        "nighttime"
+      ],
+      "rsr_target": {
+        "X": [
+          "sa"
+        ],
+        "A": [
+          "ra"
+        ]
+      }
+    },
+    {
+      "id": "row-2",
+      "premises": [
+        "n",
+        "nr",
+        "sa"
+      ],
+      "conclusions": [
+        "ra"
+      ],
+      "analyst_verdicts": [
+        "good"
+      ],
+      "tags": [
+        "irrelevant-addition",
+        "nonreflective"
+      ],
+      "rsr_target": {
+        "X": [
+          "sa"
+        ],
+        "A": [
+          "ra"
+        ]
+      }
+    },
+    {
+      "id": "row-3",
+      "premises": [
+        "ba",
+        "sa"
+      ],
+      "conclusions": [
+        "ra"
+      ],
+      "analyst_verdicts": [
+        "bad"
+      ],
+      "tags": [
+        "defeater",
+        "painted-blue"
+      ],
+      "rsr_target": {
+        "X": [
+          "sa"
+        ],
+        "A": [
+          "ra"
+        ]
+      }
+    }
+  ]
+}

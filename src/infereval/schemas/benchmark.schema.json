@@ -1,0 +1,371 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://allen.is/infereval/schema/benchmark-1.0.json",
+  "title": "infereval benchmark (beta)",
+  "$defs": {
+    "AnalystModel": {
+      "additionalProperties": false,
+      "description": "A human analyst :math:`a_j` whose verdicts appear in :math:`V_i`.",
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "display_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Display Name"
+        },
+        "notes": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Notes"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "title": "AnalystModel",
+      "type": "object"
+    },
+    "BearerModel": {
+      "additionalProperties": false,
+      "description": "JSON shape for a :class:`infereval.types.Bearer`.",
+      "properties": {
+        "expression": {
+          "title": "Expression",
+          "type": "string"
+        },
+        "paraphrases": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Paraphrases",
+          "type": "array"
+        }
+      },
+      "required": [
+        "expression"
+      ],
+      "title": "BearerModel",
+      "type": "object"
+    },
+    "BenchmarkItem": {
+      "additionalProperties": false,
+      "description": "A single benchmark item: an implication paired with analyst verdicts.",
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "premises": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Premises",
+          "type": "array"
+        },
+        "conclusions": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Conclusions",
+          "type": "array"
+        },
+        "analyst_verdicts": {
+          "items": {
+            "$ref": "#/$defs/Verdict"
+          },
+          "title": "Analyst Verdicts",
+          "type": "array"
+        },
+        "tags": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Tags",
+          "type": "array"
+        },
+        "rsr_target": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RSRTarget"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "id",
+        "premises",
+        "conclusions",
+        "analyst_verdicts"
+      ],
+      "title": "BenchmarkItem",
+      "type": "object"
+    },
+    "ContextBuilders": {
+      "additionalProperties": false,
+      "description": "Pair of context builders for :math:`\\mathrm{ctx}_\\Gamma` and :math:`\\mathrm{ctx}_\\Delta`.",
+      "properties": {
+        "premise": {
+          "discriminator": {
+            "mapping": {
+              "plugin": "#/$defs/PluginContextBuilder",
+              "template": "#/$defs/TemplateContextBuilder"
+            },
+            "propertyName": "kind"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/TemplateContextBuilder"
+            },
+            {
+              "$ref": "#/$defs/PluginContextBuilder"
+            }
+          ],
+          "title": "Premise"
+        },
+        "conclusion": {
+          "discriminator": {
+            "mapping": {
+              "plugin": "#/$defs/PluginContextBuilder",
+              "template": "#/$defs/TemplateContextBuilder"
+            },
+            "propertyName": "kind"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/TemplateContextBuilder"
+            },
+            {
+              "$ref": "#/$defs/PluginContextBuilder"
+            }
+          ],
+          "title": "Conclusion"
+        }
+      },
+      "title": "ContextBuilders",
+      "type": "object"
+    },
+    "PluginContextBuilder": {
+      "additionalProperties": false,
+      "description": "A context builder specified by a dotted import path.\n\nThe plugin must resolve to a callable ``(Sequence[str]) -> str`` taking\nbearer expressions and returning the natural-language context.",
+      "properties": {
+        "kind": {
+          "const": "plugin",
+          "default": "plugin",
+          "title": "Kind",
+          "type": "string"
+        },
+        "plugin": {
+          "title": "Plugin",
+          "type": "string"
+        }
+      },
+      "required": [
+        "plugin"
+      ],
+      "title": "PluginContextBuilder",
+      "type": "object"
+    },
+    "RSRTarget": {
+      "additionalProperties": false,
+      "description": "Target inference :math:`\\langle X, A \\rangle` for an RSR-targeted item.\n\nSee revised.tex Remark on \"RSR-targeted benchmarks\".",
+      "properties": {
+        "X": {
+          "items": {
+            "type": "string"
+          },
+          "title": "X",
+          "type": "array"
+        },
+        "A": {
+          "items": {
+            "type": "string"
+          },
+          "title": "A",
+          "type": "array"
+        }
+      },
+      "required": [
+        "X",
+        "A"
+      ],
+      "title": "RSRTarget",
+      "type": "object"
+    },
+    "TemplateContextBuilder": {
+      "additionalProperties": false,
+      "description": "A context builder specified by an inline template string.\n\nThe template is a format string with a single ``{expressions}`` placeholder.\nBearer expressions are joined by ``joiner`` to fill it.",
+      "properties": {
+        "kind": {
+          "const": "template",
+          "default": "template",
+          "title": "Kind",
+          "type": "string"
+        },
+        "template": {
+          "default": "{expressions}",
+          "title": "Template",
+          "type": "string"
+        },
+        "joiner": {
+          "default": " and ",
+          "title": "Joiner",
+          "type": "string"
+        }
+      },
+      "title": "TemplateContextBuilder",
+      "type": "object"
+    },
+    "Verdict": {
+      "description": "Endorsement verdict :math:`E_M(\\langle \\Gamma, \\Delta \\rangle)`.\n\nString-valued so JSON serialization yields ``\"good\"`` / ``\"bad\"`` / ``\"abstain\"``\ndirectly. The ``(str, Enum)`` pattern is used in place of\n:class:`enum.StrEnum` for Python 3.10 compatibility.",
+      "enum": [
+        "good",
+        "bad",
+        "abstain"
+      ],
+      "title": "Verdict",
+      "type": "string"
+    },
+    "VerificationPromptOverride": {
+      "additionalProperties": false,
+      "description": "Optional benchmark-level override of the framework's default verification prompt.",
+      "properties": {
+        "template": {
+          "title": "Template",
+          "type": "string"
+        },
+        "parse_regex": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parse Regex"
+        }
+      },
+      "required": [
+        "template"
+      ],
+      "title": "VerificationPromptOverride",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "A benchmark :math:`\\beta` over a bearer set, analyst panel, and items.\n\nSee revised.tex Definition 4.",
+  "properties": {
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "id": {
+      "title": "Id",
+      "type": "string"
+    },
+    "title": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Title"
+    },
+    "domain": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Domain"
+    },
+    "description": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Description"
+    },
+    "bearers": {
+      "additionalProperties": {
+        "$ref": "#/$defs/BearerModel"
+      },
+      "title": "Bearers",
+      "type": "object"
+    },
+    "analysts": {
+      "items": {
+        "$ref": "#/$defs/AnalystModel"
+      },
+      "minItems": 1,
+      "title": "Analysts",
+      "type": "array"
+    },
+    "context_builders": {
+      "$ref": "#/$defs/ContextBuilders"
+    },
+    "verification_prompt": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/VerificationPromptOverride"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "items": {
+      "items": {
+        "$ref": "#/$defs/BenchmarkItem"
+      },
+      "title": "Items",
+      "type": "array"
+    }
+  },
+  "required": [
+    "id",
+    "bearers",
+    "analysts",
+    "items"
+  ],
+  "type": "object"
+}
