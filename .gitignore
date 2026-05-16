@@ -57,6 +57,9 @@ coverage.xml
 logs/
 *.log
 
+# Per-experiment outputs (regenerable; the scripts are tracked, not their output)
+experiments/out/
+
 # LaTeX build artifacts
 *.aux
 *.bbl
