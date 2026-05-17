@@ -8,6 +8,14 @@ Inferentialist evaluation of LLMs: derive an implication frame from a language m
 
 Alpha (0.1.0). Methodology defaults are locked; the JSON schemas are versioned independently (`schema_version: "1.0"`) and promised stable from 1.0 onward.
 
+## Documentation
+
+- [**Concepts**](docs/concepts.md) — the methodology's mental model, pedagogically.
+- [**Authoring benchmarks**](docs/authoring_benchmarks.md) — writing your own `benchmark.json`.
+- [**Interpreting metrics**](docs/interpreting_metrics.md) — what κ_C, κ_F, and κ_F\* tell you; reading by-tag decompositions.
+- [**Providers**](docs/providers.md) — per-provider quirks (Anthropic seed handling, DeepSeek reasoning-token budgets, OpenRouter attribution).
+- **Tutorials** (executable Jupyter notebooks under [docs/tutorials/](docs/tutorials/)): the quickstart, authoring from scratch, the cross-model paraphrase-axis experiment.
+
 ## Install
 
 ```
