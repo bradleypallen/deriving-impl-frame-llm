@@ -35,6 +35,25 @@ OPENAI_API_KEY_ENV = "OPENAI_API_KEY"
 OPENAI_DEFAULT_BASE_URL = "https://api.openai.com/v1"
 
 
+def _uses_max_completion_tokens(model_id: str) -> bool:
+    """Detect models that require ``max_completion_tokens`` instead of ``max_tokens``.
+
+    Applies to GPT-5.x and the o-series reasoning models (o1, o3, o4-*). The
+    same rule applies via OpenRouter when the upstream is OpenAI; for other
+    OpenRouter vendors (deepseek/qwen/etc) the legacy ``max_tokens`` is fine.
+    """
+    if not model_id:
+        return False
+    # Strip OpenRouter vendor prefix so "openai/gpt-5.4" and "gpt-5.4" both match.
+    bare = model_id.split("/", 1)[-1].lower()
+    # gpt-5* and gpt-6* (defensive for future generations).
+    for n in range(5, 10):
+        if bare.startswith(f"gpt-{n}"):
+            return True
+    # o-series reasoning models: o1, o1-pro, o3, o3-mini, o4-mini, ...
+    return bare.startswith(("o1", "o3", "o4", "o5"))
+
+
 class OpenAIProvider(BaseProvider):
     """OpenAI Chat Completions backend.
 
@@ -98,9 +117,15 @@ class OpenAIProvider(BaseProvider):
         kwargs: dict[str, Any] = {
             "model": self.model_id,
             "messages": messages,
-            "max_tokens": req.max_tokens,
             "temperature": req.temperature,
         }
+        # GPT-5.x and the o-series reasoning models (o1, o3, o4-...) require
+        # ``max_completion_tokens`` and reject the legacy ``max_tokens`` param.
+        # We sniff the model id to route to the right one.
+        if _uses_max_completion_tokens(self.model_id):
+            kwargs["max_completion_tokens"] = req.max_tokens
+        else:
+            kwargs["max_tokens"] = req.max_tokens
         if req.top_p is not None:
             kwargs["top_p"] = req.top_p
         if req.seed is not None:
