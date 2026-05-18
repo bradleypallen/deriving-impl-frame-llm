@@ -32,7 +32,7 @@ def _provider_with_mock_client(create_returns) -> tuple[AnthropicProvider, Magic
     mock_client = MagicMock()
     mock_client.messages.create.return_value = create_returns
     return (
-        AnthropicProvider("claude-opus-4-7", client=mock_client),
+        AnthropicProvider("claude-haiku-4-5-20251001", client=mock_client),
         mock_client,
     )
 
@@ -44,19 +44,19 @@ class TestConfig:
     def test_missing_api_key_raises_config_error(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.delenv(ANTHROPIC_API_KEY_ENV, raising=False)
         with pytest.raises(ProviderConfigError, match="ANTHROPIC_API_KEY"):
-            AnthropicProvider("claude-opus-4-7")
+            AnthropicProvider("claude-haiku-4-5-20251001")
 
     def test_explicit_api_key_overrides_env(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.delenv(ANTHROPIC_API_KEY_ENV, raising=False)
         # Construct with explicit api_key; should not raise. We verify the client is built
         # by checking that the instance exists.
-        p = AnthropicProvider("claude-opus-4-7", api_key="sk-ant-test")
+        p = AnthropicProvider("claude-haiku-4-5-20251001", api_key="sk-ant-test")
         assert p.name == "anthropic"
-        assert p.model_id == "claude-opus-4-7"
+        assert p.model_id == "claude-haiku-4-5-20251001"
 
     def test_uses_env_when_no_explicit_key(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv(ANTHROPIC_API_KEY_ENV, "sk-ant-from-env")
-        p = AnthropicProvider("claude-opus-4-7")
+        p = AnthropicProvider("claude-haiku-4-5-20251001")
         assert p.name == "anthropic"
 
     def test_sdk_not_installed_raises_config_error(self) -> None:
@@ -65,7 +65,7 @@ class TestConfig:
             patch.dict("sys.modules", {"anthropic": None}),
             pytest.raises(ProviderConfigError, match="anthropic SDK not installed"),
         ):
-            AnthropicProvider("claude-opus-4-7", api_key="sk-test")
+            AnthropicProvider("claude-haiku-4-5-20251001", api_key="sk-test")
 
 
 # ---- Request construction -------------------------------------------------
@@ -77,7 +77,7 @@ class TestRequestConstruction:
         p.sample(SampleRequest(prompt="Premises: X. Conclusion: Y. Verdict:"))
         client.messages.create.assert_called_once()
         kwargs = client.messages.create.call_args.kwargs
-        assert kwargs["model"] == "claude-opus-4-7"
+        assert kwargs["model"] == "claude-haiku-4-5-20251001"
         assert kwargs["max_tokens"] == 32
         assert kwargs["temperature"] == 1.0
         assert kwargs["messages"] == [
@@ -118,6 +118,23 @@ class TestRequestConstruction:
         p.sample(SampleRequest(prompt="Q", seed=42))
         assert "seed" not in client.messages.create.call_args.kwargs
 
+    def test_temperature_skipped_for_claude_opus_4_7(self) -> None:
+        # Opus 4.7 rejects 'temperature' as a 400 invalid_request_error.
+        # The provider should detect this and skip the parameter entirely.
+        mock_client = MagicMock()
+        mock_client.messages.create.return_value = _fake_response()
+        p = AnthropicProvider("claude-opus-4-7", client=mock_client)
+        p.sample(SampleRequest(prompt="Q", temperature=0.5))
+        kwargs = mock_client.messages.create.call_args.kwargs
+        assert "temperature" not in kwargs
+
+    def test_temperature_kept_for_haiku(self) -> None:
+        # Haiku still accepts temperature; the skip should not apply.
+        p, client = _provider_with_mock_client(_fake_response())
+        p.sample(SampleRequest(prompt="Q", temperature=0.7))
+        kwargs = client.messages.create.call_args.kwargs
+        assert kwargs["temperature"] == 0.7
+
 
 # ---- Response parsing -----------------------------------------------------
 
@@ -128,7 +145,7 @@ class TestResponseParsing:
         result = p.sample(SampleRequest(prompt="Q"))
         assert result.text == "BAD"
         assert result.provider == "anthropic"
-        assert result.model_id == "claude-opus-4-7"
+        assert result.model_id == "claude-haiku-4-5-20251001"
 
     def test_usage_recorded(self) -> None:
         p, _ = _provider_with_mock_client(_fake_response(input_tokens=42, output_tokens=3))
@@ -178,11 +195,11 @@ class TestTransientClassification:
     def test_rate_limit_is_transient(self) -> None:
         import anthropic
 
-        p = AnthropicProvider("claude-opus-4-7", api_key="sk-test")
+        p = AnthropicProvider("claude-haiku-4-5-20251001", api_key="sk-test")
         # Use the real class, no body required since _is_transient only does isinstance
         exc = anthropic.RateLimitError.__new__(anthropic.RateLimitError)
         assert p._is_transient(exc)
 
     def test_value_error_is_not_transient(self) -> None:
-        p = AnthropicProvider("claude-opus-4-7", api_key="sk-test")
+        p = AnthropicProvider("claude-haiku-4-5-20251001", api_key="sk-test")
         assert not p._is_transient(ValueError("nope"))

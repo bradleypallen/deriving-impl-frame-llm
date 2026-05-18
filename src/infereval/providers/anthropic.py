@@ -35,6 +35,23 @@ log = logging.getLogger(__name__)
 ANTHROPIC_API_KEY_ENV = "ANTHROPIC_API_KEY"
 
 
+def _rejects_temperature(model_id: str) -> bool:
+    """Detect Claude models that reject the ``temperature`` parameter outright.
+
+    As of 2026-05, ``claude-opus-4-7`` (and later Opus versions, presumably)
+    deprecate ``temperature`` and return a 400 if it is supplied. Sonnet
+    and Haiku still accept it.
+    """
+    if not model_id:
+        return False
+    bare = model_id.split("/", 1)[-1].lower()
+    # claude-opus-4-7, claude-opus-4-8, etc.
+    if bare.startswith(("claude-opus-4-7", "claude-opus-4.7")):
+        return True
+    # Generation-agnostic: claude-opus-5+ likely keeps the same posture.
+    return any(bare.startswith(f"claude-opus-{n}") for n in range(5, 10))
+
+
 class AnthropicProvider(BaseProvider):
     """Anthropic Claude backend (Messages API)."""
 
@@ -86,8 +103,12 @@ class AnthropicProvider(BaseProvider):
             "model": self.model_id,
             "max_tokens": req.max_tokens,
             "messages": [{"role": "user", "content": req.prompt}],
-            "temperature": req.temperature,
         }
+        # Claude Opus 4.7+ has deprecated the ``temperature`` parameter and
+        # rejects requests that include it. Skip it for those models;
+        # everything else still accepts it.
+        if not _rejects_temperature(self.model_id):
+            kwargs["temperature"] = req.temperature
         if req.top_p is not None:
             kwargs["top_p"] = req.top_p
         if req.system:

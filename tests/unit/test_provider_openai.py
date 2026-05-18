@@ -105,6 +105,34 @@ class TestRequestConstruction:
         p.sample(SampleRequest(prompt="Q", top_p=0.9))
         assert client.chat.completions.create.call_args.kwargs["top_p"] == 0.9
 
+    def test_gpt5_uses_max_completion_tokens(self) -> None:
+        # gpt-5.x and the o-series reject 'max_tokens' as unsupported.
+        mock_client = MagicMock()
+        mock_client.chat.completions.create.return_value = _fake_response()
+        p = OpenAIProvider("gpt-5.4", client=mock_client)
+        p.sample(SampleRequest(prompt="Q", max_tokens=512))
+        kwargs = mock_client.chat.completions.create.call_args.kwargs
+        assert kwargs["max_completion_tokens"] == 512
+        assert "max_tokens" not in kwargs
+
+    def test_o4_mini_uses_max_completion_tokens(self) -> None:
+        # The o-series reasoning models behave the same way.
+        mock_client = MagicMock()
+        mock_client.chat.completions.create.return_value = _fake_response()
+        p = OpenAIProvider("o4-mini", client=mock_client)
+        p.sample(SampleRequest(prompt="Q", max_tokens=128))
+        kwargs = mock_client.chat.completions.create.call_args.kwargs
+        assert kwargs["max_completion_tokens"] == 128
+        assert "max_tokens" not in kwargs
+
+    def test_gpt4o_uses_legacy_max_tokens(self) -> None:
+        # Pre-5.x non-reasoning models still expect 'max_tokens'.
+        p, client = _provider_with_mock_client(_fake_response())  # uses gpt-4o
+        p.sample(SampleRequest(prompt="Q", max_tokens=32))
+        kwargs = client.chat.completions.create.call_args.kwargs
+        assert kwargs["max_tokens"] == 32
+        assert "max_completion_tokens" not in kwargs
+
 
 # ---- Response parsing -----------------------------------------------------
 

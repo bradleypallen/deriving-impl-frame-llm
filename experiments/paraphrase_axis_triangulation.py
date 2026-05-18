@@ -1,27 +1,32 @@
-"""Paraphrase-axis triangulation across three LLM families.
+"""Paraphrase-axis experiment across LLM families.
 
 A worked example of the methodology in revised.tex §5: vary the expression
 function δ(ra) across three readings of "is red" (original, intrinsic,
 perceptual) and measure each model's κ_C against Simonelli's analyst row.
 
-Findings reproduced (2026-05-16, see CHANGELOG for run log of first results):
+The script supports an arbitrary list of (provider, model) pairs. The
+default ``MODELS`` list covers six frontier families (Anthropic, OpenAI,
+DeepSeek, Qwen, Gemini, Mistral) with a flagship and a distilled / small
+variant from each, plus GPT-4.1 as the original-paper baseline.
 
-- **GPT-4.1** and **DeepSeek v4-flash** default to an *intrinsic* reading of
-  ``a is red``: under the original phrasing they reproduce the paper's
+Each model is skipped if its provider API key is missing in env. Each
+``(model, variant)`` evaluation writes ``out/<slug>-<variant>.{json,jsonl}``
+under ``--out-dir``; the script can be re-run incrementally as long as the
+output directory is preserved (it will write fresh files but won't re-issue
+already-completed sets unless rerun with the same out-dir, since each call
+generates a new ``run_id``).
+
+Findings from the first 3-model triangulation (2026-05-16, GPT-4.1 +
+Claude Haiku 4.5 + DeepSeek v4-flash):
+
+- **GPT-4.1** and **DeepSeek v4-flash** default to an *intrinsic* reading
+  of ``a is red``: under the original phrasing they reproduce the paper's
   analyst row exactly (κ_C = +1.00).
-- **Claude Haiku 4.5** alone defaults to a *perceptual* reading: under the
-  original phrasing it treats nighttime and non-reflectivity as defeaters
-  (κ_C = +0.20).
+- **Claude Haiku 4.5** defaults to a *perceptual* reading: under the
+  original phrasing it treats nighttime and non-reflectivity as defeaters.
 - All three models converge on the perceptual reading under the explicit
   ``a visibly appears red`` variant — they agree about defeasible inference;
   the disagreement was about δ.
-- Switching Haiku to the intrinsic phrasing partially recovers the analyst
-  row (κ_C: +0.20 → +0.50). Even under intrinsic phrasing, Haiku reads
-  multi-modifier perceptual premises (nighttime + non-reflective) as defeating
-  the inference — see the per-item table for row-2.
-
-The experiment took ~5 minutes total wall time across all three providers
-at the time of writing.
 
 Usage
 -----
@@ -137,31 +142,33 @@ class ModelSpec(NamedTuple):
     extra_kwargs: dict[str, object]
 
 
+_OPENROUTER_EXTRAS: dict[str, object] = {
+    "http_referer": "https://github.com/bradleypallen/deriving-impl-frame-llm",
+    "x_title": "infereval-paraphrase-axis-experiment",
+}
+
+
 MODELS: list[ModelSpec] = [
-    ModelSpec(
-        label="gpt-4.1",
-        provider_name="openai",
-        model_id="gpt-4.1",
-        env_var="OPENAI_API_KEY",
-        extra_kwargs={},
-    ),
-    ModelSpec(
-        label="claude-haiku-4-5",
-        provider_name="anthropic",
-        model_id="claude-haiku-4-5-20251001",
-        env_var="ANTHROPIC_API_KEY",
-        extra_kwargs={},
-    ),
-    ModelSpec(
-        label="deepseek-v4-flash",
-        provider_name="openrouter",
-        model_id="deepseek/deepseek-v4-flash",
-        env_var="OPENROUTER_API_KEY",
-        extra_kwargs={
-            "http_referer": "https://github.com/bradleypallen/deriving-impl-frame-llm",
-            "x_title": "infereval-paraphrase-axis-experiment",
-        },
-    ),
+    # OpenAI baseline (the model Simonelli used in revised.tex).
+    ModelSpec("gpt-4.1",          "openai",     "gpt-4.1",                       "OPENAI_API_KEY",     {}),
+    # OpenAI current-generation pair (5.4).
+    ModelSpec("gpt-5.4",          "openai",     "gpt-5.4",                       "OPENAI_API_KEY",     {}),
+    ModelSpec("gpt-5.4-mini",     "openai",     "gpt-5.4-mini",                  "OPENAI_API_KEY",     {}),
+    # Anthropic: Opus 4.7 flagship + Haiku 4.5 distilled tier.
+    ModelSpec("claude-opus-4.7",  "anthropic",  "claude-opus-4-7",               "ANTHROPIC_API_KEY",  {}),
+    ModelSpec("claude-haiku-4.5", "anthropic",  "claude-haiku-4-5-20251001",     "ANTHROPIC_API_KEY",  {}),
+    # DeepSeek v4 pair.
+    ModelSpec("deepseek-v4-pro",  "openrouter", "deepseek/deepseek-v4-pro",      "OPENROUTER_API_KEY", _OPENROUTER_EXTRAS),
+    ModelSpec("deepseek-v4-flash","openrouter", "deepseek/deepseek-v4-flash",    "OPENROUTER_API_KEY", _OPENROUTER_EXTRAS),
+    # Qwen: 3-max flagship + 3.6-flash distilled (slight generation gap).
+    ModelSpec("qwen3-max",        "openrouter", "qwen/qwen3-max",                "OPENROUTER_API_KEY", _OPENROUTER_EXTRAS),
+    ModelSpec("qwen3.6-flash",    "openrouter", "qwen/qwen3.6-flash",            "OPENROUTER_API_KEY", _OPENROUTER_EXTRAS),
+    # Gemini 2.5 pair.
+    ModelSpec("gemini-2.5-pro",   "openrouter", "google/gemini-2.5-pro",         "OPENROUTER_API_KEY", _OPENROUTER_EXTRAS),
+    ModelSpec("gemini-2.5-flash", "openrouter", "google/gemini-2.5-flash",       "OPENROUTER_API_KEY", _OPENROUTER_EXTRAS),
+    # Mistral pair.
+    ModelSpec("mistral-large",    "openrouter", "mistralai/mistral-large-2512",  "OPENROUTER_API_KEY", _OPENROUTER_EXTRAS),
+    ModelSpec("mistral-small",    "openrouter", "mistralai/mistral-small-2603",  "OPENROUTER_API_KEY", _OPENROUTER_EXTRAS),
 ]
 
 
@@ -210,7 +217,15 @@ def run_model(
     n_samples: int,
     max_tokens: int,
 ) -> dict[str, Evaluation] | None:
-    """Run all variants for one model; return dict[variant_name → Evaluation], or None if skipped."""
+    """Run all variants for one model; return dict[variant_name → Evaluation], or None if skipped.
+
+    Per-variant evaluation failures are caught and logged so a single
+    bad-model-id or rate-limit doesn't kill a multi-model sweep. The
+    variant is dropped from the returned dict; the partial results from
+    earlier variants are preserved.
+    """
+    import time
+
     if not os.environ.get(spec.env_var):
         print(f"[skip] {spec.label}: {spec.env_var} not set", file=sys.stderr)
         return None
@@ -225,10 +240,23 @@ def run_model(
     for variant_name, ra_expr in VARIANTS.items():
         print(f"    ... variant={variant_name}  δ(ra)={ra_expr!r}", flush=True)
         bench = make_variant_benchmark(variant_name, ra_expr)
-        results[variant_name] = run_one_variant(
-            provider, bench, variant_name, spec.label, out_dir,
-            n_samples=n_samples, max_tokens=max_tokens,
-        )
+        t0 = time.monotonic()
+        try:
+            results[variant_name] = run_one_variant(
+                provider, bench, variant_name, spec.label, out_dir,
+                n_samples=n_samples, max_tokens=max_tokens,
+            )
+            elapsed = time.monotonic() - t0
+            print(f"        done in {elapsed:.1f}s", flush=True)
+        except Exception as exc:  # noqa: BLE001 -- best-effort: keep sweeping
+            elapsed = time.monotonic() - t0
+            print(
+                f"        FAILED after {elapsed:.1f}s: {type(exc).__name__}: {exc}",
+                file=sys.stderr, flush=True,
+            )
+    if not results:
+        # All variants failed for this model
+        return None
     return results
 
 
@@ -319,8 +347,10 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--n-samples", type=int, default=3)
     parser.add_argument(
-        "--max-tokens", type=int, default=512,
-        help="Per-sample max_tokens. 512 is enough for reasoning-capable models.",
+        "--max-tokens", type=int, default=2048,
+        help="Per-sample max_tokens. 2048 is generous; needed for frontier "
+             "reasoning-capable models (Gemini 2.5 Pro, Claude Opus, DeepSeek v4) "
+             "that consume budget on silent internal reasoning.",
     )
     args = parser.parse_args(argv)
 

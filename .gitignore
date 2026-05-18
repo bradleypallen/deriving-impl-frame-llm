@@ -57,7 +57,8 @@ coverage.xml
 logs/
 *.log
 
-# Per-experiment outputs (regenerable; the scripts are tracked, not their output)
+# Per-experiment outputs (regenerable; the scripts are tracked, not their output).
+# Committed result sets live in experiments/results/, which is tracked.
 experiments/out/
 
 # LaTeX build artifacts
