@@ -17,21 +17,28 @@ def _fake_response(
     prompt_tokens: int = 10,
     completion_tokens: int = 1,
     resp_id: str = "chatcmpl_test_123",
+    finish_reason: str = "stop",
+    reasoning_tokens: int | None = None,
 ):
+    usage = SimpleNamespace(
+        prompt_tokens=prompt_tokens,
+        completion_tokens=completion_tokens,
+        total_tokens=prompt_tokens + completion_tokens,
+    )
+    if reasoning_tokens is not None:
+        usage.completion_tokens_details = SimpleNamespace(
+            reasoning_tokens=reasoning_tokens,
+        )
     return SimpleNamespace(
         id=resp_id,
         choices=[
             SimpleNamespace(
                 message=SimpleNamespace(content=text, role="assistant"),
                 index=0,
-                finish_reason="stop",
+                finish_reason=finish_reason,
             )
         ],
-        usage=SimpleNamespace(
-            prompt_tokens=prompt_tokens,
-            completion_tokens=completion_tokens,
-            total_tokens=prompt_tokens + completion_tokens,
-        ),
+        usage=usage,
         model_dump=lambda: {"id": resp_id, "choices": [{"message": {"content": text}}]},
     )
 
@@ -78,7 +85,7 @@ class TestRequestConstruction:
         kwargs = client.chat.completions.create.call_args.kwargs
         assert kwargs["model"] == "gpt-4o"
         assert kwargs["messages"] == [{"role": "user", "content": "Q?"}]
-        assert kwargs["max_tokens"] == 32
+        assert kwargs["max_tokens"] == 1024
         assert kwargs["temperature"] == 1.0
 
     def test_system_message_prepended(self) -> None:
@@ -157,6 +164,27 @@ class TestResponseParsing:
 
         r2 = p.sample(SampleRequest(prompt="Q", request_id="client-id"))
         assert r2.request_id == "client-id"
+
+    def test_finish_reason_populated(self) -> None:
+        p, _ = _provider_with_mock_client(_fake_response(finish_reason="stop"))
+        result = p.sample(SampleRequest(prompt="Q"))
+        assert result.finish_reason == "stop"
+
+    def test_finish_reason_length_signals_budget_clip(self) -> None:
+        p, _ = _provider_with_mock_client(_fake_response(finish_reason="length"))
+        result = p.sample(SampleRequest(prompt="Q"))
+        assert result.finish_reason == "length"
+
+    def test_reasoning_tokens_from_completion_tokens_details(self) -> None:
+        p, _ = _provider_with_mock_client(_fake_response(reasoning_tokens=256))
+        result = p.sample(SampleRequest(prompt="Q"))
+        assert result.reasoning_tokens == 256
+
+    def test_reasoning_tokens_none_when_absent(self) -> None:
+        # Default response has no completion_tokens_details on usage.
+        p, _ = _provider_with_mock_client(_fake_response())
+        result = p.sample(SampleRequest(prompt="Q"))
+        assert result.reasoning_tokens is None
 
     def test_empty_content_yields_empty_text(self) -> None:
         resp = SimpleNamespace(

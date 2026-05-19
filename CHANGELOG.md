@@ -32,6 +32,31 @@ items remain open.
   78 (Evaluation JSON + JSONL audit log) pairs from the sweep for full
   reproducibility.
 
+### Changed
+
+- **Default `max_tokens` raised from 32 to 1024** on both
+  `infereval.providers.base.SampleRequest` and
+  `infereval.evaluation.ProviderParams`. The old default budget-clipped
+  any reasoning-capable model. The new default is generous for non-
+  reasoning models (which only emit a handful of tokens for a one-word
+  verdict regardless of the cap) and sufficient for current reasoning
+  models. Closes #4.
+- **`SampleRecord` gains `finish_reason` and `reasoning_tokens`
+  fields** (both `Optional[str]` / `Optional[int]`, defaulting to
+  `None`). Providers populate them where available — OpenAI from
+  `choices[0].finish_reason` and `usage.completion_tokens_details.reasoning_tokens`;
+  Anthropic from `response.stop_reason` and `usage.thinking_tokens`. The
+  fields round-trip through the evaluation JSON. Closes #5.
+- **`ParseStatus` gains `"budget_clipped"`**. The endorser promotes
+  `"unparseable"` to `"budget_clipped"` whenever the provider's
+  `finish_reason` is in the canonical budget-hit set (OpenAI `"length"`,
+  Anthropic `"max_tokens"`). Verdict still falls back to `abstain` per
+  Definition 2, but the parse_status now tells the analyst the abstain
+  is operational (raise `max_tokens` and re-run), not a model decision.
+- **`ParseStatus`** is now a single canonical type in
+  `infereval.types` rather than two divergent definitions in
+  `prompts.py` and `evaluation.py`.
+
 ### Fixed
 
 - **OpenAIProvider**: route to `max_completion_tokens` for GPT-5.x and
@@ -45,11 +70,6 @@ items remain open.
 
 ### Open (still in scope for 0.2.0)
 
-- #4 — raise default `max_tokens` (still 32, too low for reasoning-capable
-  models). The cross-family sweep used `max_tokens=2048` explicitly.
-- #5 — surface `finish_reason` and `reasoning_tokens` on `SampleRecord`
-  so budget-clipped and provider-side-failed samples are first-class
-  distinguishable from genuine model abstentions at the η level.
 - #6 — allow `system` override in benchmark JSON's `verification_prompt`
   field (the paraphrase-axis experiment still requires Python to
   override the system message).

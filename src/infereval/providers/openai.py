@@ -138,13 +138,19 @@ class OpenAIProvider(BaseProvider):
         wall_time_ms = (time.monotonic() - start) * 1000.0
 
         text = ""
+        finish_reason: str | None = None
         choices = getattr(response, "choices", None) or []
         if choices:
-            msg = getattr(choices[0], "message", None)
+            choice = choices[0]
+            msg = getattr(choice, "message", None)
             text = (getattr(msg, "content", None) or "") if msg is not None else ""
+            fr = getattr(choice, "finish_reason", None)
+            if isinstance(fr, str):
+                finish_reason = fr
 
         usage_obj = getattr(response, "usage", None)
         usage: dict[str, int] = {}
+        reasoning_tokens: int | None = None
         if usage_obj is not None:
             in_tok = getattr(usage_obj, "prompt_tokens", None)
             out_tok = getattr(usage_obj, "completion_tokens", None)
@@ -152,6 +158,12 @@ class OpenAIProvider(BaseProvider):
                 usage["input_tokens"] = in_tok
             if isinstance(out_tok, int):
                 usage["output_tokens"] = out_tok
+            # Reasoning models expose this as a nested field on usage.
+            ctd = getattr(usage_obj, "completion_tokens_details", None)
+            if ctd is not None:
+                rt = getattr(ctd, "reasoning_tokens", None)
+                if isinstance(rt, int):
+                    reasoning_tokens = rt
 
         raw: dict[str, Any] | None = None
         if hasattr(response, "model_dump"):
@@ -171,6 +183,8 @@ class OpenAIProvider(BaseProvider):
             wall_time_ms=wall_time_ms,
             input_tokens=usage.get("input_tokens"),
             output_tokens=usage.get("output_tokens"),
+            finish_reason=finish_reason,
+            reasoning_tokens=reasoning_tokens,
         )
 
         return SampleResult(
@@ -181,6 +195,8 @@ class OpenAIProvider(BaseProvider):
             wall_time_ms=wall_time_ms,
             usage=usage,
             raw=raw,
+            finish_reason=finish_reason,
+            reasoning_tokens=reasoning_tokens,
         )
 
     def _is_transient(self, exc: Exception) -> bool:

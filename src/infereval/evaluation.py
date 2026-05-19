@@ -32,7 +32,7 @@ from pydantic import (
 )
 
 from . import __version__
-from .types import Implication, Verdict
+from .types import Implication, ParseStatus, Verdict
 
 if TYPE_CHECKING:
     from .benchmark import Benchmark
@@ -48,12 +48,18 @@ TieBreak = Literal["abstain", "good", "bad", "first"]
 
 
 class ProviderParams(BaseModel):
-    """Decoding parameters passed to a provider sample call."""
+    """Decoding parameters passed to a provider sample call.
+
+    The ``max_tokens`` default of 1024 is sized for current frontier models
+    that consume budget on silent internal reasoning. See
+    :class:`infereval.providers.base.SampleRequest` and
+    ``docs/providers.md`` for the rationale and per-provider guidance.
+    """
 
     model_config = ConfigDict(extra="allow")  # allow provider-specific extras
 
     temperature: float = 1.0
-    max_tokens: int = 32
+    max_tokens: int = 1024
     top_p: float | None = None
     seed: int | None = None
     stop: tuple[str, ...] = ()
@@ -97,9 +103,6 @@ class SampleUsage(BaseModel):
     output_tokens: int | None = None
 
 
-ParseStatus = Literal["ok", "unparseable", "sample_failed"]
-
-
 class SampleRecord(BaseModel):
     """One sampled response from the provider plus its parsed verdict."""
 
@@ -112,6 +115,12 @@ class SampleRecord(BaseModel):
     request_id: str | None = None
     wall_time_ms: float | None = None
     usage: SampleUsage | None = None
+    finish_reason: str | None = None
+    """Provider-side stop reason, when reported. See
+    :class:`infereval.providers.base.SampleResult.finish_reason`."""
+    reasoning_tokens: int | None = None
+    """Reasoning / thinking token count, when the provider reports it.
+    See :class:`infereval.providers.base.SampleResult.reasoning_tokens`."""
 
 
 class MajorityVote(BaseModel):

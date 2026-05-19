@@ -40,6 +40,7 @@ from .prompts import (
     parse_verdict,
 )
 from .providers.base import (
+    BUDGET_FINISH_REASONS,
     Provider,
     ProviderSampleError,
     SampleRequest,
@@ -225,6 +226,15 @@ def endorse(
         try:
             result = provider.sample(req)
             verdict, status = parse_verdict(result.text, parser)
+            # Promote unparseable -> budget_clipped when the provider says the
+            # response was truncated by max_tokens. The verdict stays abstain
+            # (Definition 2 fallback) but the parse_status now tells the user
+            # the abstain is operational, not a model decision.
+            if (
+                status == "unparseable"
+                and result.finish_reason in BUDGET_FINISH_REASONS
+            ):
+                status = "budget_clipped"
             record = SampleRecord(
                 sample_index=i,
                 raw_response=result.text,
@@ -233,6 +243,8 @@ def endorse(
                 request_id=result.request_id,
                 wall_time_ms=result.wall_time_ms,
                 usage=_usage_from_mapping(result.usage),
+                finish_reason=result.finish_reason,
+                reasoning_tokens=result.reasoning_tokens,
             )
             log_event(
                 log,
@@ -249,6 +261,8 @@ def endorse(
                 wall_time_ms=result.wall_time_ms,
                 input_tokens=result.usage.get("input_tokens") if result.usage else None,
                 output_tokens=result.usage.get("output_tokens") if result.usage else None,
+                finish_reason=result.finish_reason,
+                reasoning_tokens=result.reasoning_tokens,
             )
         except ProviderSampleError as exc:
             log_event(
@@ -268,6 +282,8 @@ def endorse(
                 request_id=rid,
                 wall_time_ms=None,
                 usage=None,
+                finish_reason=None,
+                reasoning_tokens=None,
             )
         sample_records.append(record)
         verdicts.append(verdict)

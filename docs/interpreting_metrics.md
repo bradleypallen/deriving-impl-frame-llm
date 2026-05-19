@@ -24,9 +24,9 @@ What low coverage usually means:
 | Coverage | Likely cause | What to do |
 |---|---|---|
 | `0.95–1.00` | Normal | Move on to kappa. |
-| `0.70–0.95` | Some items are genuinely hard, or you have a small `--max-tokens` and a verbose model | Inspect the `parse_status` field in `η`: `unparseable` means the model talked but didn't say a verdict word. `sample_failed` means a provider error after retries. |
-| `0.30–0.70` | Likely a token-budget issue with a reasoning-capable model, OR a verification prompt the model finds genuinely ambiguous | Check `--max-tokens` (raise to 256+). Inspect the prompts that produced abstains. |
-| `0.00–0.30` | Almost certainly token-budget or model-misconfigured | Try `--max-tokens 512`. See [`providers.md`](providers.md) for the reasoning-tokens issue. |
+| `0.70–0.95` | Some items are genuinely hard, or you have a small `--max-tokens` and a verbose model | Inspect the `parse_status` field in `η`: `unparseable` means the model talked but didn't say a verdict word. `budget_clipped` means the provider truncated by `max_tokens` — raise it. `sample_failed` means a provider error after retries. |
+| `0.30–0.70` | Likely a verification prompt the model finds genuinely ambiguous, or a content-attribution disagreement (see Haiku-style perceptual default) | Inspect the prompts that produced abstains; try the paraphrase axis (`experiments/paraphrase_axis_triangulation.py`). |
+| `0.00–0.30` | Often token-budget or model-misconfigured | Check `parse_status` distribution. If lots of `budget_clipped`, bump `--max-tokens` to 2048+. See [`providers.md`](providers.md) for the reasoning-tokens issue. |
 
 **Per-analyst coverage** (`cov_j(η)`) is the analog for each human analyst — useful when authoring a benchmark to spot analysts who abstain a lot (their column has less inferential signal).
 

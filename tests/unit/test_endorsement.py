@@ -274,3 +274,105 @@ class TestSampleFailures:
         assert record.verdict == Verdict.ABSTAIN
         assert all(s.parse_status == "sample_failed" for s in record.samples)
         assert record.counts[Verdict.ABSTAIN] == 3
+
+
+# ---- Budget-clipped detection --------------------------------------------
+
+
+class _BudgetClippedProvider:
+    """Returns empty text with finish_reason='length' on every call.
+
+    Models reasoning-capable backends that consume budget on silent
+    internal reasoning before emitting any verdict tokens (DeepSeek
+    v4-flash at max_tokens=32 is the canonical case).
+    """
+
+    name = "budget-clipped-mock"
+    model_id = "mock-v1"
+
+    def sample(self, req):  # type: ignore[no-untyped-def]
+        from infereval.providers.base import SampleResult
+
+        return SampleResult(
+            text="",
+            provider=self.name,
+            model_id=self.model_id,
+            request_id=req.request_id,
+            finish_reason="length",
+            reasoning_tokens=req.max_tokens,
+        )
+
+
+class _MaxTokensProvider(_BudgetClippedProvider):
+    """Like _BudgetClippedProvider but using Anthropic's 'max_tokens' value."""
+
+    def sample(self, req):  # type: ignore[no-untyped-def]
+        from infereval.providers.base import SampleResult
+
+        return SampleResult(
+            text="",
+            provider=self.name,
+            model_id=self.model_id,
+            request_id=req.request_id,
+            finish_reason="max_tokens",
+            reasoning_tokens=None,
+        )
+
+
+class TestBudgetClipped:
+    def test_length_finish_reason_promotes_unparseable_to_budget_clipped(self) -> None:
+        record = _run(_BudgetClippedProvider(), n_samples=3)  # type: ignore[arg-type]
+        # Verdict still abstain (Definition 2 fallback) ...
+        assert record.verdict == Verdict.ABSTAIN
+        # ... but parse_status is the diagnostic 'budget_clipped', not 'unparseable'.
+        assert all(s.parse_status == "budget_clipped" for s in record.samples)
+        assert all(s.parsed_verdict == Verdict.ABSTAIN for s in record.samples)
+        # finish_reason and reasoning_tokens propagated onto the record.
+        assert all(s.finish_reason == "length" for s in record.samples)
+        assert all(s.reasoning_tokens == 1024 for s in record.samples)
+
+    def test_anthropic_max_tokens_finish_reason_promotes(self) -> None:
+        record = _run(_MaxTokensProvider(), n_samples=2)  # type: ignore[arg-type]
+        assert all(s.parse_status == "budget_clipped" for s in record.samples)
+        assert all(s.finish_reason == "max_tokens" for s in record.samples)
+
+    def test_stop_finish_reason_with_parseable_text_stays_ok(self) -> None:
+        from infereval.providers.base import SampleResult
+
+        class _OkProvider:
+            name = "ok-mock"
+            model_id = "ok-v1"
+
+            def sample(self, req):  # type: ignore[no-untyped-def]
+                return SampleResult(
+                    text="GOOD",
+                    provider=self.name,
+                    model_id=self.model_id,
+                    request_id=req.request_id,
+                    finish_reason="stop",
+                )
+
+        record = _run(_OkProvider(), n_samples=1)  # type: ignore[arg-type]
+        assert record.samples[0].parse_status == "ok"
+        assert record.samples[0].finish_reason == "stop"
+
+    def test_unparseable_without_budget_finish_reason_stays_unparseable(self) -> None:
+        # Model produced parseable-looking text that just didn't contain a verdict
+        # token, with a clean stop reason: that's a genuine unparseable, not budget.
+        from infereval.providers.base import SampleResult
+
+        class _UnparseableButCleanProvider:
+            name = "u-mock"
+            model_id = "u-v1"
+
+            def sample(self, req):  # type: ignore[no-untyped-def]
+                return SampleResult(
+                    text="I am not sure about this one.",
+                    provider=self.name,
+                    model_id=self.model_id,
+                    request_id=req.request_id,
+                    finish_reason="stop",
+                )
+
+        record = _run(_UnparseableButCleanProvider(), n_samples=1)  # type: ignore[arg-type]
+        assert record.samples[0].parse_status == "unparseable"
