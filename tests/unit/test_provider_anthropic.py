@@ -236,3 +236,54 @@ class TestTransientClassification:
     def test_value_error_is_not_transient(self) -> None:
         p = AnthropicProvider("claude-haiku-4-5-20251001", api_key="sk-test")
         assert not p._is_transient(ValueError("nope"))
+
+    def test_overloaded_529_is_transient(self) -> None:
+        # 529 OverloadedError is the symptom we saw on long Opus runs:
+        # Anthropic returns ``{"type": "overloaded_error", ...}`` and the
+        # framework must classify it as transient so RetryPolicy can back
+        # off and retry instead of failing the sample outright.
+        import anthropic
+
+        p = AnthropicProvider("claude-haiku-4-5-20251001", api_key="sk-test")
+        exc = anthropic.APIStatusError.__new__(anthropic.APIStatusError)
+        # ``status_code`` is what the SDK populates on real errors; we set
+        # it directly because we are not exercising __init__.
+        exc.status_code = 529
+        assert p._is_transient(exc)
+
+    def test_service_unavailable_503_is_transient(self) -> None:
+        import anthropic
+
+        p = AnthropicProvider("claude-haiku-4-5-20251001", api_key="sk-test")
+        exc = anthropic.APIStatusError.__new__(anthropic.APIStatusError)
+        exc.status_code = 503
+        assert p._is_transient(exc)
+
+    def test_deadline_exceeded_504_is_transient(self) -> None:
+        import anthropic
+
+        p = AnthropicProvider("claude-haiku-4-5-20251001", api_key="sk-test")
+        exc = anthropic.APIStatusError.__new__(anthropic.APIStatusError)
+        exc.status_code = 504
+        assert p._is_transient(exc)
+
+    def test_bad_request_400_is_not_transient(self) -> None:
+        # 400 BadRequest must remain non-transient: retrying a malformed
+        # request would just burn budget for the same failure.
+        import anthropic
+
+        p = AnthropicProvider("claude-haiku-4-5-20251001", api_key="sk-test")
+        exc = anthropic.APIStatusError.__new__(anthropic.APIStatusError)
+        exc.status_code = 400
+        assert not p._is_transient(exc)
+
+    def test_overloaded_real_subclass_is_transient(self) -> None:
+        # Sanity check against the SDK's real OverloadedError subclass
+        # (lives under anthropic._exceptions in 0.10x). If a future SDK
+        # rev moves it, we still classify by status_code on the base.
+        from anthropic._exceptions import OverloadedError  # type: ignore[import-untyped]
+
+        p = AnthropicProvider("claude-haiku-4-5-20251001", api_key="sk-test")
+        exc = OverloadedError.__new__(OverloadedError)
+        exc.status_code = 529
+        assert p._is_transient(exc)

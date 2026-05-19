@@ -183,6 +183,16 @@ class AnthropicProvider(BaseProvider):
             reasoning_tokens=reasoning_tokens,
         )
 
+    # HTTP status codes that should be retried as transient server-side
+    # capacity problems. 503 ServiceUnavailable, 504 DeadlineExceeded, and
+    # 529 Overloaded are all classes of "the server is busy, try again";
+    # the corresponding Anthropic SDK subclasses (``ServiceUnavailableError``,
+    # ``DeadlineExceededError``, ``OverloadedError``) live under
+    # ``anthropic._exceptions`` in current SDKs and are not exported at
+    # the top-level namespace, so we match by status code on the public
+    # ``APIStatusError`` base class.
+    _TRANSIENT_STATUS_CODES: frozenset[int] = frozenset({503, 504, 529})
+
     def _is_transient(self, exc: Exception) -> bool:
         try:
             import anthropic
@@ -194,7 +204,13 @@ class AnthropicProvider(BaseProvider):
             anthropic.APITimeoutError,
             anthropic.InternalServerError,
         )
-        return isinstance(exc, transient_types)
+        if isinstance(exc, transient_types):
+            return True
+        if isinstance(exc, anthropic.APIStatusError):
+            status = getattr(exc, "status_code", None)
+            if isinstance(status, int) and status in self._TRANSIENT_STATUS_CODES:
+                return True
+        return False
 
 
 __all__ = ["ANTHROPIC_API_KEY_ENV", "AnthropicProvider"]
