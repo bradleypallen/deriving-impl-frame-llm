@@ -10,9 +10,13 @@ stable from 1.0 onward, regardless of the framework version.
 
 ## [Unreleased]
 
-Targeted for the 0.2.0 milestone. Provider compatibility patches landed
-early during the cross-family experimentation (see below); core 0.2.0
-items remain open.
+No changes yet.
+
+## [0.2.0] — 2026-05-18
+
+Methodology- and provider-level improvements surfaced during 0.1.0 use
+against real APIs (the paraphrase-axis experiment and multi-model
+triangulation). All v0.2.0 milestone issues closed.
 
 ### Added
 
@@ -74,9 +78,9 @@ items remain open.
   Opus 4.7 and later (the API rejects it as deprecated). Sonnet and
   Haiku still pass it through unchanged. Closes #10.
 
-### Open (still in scope for 0.2.0)
+### Authors
 
-All v0.2.0 milestone issues closed.
+- Bradley P. Allen, University of Amsterdam.
 
 ## [0.1.0] — 2026-05-16
 
@@ -172,4 +176,5 @@ Evaluation of LLM Inferential Mastery* (Allen, 2026).
 
 - Bradley P. Allen, University of Amsterdam.
 
+[0.2.0]: https://github.com/bradleypallen/deriving-impl-frame-llm/releases/tag/v0.2.0
 [0.1.0]: https://github.com/bradleypallen/deriving-impl-frame-llm/releases/tag/v0.1.0
