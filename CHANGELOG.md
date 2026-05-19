@@ -34,6 +34,12 @@ items remain open.
 
 ### Changed
 
+- **`VerificationPromptOverride` gains optional `system` and `id` fields.**
+  A benchmark JSON can now fully specify a custom verification prompt
+  (system + user template + parse regex + identifier) without dropping
+  to the Python API. The paraphrase-axis experiment in
+  `experiments/paraphrase_axis_triangulation.py` is now JSON-drivable.
+  Closes #6.
 - **Default `max_tokens` raised from 32 to 1024** on both
   `infereval.providers.base.SampleRequest` and
   `infereval.evaluation.ProviderParams`. The old default budget-clipped
@@ -70,9 +76,7 @@ items remain open.
 
 ### Open (still in scope for 0.2.0)
 
-- #6 — allow `system` override in benchmark JSON's `verification_prompt`
-  field (the paraphrase-axis experiment still requires Python to
-  override the system message).
+All v0.2.0 milestone issues closed.
 
 ## [0.1.0] — 2026-05-16
 

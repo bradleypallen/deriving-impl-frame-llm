@@ -23,7 +23,16 @@ A benchmark file has five top-level pieces, plus an `id` and optional descriptiv
 }
 ```
 
-A `verification_prompt` override field exists but most benchmarks should leave it alone (the framework default is the locked `default-v1` template).
+A `verification_prompt` override field exists for benchmarks that need a custom system message, user template, parse regex, or stable prompt identifier — for example, to run the paraphrase axis with a defeasibility-explicit prompt. Most benchmarks should leave it alone (the framework default is the locked `default-v1` template). When supplied, each sub-field that you leave out falls back to the framework default:
+
+```json
+"verification_prompt": {
+  "template": "Premises: {premise_context}\nConclusion: {conclusion_context}\nVerdict:",
+  "system": "You are evaluating defeasible material inference. ...",
+  "parse_regex": "\\b(GOOD|BAD|ABSTAIN)\\b",
+  "id": "my-defeasible-v1"
+}
+```
 
 ## Step 1: Decide what you're measuring
 

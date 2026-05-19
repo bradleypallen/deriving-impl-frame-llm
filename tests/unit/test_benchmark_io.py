@@ -188,3 +188,61 @@ class TestContextBuilders:
         bench = Benchmark.model_validate(d)
         assert bench.context_builders.premise.kind == "plugin"
         assert bench.context_builders.premise.plugin == "my_pkg.builders:premise_fn"
+
+
+# ---- Verification-prompt override ---------------------------------------
+
+
+class TestVerificationPromptOverride:
+    """The benchmark JSON can fully specify a custom verification prompt
+    (system + user template + parse regex + id) without dropping to Python."""
+
+    def test_template_only(self, stop_sign_benchmark_dict: dict) -> None:
+        d = copy.deepcopy(stop_sign_benchmark_dict)
+        d["verification_prompt"] = {"template": "{premise_context} ?> {conclusion_context}"}
+        bench = Benchmark.model_validate(d)
+        assert bench.verification_prompt is not None
+        assert bench.verification_prompt.template.startswith("{premise_context}")
+        assert bench.verification_prompt.system is None  # defaults to None → DEFAULT
+        assert bench.verification_prompt.id is None
+
+    def test_full_override_in_json(self, stop_sign_benchmark_dict: dict) -> None:
+        d = copy.deepcopy(stop_sign_benchmark_dict)
+        d["verification_prompt"] = {
+            "template": "P: {premise_context}\nC: {conclusion_context}\nVerdict:",
+            "system": "You are evaluating defeasible material inference.",
+            "parse_regex": r"\b(GOOD|BAD|ABSTAIN)\b",
+            "id": "my-defeasible-v1",
+        }
+        bench = Benchmark.model_validate(d)
+        vp = bench.verification_prompt
+        assert vp is not None
+        assert vp.system == "You are evaluating defeasible material inference."
+        assert vp.id == "my-defeasible-v1"
+        assert vp.parse_regex == r"\b(GOOD|BAD|ABSTAIN)\b"
+
+    def test_resolve_uses_override_system_when_supplied(
+        self, stop_sign_benchmark_dict: dict
+    ) -> None:
+        from infereval.prompts import resolve_verification_prompt
+
+        d = copy.deepcopy(stop_sign_benchmark_dict)
+        d["verification_prompt"] = {
+            "template": "{premise_context}|{conclusion_context}",
+            "system": "Custom system message here.",
+            "id": "custom-v7",
+        }
+        bench = Benchmark.model_validate(d)
+        prompt = resolve_verification_prompt(bench.verification_prompt)
+        assert prompt.system == "Custom system message here."
+        assert prompt.id == "custom-v7"
+        assert prompt.user_template == "{premise_context}|{conclusion_context}"
+
+    def test_unknown_fields_rejected(self, stop_sign_benchmark_dict: dict) -> None:
+        d = copy.deepcopy(stop_sign_benchmark_dict)
+        d["verification_prompt"] = {
+            "template": "{premise_context}/{conclusion_context}",
+            "garbage_field": "nope",
+        }
+        with pytest.raises(ValidationError):
+            Benchmark.model_validate(d)

@@ -93,16 +93,25 @@ def resolve_verification_prompt(
 ) -> VerificationPrompt:
     """Return the default prompt, or a benchmark-supplied override.
 
-    The default's :attr:`system` is preserved by the override (since
-    :class:`VerificationPromptOverride` only carries ``template`` and
-    ``parse_regex``); analysts who need a custom system message can
-    embed it into the user template or extend the model later.
+    Each override field that is ``None`` falls back to the framework
+    default:
+
+    - :attr:`VerificationPromptOverride.system` ``None`` →
+      :data:`DEFAULT_SYSTEM_PROMPT`.
+    - :attr:`VerificationPromptOverride.parse_regex` ``None`` →
+      :data:`DEFAULT_PARSE_REGEX`.
+    - :attr:`VerificationPromptOverride.id` ``None`` → ``override_id``
+      (caller-supplied fallback identifier).
+
+    A benchmark JSON can now fully specify a custom verification prompt
+    (system + user template + parse regex + identifier) without dropping
+    to the Python API.
     """
     if override is None:
         return DEFAULT_VERIFICATION_PROMPT
     return VerificationPrompt(
-        id=override_id,
-        system=DEFAULT_SYSTEM_PROMPT,
+        id=override.id or override_id,
+        system=override.system if override.system is not None else DEFAULT_SYSTEM_PROMPT,
         user_template=override.template,
         parse_regex=override.parse_regex or DEFAULT_PARSE_REGEX,
     )
