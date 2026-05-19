@@ -1,0 +1,2094 @@
+{
+  "schema_version": "1.0",
+  "id": "pulm-deepseek-2026-05-19",
+  "benchmark_id": "pulmonary-edema-differential-v0.1",
+  "benchmark_hash": "sha256:0659167c476622806f4b6906985630d66c408a6485550685f42e7c751fed078b",
+  "model": {
+    "provider": "openrouter",
+    "model_id": "deepseek/deepseek-v4-pro",
+    "params": {
+      "temperature": 0.0,
+      "max_tokens": 1024,
+      "stop": []
+    }
+  },
+  "endorsement_config": {
+    "n_samples": 3,
+    "tie_break": "abstain",
+    "verification_prompt_id": "defeasible-clinical-v1",
+    "context_builder_premise_id": "conjunction-and-v1",
+    "context_builder_conclusion_id": "disjunction-or-v1"
+  },
+  "framework_version": "0.2.1",
+  "started_at": "2026-05-19T15:32:51.809457Z",
+  "finished_at": "2026-05-19T15:50:12.584930Z",
+  "items": [
+    {
+      "id": "c1",
+      "premises": [
+        "ad",
+        "bi"
+      ],
+      "conclusions": [
+        "cpe"
+      ],
+      "analyst_verdicts": [
+        "good"
+      ],
+      "model_verdict": "good",
+      "samples": [
+        {
+          "sample_index": 0,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:c1:sample-0",
+          "wall_time_ms": 753.7394589744508,
+          "usage": {
+            "input_tokens": 218,
+            "output_tokens": 3
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        },
+        {
+          "sample_index": 1,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:c1:sample-1",
+          "wall_time_ms": 8845.29858303722,
+          "usage": {
+            "input_tokens": 218,
+            "output_tokens": 207
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 204
+        },
+        {
+          "sample_index": 2,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:c1:sample-2",
+          "wall_time_ms": 11386.548292008229,
+          "usage": {
+            "input_tokens": 218,
+            "output_tokens": 311
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 307
+        }
+      ],
+      "majority_vote": {
+        "good": 2,
+        "bad": 1,
+        "abstain": 0,
+        "verdict": "good",
+        "tie_broken": false
+      },
+      "tags": [
+        "base-inference",
+        "T1",
+        "dialectical-low"
+      ]
+    },
+    {
+      "id": "c2",
+      "premises": [
+        "ad",
+        "bi",
+        "el"
+      ],
+      "conclusions": [
+        "cpe"
+      ],
+      "analyst_verdicts": [
+        "good"
+      ],
+      "model_verdict": "good",
+      "samples": [
+        {
+          "sample_index": 0,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:c2:sample-0",
+          "wall_time_ms": 14728.088250034489,
+          "usage": {
+            "input_tokens": 232,
+            "output_tokens": 225
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 222
+        },
+        {
+          "sample_index": 1,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:c2:sample-1",
+          "wall_time_ms": 6803.8719579344615,
+          "usage": {
+            "input_tokens": 232,
+            "output_tokens": 198
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 194
+        },
+        {
+          "sample_index": 2,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:c2:sample-2",
+          "wall_time_ms": 7367.891374975443,
+          "usage": {
+            "input_tokens": 232,
+            "output_tokens": 185
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 181
+        }
+      ],
+      "majority_vote": {
+        "good": 3,
+        "bad": 0,
+        "abstain": 0,
+        "verdict": "good",
+        "tie_broken": false
+      },
+      "tags": [
+        "supporter",
+        "T1",
+        "biomarker",
+        "dialectical-low"
+      ]
+    },
+    {
+      "id": "c3",
+      "premises": [
+        "ad",
+        "bi",
+        "lv"
+      ],
+      "conclusions": [
+        "cpe"
+      ],
+      "analyst_verdicts": [
+        "good"
+      ],
+      "model_verdict": "good",
+      "samples": [
+        {
+          "sample_index": 0,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:c3:sample-0",
+          "wall_time_ms": 11569.91887500044,
+          "usage": {
+            "input_tokens": 231,
+            "output_tokens": 231
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 228
+        },
+        {
+          "sample_index": 1,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:c3:sample-1",
+          "wall_time_ms": 9718.78812497016,
+          "usage": {
+            "input_tokens": 231,
+            "output_tokens": 164
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 161
+        },
+        {
+          "sample_index": 2,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:c3:sample-2",
+          "wall_time_ms": 5909.357666969299,
+          "usage": {
+            "input_tokens": 231,
+            "output_tokens": 155
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 186
+        }
+      ],
+      "majority_vote": {
+        "good": 3,
+        "bad": 0,
+        "abstain": 0,
+        "verdict": "good",
+        "tie_broken": false
+      },
+      "tags": [
+        "supporter",
+        "T1",
+        "imaging",
+        "dialectical-low"
+      ]
+    },
+    {
+      "id": "c4",
+      "premises": [
+        "ad",
+        "bi",
+        "kb"
+      ],
+      "conclusions": [
+        "cpe"
+      ],
+      "analyst_verdicts": [
+        "good"
+      ],
+      "model_verdict": "good",
+      "samples": [
+        {
+          "sample_index": 0,
+          "raw_response": "",
+          "parsed_verdict": "abstain",
+          "parse_status": "unparseable",
+          "request_id": "pulm-deepseek-2026-05-19:c4:sample-0",
+          "wall_time_ms": 12799.563791020773,
+          "usage": {
+            "input_tokens": 273,
+            "output_tokens": 151
+          },
+          "reasoning_tokens": 151
+        },
+        {
+          "sample_index": 1,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:c4:sample-1",
+          "wall_time_ms": 3406.1839170753956,
+          "usage": {
+            "input_tokens": 229,
+            "output_tokens": 141
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 137
+        },
+        {
+          "sample_index": 2,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:c4:sample-2",
+          "wall_time_ms": 9203.67645798251,
+          "usage": {
+            "input_tokens": 229,
+            "output_tokens": 233
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 230
+        }
+      ],
+      "majority_vote": {
+        "good": 2,
+        "bad": 0,
+        "abstain": 1,
+        "verdict": "good",
+        "tie_broken": false
+      },
+      "tags": [
+        "supporter",
+        "T1",
+        "imaging",
+        "dialectical-low"
+      ]
+    },
+    {
+      "id": "c5",
+      "premises": [
+        "ad",
+        "bi",
+        "pcwp"
+      ],
+      "conclusions": [
+        "cpe"
+      ],
+      "analyst_verdicts": [
+        "good"
+      ],
+      "model_verdict": "good",
+      "samples": [
+        {
+          "sample_index": 0,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:c5:sample-0",
+          "wall_time_ms": 10942.937707994133,
+          "usage": {
+            "input_tokens": 232,
+            "output_tokens": 186
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 183
+        },
+        {
+          "sample_index": 1,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:c5:sample-1",
+          "wall_time_ms": 13528.170041972771,
+          "usage": {
+            "input_tokens": 232,
+            "output_tokens": 268
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 265
+        },
+        {
+          "sample_index": 2,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:c5:sample-2",
+          "wall_time_ms": 8597.76104206685,
+          "usage": {
+            "input_tokens": 232,
+            "output_tokens": 255
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 251
+        }
+      ],
+      "majority_vote": {
+        "good": 3,
+        "bad": 0,
+        "abstain": 0,
+        "verdict": "good",
+        "tie_broken": false
+      },
+      "tags": [
+        "supporter",
+        "T1",
+        "hemodynamic",
+        "dialectical-low"
+      ]
+    },
+    {
+      "id": "c6",
+      "premises": [
+        "ad",
+        "bi",
+        "nl"
+      ],
+      "conclusions": [
+        "cpe"
+      ],
+      "analyst_verdicts": [
+        "bad"
+      ],
+      "model_verdict": "bad",
+      "samples": [
+        {
+          "sample_index": 0,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:c6:sample-0",
+          "wall_time_ms": 4885.9225830528885,
+          "usage": {
+            "input_tokens": 232,
+            "output_tokens": 171
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 168
+        },
+        {
+          "sample_index": 1,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:c6:sample-1",
+          "wall_time_ms": 10611.877250019461,
+          "usage": {
+            "input_tokens": 232,
+            "output_tokens": 261
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 259
+        },
+        {
+          "sample_index": 2,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:c6:sample-2",
+          "wall_time_ms": 14040.591833065264,
+          "usage": {
+            "input_tokens": 232,
+            "output_tokens": 177
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 174
+        }
+      ],
+      "majority_vote": {
+        "good": 0,
+        "bad": 3,
+        "abstain": 0,
+        "verdict": "bad",
+        "tie_broken": false
+      },
+      "tags": [
+        "defeater",
+        "T1",
+        "biomarker",
+        "dialectical-medium"
+      ]
+    },
+    {
+      "id": "c7",
+      "premises": [
+        "ad",
+        "bi",
+        "sep"
+      ],
+      "conclusions": [
+        "cpe"
+      ],
+      "analyst_verdicts": [
+        "bad"
+      ],
+      "model_verdict": "bad",
+      "samples": [
+        {
+          "sample_index": 0,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:c7:sample-0",
+          "wall_time_ms": 8448.594916961156,
+          "usage": {
+            "input_tokens": 224,
+            "output_tokens": 239
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 236
+        },
+        {
+          "sample_index": 1,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:c7:sample-1",
+          "wall_time_ms": 11004.151916014962,
+          "usage": {
+            "input_tokens": 224,
+            "output_tokens": 323
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 320
+        },
+        {
+          "sample_index": 2,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:c7:sample-2",
+          "wall_time_ms": 8589.964332990348,
+          "usage": {
+            "input_tokens": 224,
+            "output_tokens": 242
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 239
+        }
+      ],
+      "majority_vote": {
+        "good": 0,
+        "bad": 3,
+        "abstain": 0,
+        "verdict": "bad",
+        "tie_broken": false
+      },
+      "tags": [
+        "defeater",
+        "T1",
+        "context",
+        "dialectical-high"
+      ]
+    },
+    {
+      "id": "c8",
+      "premises": [
+        "ad",
+        "asp",
+        "bi"
+      ],
+      "conclusions": [
+        "cpe"
+      ],
+      "analyst_verdicts": [
+        "bad"
+      ],
+      "model_verdict": "bad",
+      "samples": [
+        {
+          "sample_index": 0,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:c8:sample-0",
+          "wall_time_ms": 9039.052417036146,
+          "usage": {
+            "input_tokens": 226,
+            "output_tokens": 261
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 258
+        },
+        {
+          "sample_index": 1,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:c8:sample-1",
+          "wall_time_ms": 7171.113457996398,
+          "usage": {
+            "input_tokens": 226,
+            "output_tokens": 224
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 221
+        },
+        {
+          "sample_index": 2,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:c8:sample-2",
+          "wall_time_ms": 7835.3742910549045,
+          "usage": {
+            "input_tokens": 226,
+            "output_tokens": 208
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 205
+        }
+      ],
+      "majority_vote": {
+        "good": 0,
+        "bad": 3,
+        "abstain": 0,
+        "verdict": "bad",
+        "tie_broken": false
+      },
+      "tags": [
+        "defeater",
+        "T1",
+        "etiology",
+        "dialectical-medium"
+      ]
+    },
+    {
+      "id": "c9",
+      "premises": [
+        "ad",
+        "bi",
+        "cv",
+        "iv"
+      ],
+      "conclusions": [
+        "cpe"
+      ],
+      "analyst_verdicts": [
+        "good"
+      ],
+      "model_verdict": "good",
+      "samples": [
+        {
+          "sample_index": 0,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:c9:sample-0",
+          "wall_time_ms": 9860.12995801866,
+          "usage": {
+            "input_tokens": 242,
+            "output_tokens": 183
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 180
+        },
+        {
+          "sample_index": 1,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:c9:sample-1",
+          "wall_time_ms": 13834.669290925376,
+          "usage": {
+            "input_tokens": 242,
+            "output_tokens": 393
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 389
+        },
+        {
+          "sample_index": 2,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:c9:sample-2",
+          "wall_time_ms": 604.5367079786956,
+          "usage": {
+            "input_tokens": 242,
+            "output_tokens": 3
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        }
+      ],
+      "majority_vote": {
+        "good": 3,
+        "bad": 0,
+        "abstain": 0,
+        "verdict": "good",
+        "tie_broken": false
+      },
+      "tags": [
+        "supporter",
+        "T1",
+        "history",
+        "dialectical-medium"
+      ]
+    },
+    {
+      "id": "c10",
+      "premises": [
+        "ad",
+        "bi",
+        "el",
+        "sep"
+      ],
+      "conclusions": [
+        "cpe"
+      ],
+      "analyst_verdicts": [
+        "good"
+      ],
+      "model_verdict": "bad",
+      "samples": [
+        {
+          "sample_index": 0,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:c10:sample-0",
+          "wall_time_ms": 12337.113249930553,
+          "usage": {
+            "input_tokens": 238,
+            "output_tokens": 252
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 250
+        },
+        {
+          "sample_index": 1,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:c10:sample-1",
+          "wall_time_ms": 10725.294540985487,
+          "usage": {
+            "input_tokens": 238,
+            "output_tokens": 334
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 331
+        },
+        {
+          "sample_index": 2,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:c10:sample-2",
+          "wall_time_ms": 6680.130957975052,
+          "usage": {
+            "input_tokens": 238,
+            "output_tokens": 182
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 179
+        }
+      ],
+      "majority_vote": {
+        "good": 0,
+        "bad": 3,
+        "abstain": 0,
+        "verdict": "bad",
+        "tie_broken": false
+      },
+      "tags": [
+        "mixed-evidence",
+        "T1",
+        "dialectical-high"
+      ]
+    },
+    {
+      "id": "c11",
+      "premises": [
+        "ad",
+        "bi",
+        "pe"
+      ],
+      "conclusions": [
+        "cpe"
+      ],
+      "analyst_verdicts": [
+        "bad"
+      ],
+      "model_verdict": "bad",
+      "samples": [
+        {
+          "sample_index": 0,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:c11:sample-0",
+          "wall_time_ms": 27829.514333978295,
+          "usage": {
+            "input_tokens": 225,
+            "output_tokens": 758
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 756
+        },
+        {
+          "sample_index": 1,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:c11:sample-1",
+          "wall_time_ms": 16604.211875004694,
+          "usage": {
+            "input_tokens": 225,
+            "output_tokens": 495
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 493
+        },
+        {
+          "sample_index": 2,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:c11:sample-2",
+          "wall_time_ms": 13782.681250013411,
+          "usage": {
+            "input_tokens": 225,
+            "output_tokens": 313
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 311
+        }
+      ],
+      "majority_vote": {
+        "good": 0,
+        "bad": 3,
+        "abstain": 0,
+        "verdict": "bad",
+        "tie_broken": false
+      },
+      "tags": [
+        "defeater",
+        "T1",
+        "alternative-diagnosis",
+        "dialectical-medium"
+      ]
+    },
+    {
+      "id": "c12",
+      "premises": [
+        "ad",
+        "bi",
+        "rf"
+      ],
+      "conclusions": [
+        "cpe"
+      ],
+      "analyst_verdicts": [
+        "good"
+      ],
+      "model_verdict": "good",
+      "samples": [
+        {
+          "sample_index": 0,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:c12:sample-0",
+          "wall_time_ms": 6056.906874990091,
+          "usage": {
+            "input_tokens": 228,
+            "output_tokens": 152
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 148
+        },
+        {
+          "sample_index": 1,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:c12:sample-1",
+          "wall_time_ms": 4058.4950409829617,
+          "usage": {
+            "input_tokens": 228,
+            "output_tokens": 130
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 126
+        },
+        {
+          "sample_index": 2,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:c12:sample-2",
+          "wall_time_ms": 19581.24183304608,
+          "usage": {
+            "input_tokens": 228,
+            "output_tokens": 770
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 766
+        }
+      ],
+      "majority_vote": {
+        "good": 3,
+        "bad": 0,
+        "abstain": 0,
+        "verdict": "good",
+        "tie_broken": false
+      },
+      "tags": [
+        "supporter",
+        "T1",
+        "etiology",
+        "dialectical-high"
+      ]
+    },
+    {
+      "id": "a1",
+      "premises": [
+        "ad",
+        "bi"
+      ],
+      "conclusions": [
+        "ards"
+      ],
+      "analyst_verdicts": [
+        "good"
+      ],
+      "model_verdict": "bad",
+      "samples": [
+        {
+          "sample_index": 0,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:a1:sample-0",
+          "wall_time_ms": 9379.313667071983,
+          "usage": {
+            "input_tokens": 218,
+            "output_tokens": 435
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 432
+        },
+        {
+          "sample_index": 1,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:a1:sample-1",
+          "wall_time_ms": 32313.759207958356,
+          "usage": {
+            "input_tokens": 218,
+            "output_tokens": 893
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 891
+        },
+        {
+          "sample_index": 2,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:a1:sample-2",
+          "wall_time_ms": 13515.056458069012,
+          "usage": {
+            "input_tokens": 218,
+            "output_tokens": 404
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 401
+        }
+      ],
+      "majority_vote": {
+        "good": 0,
+        "bad": 3,
+        "abstain": 0,
+        "verdict": "bad",
+        "tie_broken": false
+      },
+      "tags": [
+        "base-inference",
+        "T2",
+        "dialectical-low"
+      ]
+    },
+    {
+      "id": "a2",
+      "premises": [
+        "ad",
+        "bi",
+        "pf"
+      ],
+      "conclusions": [
+        "ards"
+      ],
+      "analyst_verdicts": [
+        "good"
+      ],
+      "model_verdict": "good",
+      "samples": [
+        {
+          "sample_index": 0,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:a2:sample-0",
+          "wall_time_ms": 8984.462750027888,
+          "usage": {
+            "input_tokens": 235,
+            "output_tokens": 241
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 238
+        },
+        {
+          "sample_index": 1,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:a2:sample-1",
+          "wall_time_ms": 18630.613249959424,
+          "usage": {
+            "input_tokens": 235,
+            "output_tokens": 507
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 504
+        },
+        {
+          "sample_index": 2,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:a2:sample-2",
+          "wall_time_ms": 22378.64933302626,
+          "usage": {
+            "input_tokens": 235,
+            "output_tokens": 616
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 613
+        }
+      ],
+      "majority_vote": {
+        "good": 3,
+        "bad": 0,
+        "abstain": 0,
+        "verdict": "good",
+        "tie_broken": false
+      },
+      "tags": [
+        "supporter",
+        "T2",
+        "criterion",
+        "dialectical-low"
+      ]
+    },
+    {
+      "id": "a3",
+      "premises": [
+        "ad",
+        "bi",
+        "sep"
+      ],
+      "conclusions": [
+        "ards"
+      ],
+      "analyst_verdicts": [
+        "good"
+      ],
+      "model_verdict": "bad",
+      "samples": [
+        {
+          "sample_index": 0,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:a3:sample-0",
+          "wall_time_ms": 14798.582250019535,
+          "usage": {
+            "input_tokens": 224,
+            "output_tokens": 393
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 391
+        },
+        {
+          "sample_index": 1,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:a3:sample-1",
+          "wall_time_ms": 28862.071083043702,
+          "usage": {
+            "input_tokens": 224,
+            "output_tokens": 775
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 773
+        },
+        {
+          "sample_index": 2,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:a3:sample-2",
+          "wall_time_ms": 19075.356082990766,
+          "usage": {
+            "input_tokens": 224,
+            "output_tokens": 558
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 555
+        }
+      ],
+      "majority_vote": {
+        "good": 1,
+        "bad": 2,
+        "abstain": 0,
+        "verdict": "bad",
+        "tie_broken": false
+      },
+      "tags": [
+        "supporter",
+        "T2",
+        "etiology",
+        "dialectical-low"
+      ]
+    },
+    {
+      "id": "a4",
+      "premises": [
+        "ad",
+        "asp",
+        "bi"
+      ],
+      "conclusions": [
+        "ards"
+      ],
+      "analyst_verdicts": [
+        "good"
+      ],
+      "model_verdict": "bad",
+      "samples": [
+        {
+          "sample_index": 0,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:a4:sample-0",
+          "wall_time_ms": 10213.992791017517,
+          "usage": {
+            "input_tokens": 226,
+            "output_tokens": 348
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 345
+        },
+        {
+          "sample_index": 1,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:a4:sample-1",
+          "wall_time_ms": 547.6314999395981,
+          "usage": {
+            "input_tokens": 226,
+            "output_tokens": 3
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        },
+        {
+          "sample_index": 2,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:a4:sample-2",
+          "wall_time_ms": 13745.703291962855,
+          "usage": {
+            "input_tokens": 226,
+            "output_tokens": 398
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 395
+        }
+      ],
+      "majority_vote": {
+        "good": 1,
+        "bad": 2,
+        "abstain": 0,
+        "verdict": "bad",
+        "tie_broken": false
+      },
+      "tags": [
+        "supporter",
+        "T2",
+        "etiology",
+        "dialectical-low"
+      ]
+    },
+    {
+      "id": "a5",
+      "premises": [
+        "ad",
+        "bi",
+        "tr"
+      ],
+      "conclusions": [
+        "ards"
+      ],
+      "analyst_verdicts": [
+        "good"
+      ],
+      "model_verdict": "good",
+      "samples": [
+        {
+          "sample_index": 0,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:a5:sample-0",
+          "wall_time_ms": 5763.558542006649,
+          "usage": {
+            "input_tokens": 226,
+            "output_tokens": 3
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        },
+        {
+          "sample_index": 1,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:a5:sample-1",
+          "wall_time_ms": 6624.213833943941,
+          "usage": {
+            "input_tokens": 226,
+            "output_tokens": 97
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 94
+        },
+        {
+          "sample_index": 2,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:a5:sample-2",
+          "wall_time_ms": 9387.800209107809,
+          "usage": {
+            "input_tokens": 226,
+            "output_tokens": 235
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 288
+        }
+      ],
+      "majority_vote": {
+        "good": 3,
+        "bad": 0,
+        "abstain": 0,
+        "verdict": "good",
+        "tie_broken": false
+      },
+      "tags": [
+        "supporter",
+        "T2",
+        "etiology",
+        "dialectical-low"
+      ]
+    },
+    {
+      "id": "a6",
+      "premises": [
+        "ad",
+        "bi",
+        "lv"
+      ],
+      "conclusions": [
+        "ards"
+      ],
+      "analyst_verdicts": [
+        "bad"
+      ],
+      "model_verdict": "bad",
+      "samples": [
+        {
+          "sample_index": 0,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:a6:sample-0",
+          "wall_time_ms": 14264.512583031319,
+          "usage": {
+            "input_tokens": 231,
+            "output_tokens": 378
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 375
+        },
+        {
+          "sample_index": 1,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:a6:sample-1",
+          "wall_time_ms": 15153.42295798473,
+          "usage": {
+            "input_tokens": 231,
+            "output_tokens": 411
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 408
+        },
+        {
+          "sample_index": 2,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:a6:sample-2",
+          "wall_time_ms": 11113.405458047055,
+          "usage": {
+            "input_tokens": 231,
+            "output_tokens": 359
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 356
+        }
+      ],
+      "majority_vote": {
+        "good": 0,
+        "bad": 3,
+        "abstain": 0,
+        "verdict": "bad",
+        "tie_broken": false
+      },
+      "tags": [
+        "defeater",
+        "T2",
+        "competing-finding",
+        "dialectical-medium"
+      ]
+    },
+    {
+      "id": "a7",
+      "premises": [
+        "ad",
+        "bi",
+        "kb"
+      ],
+      "conclusions": [
+        "ards"
+      ],
+      "analyst_verdicts": [
+        "bad"
+      ],
+      "model_verdict": "bad",
+      "samples": [
+        {
+          "sample_index": 0,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:a7:sample-0",
+          "wall_time_ms": 18181.777209043503,
+          "usage": {
+            "input_tokens": 229,
+            "output_tokens": 574
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 699
+        },
+        {
+          "sample_index": 1,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:a7:sample-1",
+          "wall_time_ms": 16476.622791029513,
+          "usage": {
+            "input_tokens": 229,
+            "output_tokens": 428
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 426
+        },
+        {
+          "sample_index": 2,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:a7:sample-2",
+          "wall_time_ms": 19386.51983300224,
+          "usage": {
+            "input_tokens": 229,
+            "output_tokens": 532
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 530
+        }
+      ],
+      "majority_vote": {
+        "good": 0,
+        "bad": 3,
+        "abstain": 0,
+        "verdict": "bad",
+        "tie_broken": false
+      },
+      "tags": [
+        "defeater",
+        "T2",
+        "competing-finding",
+        "dialectical-medium"
+      ]
+    },
+    {
+      "id": "a8",
+      "premises": [
+        "ad",
+        "bi",
+        "lv",
+        "pf"
+      ],
+      "conclusions": [
+        "ards"
+      ],
+      "analyst_verdicts": [
+        "bad"
+      ],
+      "model_verdict": "bad",
+      "samples": [
+        {
+          "sample_index": 0,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:a8:sample-0",
+          "wall_time_ms": 9386.177042033523,
+          "usage": {
+            "input_tokens": 248,
+            "output_tokens": 432
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 429
+        },
+        {
+          "sample_index": 1,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:a8:sample-1",
+          "wall_time_ms": 9009.733584010974,
+          "usage": {
+            "input_tokens": 248,
+            "output_tokens": 447
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 444
+        },
+        {
+          "sample_index": 2,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:a8:sample-2",
+          "wall_time_ms": 11863.925999961793,
+          "usage": {
+            "input_tokens": 248,
+            "output_tokens": 351
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 348
+        }
+      ],
+      "majority_vote": {
+        "good": 0,
+        "bad": 3,
+        "abstain": 0,
+        "verdict": "bad",
+        "tie_broken": false
+      },
+      "tags": [
+        "mixed-evidence",
+        "T2",
+        "dialectical-high"
+      ]
+    },
+    {
+      "id": "a9",
+      "premises": [
+        "ad",
+        "bi",
+        "cd"
+      ],
+      "conclusions": [
+        "ards"
+      ],
+      "analyst_verdicts": [
+        "good"
+      ],
+      "model_verdict": "bad",
+      "samples": [
+        {
+          "sample_index": 0,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:a9:sample-0",
+          "wall_time_ms": 17687.7679170575,
+          "usage": {
+            "input_tokens": 230,
+            "output_tokens": 472
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 470
+        },
+        {
+          "sample_index": 1,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:a9:sample-1",
+          "wall_time_ms": 15199.69287503045,
+          "usage": {
+            "input_tokens": 230,
+            "output_tokens": 412
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 410
+        },
+        {
+          "sample_index": 2,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:a9:sample-2",
+          "wall_time_ms": 20483.554874896072,
+          "usage": {
+            "input_tokens": 230,
+            "output_tokens": 557
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 555
+        }
+      ],
+      "majority_vote": {
+        "good": 0,
+        "bad": 3,
+        "abstain": 0,
+        "verdict": "bad",
+        "tie_broken": false
+      },
+      "tags": [
+        "supporter",
+        "T2",
+        "etiology-ambiguous",
+        "dialectical-medium"
+      ]
+    },
+    {
+      "id": "a10",
+      "premises": [
+        "ad",
+        "asp",
+        "bi",
+        "lv"
+      ],
+      "conclusions": [
+        "ards"
+      ],
+      "analyst_verdicts": [
+        "good"
+      ],
+      "model_verdict": "bad",
+      "samples": [
+        {
+          "sample_index": 0,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:a10:sample-0",
+          "wall_time_ms": 19312.901958008297,
+          "usage": {
+            "input_tokens": 239,
+            "output_tokens": 869
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 866
+        },
+        {
+          "sample_index": 1,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:a10:sample-1",
+          "wall_time_ms": 25487.778916954994,
+          "usage": {
+            "input_tokens": 239,
+            "output_tokens": 791
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 789
+        },
+        {
+          "sample_index": 2,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:a10:sample-2",
+          "wall_time_ms": 979.0091249160469,
+          "usage": {
+            "input_tokens": 239,
+            "output_tokens": 3
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        }
+      ],
+      "majority_vote": {
+        "good": 1,
+        "bad": 2,
+        "abstain": 0,
+        "verdict": "bad",
+        "tie_broken": false
+      },
+      "tags": [
+        "mixed-evidence",
+        "T2",
+        "dialectical-high"
+      ]
+    },
+    {
+      "id": "x1",
+      "premises": [
+        "cpe"
+      ],
+      "conclusions": [
+        "el"
+      ],
+      "analyst_verdicts": [
+        "good"
+      ],
+      "model_verdict": "good",
+      "samples": [
+        {
+          "sample_index": 0,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:x1:sample-0",
+          "wall_time_ms": 8199.180791969411,
+          "usage": {
+            "input_tokens": 214,
+            "output_tokens": 158
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 155
+        },
+        {
+          "sample_index": 1,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:x1:sample-1",
+          "wall_time_ms": 10884.579624980688,
+          "usage": {
+            "input_tokens": 214,
+            "output_tokens": 158
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 155
+        },
+        {
+          "sample_index": 2,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:x1:sample-2",
+          "wall_time_ms": 12060.154582955875,
+          "usage": {
+            "input_tokens": 214,
+            "output_tokens": 227
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 223
+        }
+      ],
+      "majority_vote": {
+        "good": 3,
+        "bad": 0,
+        "abstain": 0,
+        "verdict": "good",
+        "tie_broken": false
+      },
+      "tags": [
+        "cross-cutting",
+        "marker-inference",
+        "dialectical-low"
+      ]
+    },
+    {
+      "id": "x2",
+      "premises": [
+        "ards"
+      ],
+      "conclusions": [
+        "el"
+      ],
+      "analyst_verdicts": [
+        "bad"
+      ],
+      "model_verdict": "bad",
+      "samples": [
+        {
+          "sample_index": 0,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:x2:sample-0",
+          "wall_time_ms": 6727.026415988803,
+          "usage": {
+            "input_tokens": 214,
+            "output_tokens": 273
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 270
+        },
+        {
+          "sample_index": 1,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:x2:sample-1",
+          "wall_time_ms": 6670.239542028867,
+          "usage": {
+            "input_tokens": 214,
+            "output_tokens": 254
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 251
+        },
+        {
+          "sample_index": 2,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:x2:sample-2",
+          "wall_time_ms": 12342.986166011542,
+          "usage": {
+            "input_tokens": 214,
+            "output_tokens": 351
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 348
+        }
+      ],
+      "majority_vote": {
+        "good": 0,
+        "bad": 3,
+        "abstain": 0,
+        "verdict": "bad",
+        "tie_broken": false
+      },
+      "tags": [
+        "cross-cutting",
+        "marker-inference",
+        "dialectical-medium"
+      ]
+    },
+    {
+      "id": "x4",
+      "premises": [
+        "cpe",
+        "kb",
+        "lv"
+      ],
+      "conclusions": [
+        "el"
+      ],
+      "analyst_verdicts": [
+        "good"
+      ],
+      "model_verdict": "good",
+      "samples": [
+        {
+          "sample_index": 0,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:x4:sample-0",
+          "wall_time_ms": 8025.193249923177,
+          "usage": {
+            "input_tokens": 238,
+            "output_tokens": 183
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 180
+        },
+        {
+          "sample_index": 1,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:x4:sample-1",
+          "wall_time_ms": 18134.64412500616,
+          "usage": {
+            "input_tokens": 238,
+            "output_tokens": 459
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 456
+        },
+        {
+          "sample_index": 2,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:x4:sample-2",
+          "wall_time_ms": 5379.400874953717,
+          "usage": {
+            "input_tokens": 238,
+            "output_tokens": 96
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 93
+        }
+      ],
+      "majority_vote": {
+        "good": 3,
+        "bad": 0,
+        "abstain": 0,
+        "verdict": "good",
+        "tie_broken": false
+      },
+      "tags": [
+        "cross-cutting",
+        "marker-inference",
+        "dialectical-low"
+      ]
+    },
+    {
+      "id": "x5",
+      "premises": [
+        "cv",
+        "iv"
+      ],
+      "conclusions": [
+        "cpe"
+      ],
+      "analyst_verdicts": [
+        "good"
+      ],
+      "model_verdict": "good",
+      "samples": [
+        {
+          "sample_index": 0,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:x5:sample-0",
+          "wall_time_ms": 5159.601999912411,
+          "usage": {
+            "input_tokens": 224,
+            "output_tokens": 229
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 225
+        },
+        {
+          "sample_index": 1,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:x5:sample-1",
+          "wall_time_ms": 11321.747833047993,
+          "usage": {
+            "input_tokens": 224,
+            "output_tokens": 308
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 305
+        },
+        {
+          "sample_index": 2,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:x5:sample-2",
+          "wall_time_ms": 16436.61129195243,
+          "usage": {
+            "input_tokens": 224,
+            "output_tokens": 487
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 483
+        }
+      ],
+      "majority_vote": {
+        "good": 2,
+        "bad": 1,
+        "abstain": 0,
+        "verdict": "good",
+        "tie_broken": false
+      },
+      "tags": [
+        "cross-cutting",
+        "context-only",
+        "dialectical-high"
+      ]
+    },
+    {
+      "id": "x6",
+      "premises": [
+        "cpe"
+      ],
+      "conclusions": [
+        "pv"
+      ],
+      "analyst_verdicts": [
+        "good"
+      ],
+      "model_verdict": "bad",
+      "samples": [
+        {
+          "sample_index": 0,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:x6:sample-0",
+          "wall_time_ms": 15418.077958980575,
+          "usage": {
+            "input_tokens": 208,
+            "output_tokens": 217
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 268
+        },
+        {
+          "sample_index": 1,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:x6:sample-1",
+          "wall_time_ms": 9744.326916988939,
+          "usage": {
+            "input_tokens": 208,
+            "output_tokens": 234
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 232
+        },
+        {
+          "sample_index": 2,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:x6:sample-2",
+          "wall_time_ms": 10442.838000017218,
+          "usage": {
+            "input_tokens": 208,
+            "output_tokens": 258
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 256
+        }
+      ],
+      "majority_vote": {
+        "good": 0,
+        "bad": 3,
+        "abstain": 0,
+        "verdict": "bad",
+        "tie_broken": false
+      },
+      "tags": [
+        "cross-cutting",
+        "consequence",
+        "dialectical-medium"
+      ]
+    },
+    {
+      "id": "x7",
+      "premises": [
+        "ards"
+      ],
+      "conclusions": [
+        "pv"
+      ],
+      "analyst_verdicts": [
+        "bad"
+      ],
+      "model_verdict": "bad",
+      "samples": [
+        {
+          "sample_index": 0,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:x7:sample-0",
+          "wall_time_ms": 7381.664499989711,
+          "usage": {
+            "input_tokens": 208,
+            "output_tokens": 175
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 173
+        },
+        {
+          "sample_index": 1,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:x7:sample-1",
+          "wall_time_ms": 8203.45945795998,
+          "usage": {
+            "input_tokens": 208,
+            "output_tokens": 200
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 198
+        },
+        {
+          "sample_index": 2,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:x7:sample-2",
+          "wall_time_ms": 14724.007957964204,
+          "usage": {
+            "input_tokens": 208,
+            "output_tokens": 389
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 387
+        }
+      ],
+      "majority_vote": {
+        "good": 0,
+        "bad": 3,
+        "abstain": 0,
+        "verdict": "bad",
+        "tie_broken": false
+      },
+      "tags": [
+        "cross-cutting",
+        "consequence",
+        "dialectical-medium"
+      ]
+    },
+    {
+      "id": "x8",
+      "premises": [
+        "ards",
+        "cpe"
+      ],
+      "conclusions": [
+        "el"
+      ],
+      "analyst_verdicts": [
+        "good"
+      ],
+      "model_verdict": "good",
+      "samples": [
+        {
+          "sample_index": 0,
+          "raw_response": "",
+          "parsed_verdict": "abstain",
+          "parse_status": "budget_clipped",
+          "request_id": "pulm-deepseek-2026-05-19:x8:sample-0",
+          "wall_time_ms": 33789.87837501336,
+          "usage": {
+            "input_tokens": 222,
+            "output_tokens": 1024
+          },
+          "finish_reason": "length",
+          "reasoning_tokens": 1024
+        },
+        {
+          "sample_index": 1,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:x8:sample-1",
+          "wall_time_ms": 11979.34083302971,
+          "usage": {
+            "input_tokens": 222,
+            "output_tokens": 421
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 417
+        },
+        {
+          "sample_index": 2,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-deepseek-2026-05-19:x8:sample-2",
+          "wall_time_ms": 10327.208832954057,
+          "usage": {
+            "input_tokens": 222,
+            "output_tokens": 328
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 324
+        }
+      ],
+      "majority_vote": {
+        "good": 2,
+        "bad": 0,
+        "abstain": 1,
+        "verdict": "good",
+        "tie_broken": false
+      },
+      "tags": [
+        "cross-cutting",
+        "coexistence",
+        "dialectical-high"
+      ]
+    }
+  ]
+}
