@@ -16,6 +16,10 @@ Alpha (0.1.0). Methodology defaults are locked; the JSON schemas are versioned i
 - [**Providers**](docs/providers.md) — per-provider quirks (Anthropic seed handling, DeepSeek reasoning-token budgets, OpenRouter attribution).
 - **Tutorials** (executable Jupyter notebooks under [docs/tutorials/](docs/tutorials/)): the quickstart, authoring from scratch, the cross-model paraphrase-axis experiment.
 
+## Findings
+
+A 13-model cross-family sweep (2026-05-18) of the paraphrase-axis experiment is committed at [`experiments/results/cross_family_2026-05-18.md`](experiments/results/cross_family_2026-05-18.md). Headline: 11 of 13 frontier LLMs across six families reproduce Simonelli's analyst row exactly under the original δ(ra) (κ_C = +1.00) — an eleven-model independent replication of the paper's empirical anchor ten months after publication. The two outliers (Claude Haiku 4.5, Mistral Large) default to a *perceptual* reading of `is red` rather than the analyst's *intrinsic* reading, and the framework localizes this to specific (item, δ-variant) cells in the result tables.
+
 ## Install
 
 ```
