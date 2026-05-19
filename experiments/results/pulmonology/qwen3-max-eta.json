@@ -1,0 +1,2095 @@
+{
+  "schema_version": "1.0",
+  "id": "pulm-qwen-2026-05-19-v2",
+  "benchmark_id": "pulmonary-edema-differential-v0.1",
+  "benchmark_hash": "sha256:0659167c476622806f4b6906985630d66c408a6485550685f42e7c751fed078b",
+  "model": {
+    "provider": "openrouter",
+    "model_id": "qwen/qwen3-max",
+    "params": {
+      "temperature": 0.0,
+      "max_tokens": 1024,
+      "stop": []
+    }
+  },
+  "endorsement_config": {
+    "n_samples": 3,
+    "tie_break": "abstain",
+    "verification_prompt_id": "defeasible-clinical-v1",
+    "context_builder_premise_id": "conjunction-and-v1",
+    "context_builder_conclusion_id": "disjunction-or-v1"
+  },
+  "framework_version": "0.2.1",
+  "started_at": "2026-05-19T15:53:40.034706Z",
+  "finished_at": "2026-05-19T16:00:30.461843Z",
+  "items": [
+    {
+      "id": "c1",
+      "premises": [
+        "ad",
+        "bi"
+      ],
+      "conclusions": [
+        "cpe"
+      ],
+      "analyst_verdicts": [
+        "good"
+      ],
+      "model_verdict": "abstain",
+      "samples": [
+        {
+          "sample_index": 0,
+          "raw_response": "ABSTAIN",
+          "parsed_verdict": "abstain",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:c1:sample-0",
+          "wall_time_ms": 1476.8479999620467,
+          "usage": {
+            "input_tokens": 225,
+            "output_tokens": 3
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        },
+        {
+          "sample_index": 1,
+          "raw_response": "ABSTAIN",
+          "parsed_verdict": "abstain",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:c1:sample-1",
+          "wall_time_ms": 1254.2439999524504,
+          "usage": {
+            "input_tokens": 225,
+            "output_tokens": 3
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        },
+        {
+          "sample_index": 2,
+          "raw_response": "ABSTAIN",
+          "parsed_verdict": "abstain",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:c1:sample-2",
+          "wall_time_ms": 1086.7151250131428,
+          "usage": {
+            "input_tokens": 225,
+            "output_tokens": 3
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        }
+      ],
+      "majority_vote": {
+        "good": 0,
+        "bad": 0,
+        "abstain": 3,
+        "verdict": "abstain",
+        "tie_broken": false
+      },
+      "tags": [
+        "base-inference",
+        "T1",
+        "dialectical-low"
+      ]
+    },
+    {
+      "id": "c2",
+      "premises": [
+        "ad",
+        "bi",
+        "el"
+      ],
+      "conclusions": [
+        "cpe"
+      ],
+      "analyst_verdicts": [
+        "good"
+      ],
+      "model_verdict": "good",
+      "samples": [
+        {
+          "sample_index": 0,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:c2:sample-0",
+          "wall_time_ms": 1479.8728750320151,
+          "usage": {
+            "input_tokens": 241,
+            "output_tokens": 1
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        },
+        {
+          "sample_index": 1,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:c2:sample-1",
+          "wall_time_ms": 1219.2795840092003,
+          "usage": {
+            "input_tokens": 241,
+            "output_tokens": 1
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        },
+        {
+          "sample_index": 2,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:c2:sample-2",
+          "wall_time_ms": 1035.697582992725,
+          "usage": {
+            "input_tokens": 241,
+            "output_tokens": 1
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        }
+      ],
+      "majority_vote": {
+        "good": 3,
+        "bad": 0,
+        "abstain": 0,
+        "verdict": "good",
+        "tie_broken": false
+      },
+      "tags": [
+        "supporter",
+        "T1",
+        "biomarker",
+        "dialectical-low"
+      ]
+    },
+    {
+      "id": "c3",
+      "premises": [
+        "ad",
+        "bi",
+        "lv"
+      ],
+      "conclusions": [
+        "cpe"
+      ],
+      "analyst_verdicts": [
+        "good"
+      ],
+      "model_verdict": "good",
+      "samples": [
+        {
+          "sample_index": 0,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:c3:sample-0",
+          "wall_time_ms": 1855.430542025715,
+          "usage": {
+            "input_tokens": 241,
+            "output_tokens": 1
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        },
+        {
+          "sample_index": 1,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:c3:sample-1",
+          "wall_time_ms": 1135.9141669236124,
+          "usage": {
+            "input_tokens": 241,
+            "output_tokens": 1
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        },
+        {
+          "sample_index": 2,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:c3:sample-2",
+          "wall_time_ms": 1070.1160000171512,
+          "usage": {
+            "input_tokens": 241,
+            "output_tokens": 1
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        }
+      ],
+      "majority_vote": {
+        "good": 3,
+        "bad": 0,
+        "abstain": 0,
+        "verdict": "good",
+        "tie_broken": false
+      },
+      "tags": [
+        "supporter",
+        "T1",
+        "imaging",
+        "dialectical-low"
+      ]
+    },
+    {
+      "id": "c4",
+      "premises": [
+        "ad",
+        "bi",
+        "kb"
+      ],
+      "conclusions": [
+        "cpe"
+      ],
+      "analyst_verdicts": [
+        "good"
+      ],
+      "model_verdict": "good",
+      "samples": [
+        {
+          "sample_index": 0,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:c4:sample-0",
+          "wall_time_ms": 1001.4127079630271,
+          "usage": {
+            "input_tokens": 236,
+            "output_tokens": 1
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        },
+        {
+          "sample_index": 1,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:c4:sample-1",
+          "wall_time_ms": 1105.435333098285,
+          "usage": {
+            "input_tokens": 236,
+            "output_tokens": 1
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        },
+        {
+          "sample_index": 2,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:c4:sample-2",
+          "wall_time_ms": 1011.7809158982709,
+          "usage": {
+            "input_tokens": 236,
+            "output_tokens": 1
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        }
+      ],
+      "majority_vote": {
+        "good": 3,
+        "bad": 0,
+        "abstain": 0,
+        "verdict": "good",
+        "tie_broken": false
+      },
+      "tags": [
+        "supporter",
+        "T1",
+        "imaging",
+        "dialectical-low"
+      ]
+    },
+    {
+      "id": "c5",
+      "premises": [
+        "ad",
+        "bi",
+        "pcwp"
+      ],
+      "conclusions": [
+        "cpe"
+      ],
+      "analyst_verdicts": [
+        "good"
+      ],
+      "model_verdict": "good",
+      "samples": [
+        {
+          "sample_index": 0,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:c5:sample-0",
+          "wall_time_ms": 1127.215541084297,
+          "usage": {
+            "input_tokens": 243,
+            "output_tokens": 1
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        },
+        {
+          "sample_index": 1,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:c5:sample-1",
+          "wall_time_ms": 1566.3972080219537,
+          "usage": {
+            "input_tokens": 243,
+            "output_tokens": 1
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        },
+        {
+          "sample_index": 2,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:c5:sample-2",
+          "wall_time_ms": 1727.966667036526,
+          "usage": {
+            "input_tokens": 243,
+            "output_tokens": 1
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        }
+      ],
+      "majority_vote": {
+        "good": 3,
+        "bad": 0,
+        "abstain": 0,
+        "verdict": "good",
+        "tie_broken": false
+      },
+      "tags": [
+        "supporter",
+        "T1",
+        "hemodynamic",
+        "dialectical-low"
+      ]
+    },
+    {
+      "id": "c6",
+      "premises": [
+        "ad",
+        "bi",
+        "nl"
+      ],
+      "conclusions": [
+        "cpe"
+      ],
+      "analyst_verdicts": [
+        "bad"
+      ],
+      "model_verdict": "bad",
+      "samples": [
+        {
+          "sample_index": 0,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:c6:sample-0",
+          "wall_time_ms": 1036.402583005838,
+          "usage": {
+            "input_tokens": 241,
+            "output_tokens": 1
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        },
+        {
+          "sample_index": 1,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:c6:sample-1",
+          "wall_time_ms": 1086.098707979545,
+          "usage": {
+            "input_tokens": 241,
+            "output_tokens": 1
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        },
+        {
+          "sample_index": 2,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:c6:sample-2",
+          "wall_time_ms": 1112.7024580491707,
+          "usage": {
+            "input_tokens": 241,
+            "output_tokens": 1
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        }
+      ],
+      "majority_vote": {
+        "good": 0,
+        "bad": 3,
+        "abstain": 0,
+        "verdict": "bad",
+        "tie_broken": false
+      },
+      "tags": [
+        "defeater",
+        "T1",
+        "biomarker",
+        "dialectical-medium"
+      ]
+    },
+    {
+      "id": "c7",
+      "premises": [
+        "ad",
+        "bi",
+        "sep"
+      ],
+      "conclusions": [
+        "cpe"
+      ],
+      "analyst_verdicts": [
+        "bad"
+      ],
+      "model_verdict": "bad",
+      "samples": [
+        {
+          "sample_index": 0,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:c7:sample-0",
+          "wall_time_ms": 1079.490666044876,
+          "usage": {
+            "input_tokens": 233,
+            "output_tokens": 1
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        },
+        {
+          "sample_index": 1,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:c7:sample-1",
+          "wall_time_ms": 2769.549624994397,
+          "usage": {
+            "input_tokens": 233,
+            "output_tokens": 1
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        },
+        {
+          "sample_index": 2,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:c7:sample-2",
+          "wall_time_ms": 1019.0135830780491,
+          "usage": {
+            "input_tokens": 233,
+            "output_tokens": 1
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        }
+      ],
+      "majority_vote": {
+        "good": 0,
+        "bad": 3,
+        "abstain": 0,
+        "verdict": "bad",
+        "tie_broken": false
+      },
+      "tags": [
+        "defeater",
+        "T1",
+        "context",
+        "dialectical-high"
+      ]
+    },
+    {
+      "id": "c8",
+      "premises": [
+        "ad",
+        "asp",
+        "bi"
+      ],
+      "conclusions": [
+        "cpe"
+      ],
+      "analyst_verdicts": [
+        "bad"
+      ],
+      "model_verdict": "bad",
+      "samples": [
+        {
+          "sample_index": 0,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:c8:sample-0",
+          "wall_time_ms": 1151.2363749789074,
+          "usage": {
+            "input_tokens": 233,
+            "output_tokens": 1
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        },
+        {
+          "sample_index": 1,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:c8:sample-1",
+          "wall_time_ms": 1075.8026250405237,
+          "usage": {
+            "input_tokens": 233,
+            "output_tokens": 1
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        },
+        {
+          "sample_index": 2,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:c8:sample-2",
+          "wall_time_ms": 1057.2902919957414,
+          "usage": {
+            "input_tokens": 233,
+            "output_tokens": 1
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        }
+      ],
+      "majority_vote": {
+        "good": 0,
+        "bad": 3,
+        "abstain": 0,
+        "verdict": "bad",
+        "tie_broken": false
+      },
+      "tags": [
+        "defeater",
+        "T1",
+        "etiology",
+        "dialectical-medium"
+      ]
+    },
+    {
+      "id": "c9",
+      "premises": [
+        "ad",
+        "bi",
+        "cv",
+        "iv"
+      ],
+      "conclusions": [
+        "cpe"
+      ],
+      "analyst_verdicts": [
+        "good"
+      ],
+      "model_verdict": "good",
+      "samples": [
+        {
+          "sample_index": 0,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:c9:sample-0",
+          "wall_time_ms": 1159.5507500460371,
+          "usage": {
+            "input_tokens": 252,
+            "output_tokens": 1
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        },
+        {
+          "sample_index": 1,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:c9:sample-1",
+          "wall_time_ms": 1051.5410419320688,
+          "usage": {
+            "input_tokens": 252,
+            "output_tokens": 1
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        },
+        {
+          "sample_index": 2,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:c9:sample-2",
+          "wall_time_ms": 1039.6669999463484,
+          "usage": {
+            "input_tokens": 252,
+            "output_tokens": 1
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        }
+      ],
+      "majority_vote": {
+        "good": 3,
+        "bad": 0,
+        "abstain": 0,
+        "verdict": "good",
+        "tie_broken": false
+      },
+      "tags": [
+        "supporter",
+        "T1",
+        "history",
+        "dialectical-medium"
+      ]
+    },
+    {
+      "id": "c10",
+      "premises": [
+        "ad",
+        "bi",
+        "el",
+        "sep"
+      ],
+      "conclusions": [
+        "cpe"
+      ],
+      "analyst_verdicts": [
+        "good"
+      ],
+      "model_verdict": "bad",
+      "samples": [
+        {
+          "sample_index": 0,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:c10:sample-0",
+          "wall_time_ms": 987.4446250032634,
+          "usage": {
+            "input_tokens": 249,
+            "output_tokens": 1
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        },
+        {
+          "sample_index": 1,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:c10:sample-1",
+          "wall_time_ms": 1134.0199579717591,
+          "usage": {
+            "input_tokens": 249,
+            "output_tokens": 1
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        },
+        {
+          "sample_index": 2,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:c10:sample-2",
+          "wall_time_ms": 1016.7870840523392,
+          "usage": {
+            "input_tokens": 249,
+            "output_tokens": 1
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        }
+      ],
+      "majority_vote": {
+        "good": 0,
+        "bad": 3,
+        "abstain": 0,
+        "verdict": "bad",
+        "tie_broken": false
+      },
+      "tags": [
+        "mixed-evidence",
+        "T1",
+        "dialectical-high"
+      ]
+    },
+    {
+      "id": "c11",
+      "premises": [
+        "ad",
+        "bi",
+        "pe"
+      ],
+      "conclusions": [
+        "cpe"
+      ],
+      "analyst_verdicts": [
+        "bad"
+      ],
+      "model_verdict": "bad",
+      "samples": [
+        {
+          "sample_index": 0,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:c11:sample-0",
+          "wall_time_ms": 1076.0094580473378,
+          "usage": {
+            "input_tokens": 234,
+            "output_tokens": 1
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        },
+        {
+          "sample_index": 1,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:c11:sample-1",
+          "wall_time_ms": 1124.582124990411,
+          "usage": {
+            "input_tokens": 234,
+            "output_tokens": 1
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        },
+        {
+          "sample_index": 2,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:c11:sample-2",
+          "wall_time_ms": 1240.2168329572305,
+          "usage": {
+            "input_tokens": 234,
+            "output_tokens": 1
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        }
+      ],
+      "majority_vote": {
+        "good": 0,
+        "bad": 3,
+        "abstain": 0,
+        "verdict": "bad",
+        "tie_broken": false
+      },
+      "tags": [
+        "defeater",
+        "T1",
+        "alternative-diagnosis",
+        "dialectical-medium"
+      ]
+    },
+    {
+      "id": "c12",
+      "premises": [
+        "ad",
+        "bi",
+        "rf"
+      ],
+      "conclusions": [
+        "cpe"
+      ],
+      "analyst_verdicts": [
+        "good"
+      ],
+      "model_verdict": "good",
+      "samples": [
+        {
+          "sample_index": 0,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:c12:sample-0",
+          "wall_time_ms": 1154.5751250814646,
+          "usage": {
+            "input_tokens": 235,
+            "output_tokens": 1
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        },
+        {
+          "sample_index": 1,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:c12:sample-1",
+          "wall_time_ms": 1061.3899159943685,
+          "usage": {
+            "input_tokens": 235,
+            "output_tokens": 1
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        },
+        {
+          "sample_index": 2,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:c12:sample-2",
+          "wall_time_ms": 1032.005749992095,
+          "usage": {
+            "input_tokens": 235,
+            "output_tokens": 1
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        }
+      ],
+      "majority_vote": {
+        "good": 3,
+        "bad": 0,
+        "abstain": 0,
+        "verdict": "good",
+        "tie_broken": false
+      },
+      "tags": [
+        "supporter",
+        "T1",
+        "etiology",
+        "dialectical-high"
+      ]
+    },
+    {
+      "id": "a1",
+      "premises": [
+        "ad",
+        "bi"
+      ],
+      "conclusions": [
+        "ards"
+      ],
+      "analyst_verdicts": [
+        "good"
+      ],
+      "model_verdict": "good",
+      "samples": [
+        {
+          "sample_index": 0,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:a1:sample-0",
+          "wall_time_ms": 1343.3182089356706,
+          "usage": {
+            "input_tokens": 224,
+            "output_tokens": 1
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        },
+        {
+          "sample_index": 1,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:a1:sample-1",
+          "wall_time_ms": 1022.5499579682946,
+          "usage": {
+            "input_tokens": 224,
+            "output_tokens": 1
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        },
+        {
+          "sample_index": 2,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:a1:sample-2",
+          "wall_time_ms": 1134.140208014287,
+          "usage": {
+            "input_tokens": 224,
+            "output_tokens": 1
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        }
+      ],
+      "majority_vote": {
+        "good": 3,
+        "bad": 0,
+        "abstain": 0,
+        "verdict": "good",
+        "tie_broken": false
+      },
+      "tags": [
+        "base-inference",
+        "T2",
+        "dialectical-low"
+      ]
+    },
+    {
+      "id": "a2",
+      "premises": [
+        "ad",
+        "bi",
+        "pf"
+      ],
+      "conclusions": [
+        "ards"
+      ],
+      "analyst_verdicts": [
+        "good"
+      ],
+      "model_verdict": "good",
+      "samples": [
+        {
+          "sample_index": 0,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:a2:sample-0",
+          "wall_time_ms": 1227.4898750474676,
+          "usage": {
+            "input_tokens": 243,
+            "output_tokens": 1
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        },
+        {
+          "sample_index": 1,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:a2:sample-1",
+          "wall_time_ms": 1092.1025830321014,
+          "usage": {
+            "input_tokens": 243,
+            "output_tokens": 1
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        },
+        {
+          "sample_index": 2,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:a2:sample-2",
+          "wall_time_ms": 1665.424917009659,
+          "usage": {
+            "input_tokens": 243,
+            "output_tokens": 1
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        }
+      ],
+      "majority_vote": {
+        "good": 3,
+        "bad": 0,
+        "abstain": 0,
+        "verdict": "good",
+        "tie_broken": false
+      },
+      "tags": [
+        "supporter",
+        "T2",
+        "criterion",
+        "dialectical-low"
+      ]
+    },
+    {
+      "id": "a3",
+      "premises": [
+        "ad",
+        "bi",
+        "sep"
+      ],
+      "conclusions": [
+        "ards"
+      ],
+      "analyst_verdicts": [
+        "good"
+      ],
+      "model_verdict": "good",
+      "samples": [
+        {
+          "sample_index": 0,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:a3:sample-0",
+          "wall_time_ms": 2123.038375051692,
+          "usage": {
+            "input_tokens": 232,
+            "output_tokens": 1
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        },
+        {
+          "sample_index": 1,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:a3:sample-1",
+          "wall_time_ms": 1020.9939579945058,
+          "usage": {
+            "input_tokens": 232,
+            "output_tokens": 1
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        },
+        {
+          "sample_index": 2,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:a3:sample-2",
+          "wall_time_ms": 1052.2300408920273,
+          "usage": {
+            "input_tokens": 232,
+            "output_tokens": 1
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        }
+      ],
+      "majority_vote": {
+        "good": 3,
+        "bad": 0,
+        "abstain": 0,
+        "verdict": "good",
+        "tie_broken": false
+      },
+      "tags": [
+        "supporter",
+        "T2",
+        "etiology",
+        "dialectical-low"
+      ]
+    },
+    {
+      "id": "a4",
+      "premises": [
+        "ad",
+        "asp",
+        "bi"
+      ],
+      "conclusions": [
+        "ards"
+      ],
+      "analyst_verdicts": [
+        "good"
+      ],
+      "model_verdict": "abstain",
+      "samples": [
+        {
+          "sample_index": 0,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:a4:sample-0",
+          "wall_time_ms": 1154.77608400397,
+          "usage": {
+            "input_tokens": 232,
+            "output_tokens": 1
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        },
+        {
+          "sample_index": 1,
+          "raw_response": "ABSTAIN",
+          "parsed_verdict": "abstain",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:a4:sample-1",
+          "wall_time_ms": 1975.9835000149906,
+          "usage": {
+            "input_tokens": 232,
+            "output_tokens": 3
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        },
+        {
+          "sample_index": 2,
+          "raw_response": "ABSTAIN",
+          "parsed_verdict": "abstain",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:a4:sample-2",
+          "wall_time_ms": 1068.1958330096677,
+          "usage": {
+            "input_tokens": 232,
+            "output_tokens": 3
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        }
+      ],
+      "majority_vote": {
+        "good": 1,
+        "bad": 0,
+        "abstain": 2,
+        "verdict": "abstain",
+        "tie_broken": false
+      },
+      "tags": [
+        "supporter",
+        "T2",
+        "etiology",
+        "dialectical-low"
+      ]
+    },
+    {
+      "id": "a5",
+      "premises": [
+        "ad",
+        "bi",
+        "tr"
+      ],
+      "conclusions": [
+        "ards"
+      ],
+      "analyst_verdicts": [
+        "good"
+      ],
+      "model_verdict": "abstain",
+      "samples": [
+        {
+          "sample_index": 0,
+          "raw_response": "ABSTAIN",
+          "parsed_verdict": "abstain",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:a5:sample-0",
+          "wall_time_ms": 2618.9569159178063,
+          "usage": {
+            "input_tokens": 232,
+            "output_tokens": 3
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        },
+        {
+          "sample_index": 1,
+          "raw_response": "ABSTAIN",
+          "parsed_verdict": "abstain",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:a5:sample-1",
+          "wall_time_ms": 1195.0643750606105,
+          "usage": {
+            "input_tokens": 232,
+            "output_tokens": 3
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        },
+        {
+          "sample_index": 2,
+          "raw_response": "ABSTAIN",
+          "parsed_verdict": "abstain",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:a5:sample-2",
+          "wall_time_ms": 1026.4796670526266,
+          "usage": {
+            "input_tokens": 232,
+            "output_tokens": 3
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        }
+      ],
+      "majority_vote": {
+        "good": 0,
+        "bad": 0,
+        "abstain": 3,
+        "verdict": "abstain",
+        "tie_broken": false
+      },
+      "tags": [
+        "supporter",
+        "T2",
+        "etiology",
+        "dialectical-low"
+      ]
+    },
+    {
+      "id": "a6",
+      "premises": [
+        "ad",
+        "bi",
+        "lv"
+      ],
+      "conclusions": [
+        "ards"
+      ],
+      "analyst_verdicts": [
+        "bad"
+      ],
+      "model_verdict": "bad",
+      "samples": [
+        {
+          "sample_index": 0,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:a6:sample-0",
+          "wall_time_ms": 1120.6460000248626,
+          "usage": {
+            "input_tokens": 240,
+            "output_tokens": 1
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        },
+        {
+          "sample_index": 1,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:a6:sample-1",
+          "wall_time_ms": 1207.2137499926612,
+          "usage": {
+            "input_tokens": 240,
+            "output_tokens": 1
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        },
+        {
+          "sample_index": 2,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:a6:sample-2",
+          "wall_time_ms": 1260.5782920727506,
+          "usage": {
+            "input_tokens": 240,
+            "output_tokens": 1
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        }
+      ],
+      "majority_vote": {
+        "good": 0,
+        "bad": 3,
+        "abstain": 0,
+        "verdict": "bad",
+        "tie_broken": false
+      },
+      "tags": [
+        "defeater",
+        "T2",
+        "competing-finding",
+        "dialectical-medium"
+      ]
+    },
+    {
+      "id": "a7",
+      "premises": [
+        "ad",
+        "bi",
+        "kb"
+      ],
+      "conclusions": [
+        "ards"
+      ],
+      "analyst_verdicts": [
+        "bad"
+      ],
+      "model_verdict": "bad",
+      "samples": [
+        {
+          "sample_index": 0,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:a7:sample-0",
+          "wall_time_ms": 1235.1245840545744,
+          "usage": {
+            "input_tokens": 235,
+            "output_tokens": 1
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        },
+        {
+          "sample_index": 1,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:a7:sample-1",
+          "wall_time_ms": 1242.1845420030877,
+          "usage": {
+            "input_tokens": 235,
+            "output_tokens": 1
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        },
+        {
+          "sample_index": 2,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:a7:sample-2",
+          "wall_time_ms": 1179.7316250158474,
+          "usage": {
+            "input_tokens": 235,
+            "output_tokens": 1
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        }
+      ],
+      "majority_vote": {
+        "good": 0,
+        "bad": 3,
+        "abstain": 0,
+        "verdict": "bad",
+        "tie_broken": false
+      },
+      "tags": [
+        "defeater",
+        "T2",
+        "competing-finding",
+        "dialectical-medium"
+      ]
+    },
+    {
+      "id": "a8",
+      "premises": [
+        "ad",
+        "bi",
+        "lv",
+        "pf"
+      ],
+      "conclusions": [
+        "ards"
+      ],
+      "analyst_verdicts": [
+        "bad"
+      ],
+      "model_verdict": "bad",
+      "samples": [
+        {
+          "sample_index": 0,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:a8:sample-0",
+          "wall_time_ms": 1463.8279170030728,
+          "usage": {
+            "input_tokens": 259,
+            "output_tokens": 1
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        },
+        {
+          "sample_index": 1,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:a8:sample-1",
+          "wall_time_ms": 969.4824579637498,
+          "usage": {
+            "input_tokens": 259,
+            "output_tokens": 1
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        },
+        {
+          "sample_index": 2,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:a8:sample-2",
+          "wall_time_ms": 1027.0887499209493,
+          "usage": {
+            "input_tokens": 259,
+            "output_tokens": 1
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        }
+      ],
+      "majority_vote": {
+        "good": 0,
+        "bad": 3,
+        "abstain": 0,
+        "verdict": "bad",
+        "tie_broken": false
+      },
+      "tags": [
+        "mixed-evidence",
+        "T2",
+        "dialectical-high"
+      ]
+    },
+    {
+      "id": "a9",
+      "premises": [
+        "ad",
+        "bi",
+        "cd"
+      ],
+      "conclusions": [
+        "ards"
+      ],
+      "analyst_verdicts": [
+        "good"
+      ],
+      "model_verdict": "abstain",
+      "samples": [
+        {
+          "sample_index": 0,
+          "raw_response": "ABSTAIN",
+          "parsed_verdict": "abstain",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:a9:sample-0",
+          "wall_time_ms": 1259.5552500570193,
+          "usage": {
+            "input_tokens": 235,
+            "output_tokens": 3
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        },
+        {
+          "sample_index": 1,
+          "raw_response": "ABSTAIN",
+          "parsed_verdict": "abstain",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:a9:sample-1",
+          "wall_time_ms": 1141.7298329761252,
+          "usage": {
+            "input_tokens": 235,
+            "output_tokens": 3
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        },
+        {
+          "sample_index": 2,
+          "raw_response": "ABSTAIN",
+          "parsed_verdict": "abstain",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:a9:sample-2",
+          "wall_time_ms": 1080.4340420290828,
+          "usage": {
+            "input_tokens": 235,
+            "output_tokens": 3
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        }
+      ],
+      "majority_vote": {
+        "good": 0,
+        "bad": 0,
+        "abstain": 3,
+        "verdict": "abstain",
+        "tie_broken": false
+      },
+      "tags": [
+        "supporter",
+        "T2",
+        "etiology-ambiguous",
+        "dialectical-medium"
+      ]
+    },
+    {
+      "id": "a10",
+      "premises": [
+        "ad",
+        "asp",
+        "bi",
+        "lv"
+      ],
+      "conclusions": [
+        "ards"
+      ],
+      "analyst_verdicts": [
+        "good"
+      ],
+      "model_verdict": "bad",
+      "samples": [
+        {
+          "sample_index": 0,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:a10:sample-0",
+          "wall_time_ms": 1146.7697080224752,
+          "usage": {
+            "input_tokens": 248,
+            "output_tokens": 1
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        },
+        {
+          "sample_index": 1,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:a10:sample-1",
+          "wall_time_ms": 1004.7919580247253,
+          "usage": {
+            "input_tokens": 248,
+            "output_tokens": 1
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        },
+        {
+          "sample_index": 2,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:a10:sample-2",
+          "wall_time_ms": 1107.9853749834,
+          "usage": {
+            "input_tokens": 248,
+            "output_tokens": 1
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        }
+      ],
+      "majority_vote": {
+        "good": 0,
+        "bad": 3,
+        "abstain": 0,
+        "verdict": "bad",
+        "tie_broken": false
+      },
+      "tags": [
+        "mixed-evidence",
+        "T2",
+        "dialectical-high"
+      ]
+    },
+    {
+      "id": "x1",
+      "premises": [
+        "cpe"
+      ],
+      "conclusions": [
+        "el"
+      ],
+      "analyst_verdicts": [
+        "good"
+      ],
+      "model_verdict": "good",
+      "samples": [
+        {
+          "sample_index": 0,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:x1:sample-0",
+          "wall_time_ms": 2377.1697080228478,
+          "usage": {
+            "input_tokens": 223,
+            "output_tokens": 1
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        },
+        {
+          "sample_index": 1,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:x1:sample-1",
+          "wall_time_ms": 1169.4393329089507,
+          "usage": {
+            "input_tokens": 223,
+            "output_tokens": 1
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        },
+        {
+          "sample_index": 2,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:x1:sample-2",
+          "wall_time_ms": 1143.6611249810085,
+          "usage": {
+            "input_tokens": 223,
+            "output_tokens": 1
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        }
+      ],
+      "majority_vote": {
+        "good": 3,
+        "bad": 0,
+        "abstain": 0,
+        "verdict": "good",
+        "tie_broken": false
+      },
+      "tags": [
+        "cross-cutting",
+        "marker-inference",
+        "dialectical-low"
+      ]
+    },
+    {
+      "id": "x2",
+      "premises": [
+        "ards"
+      ],
+      "conclusions": [
+        "el"
+      ],
+      "analyst_verdicts": [
+        "bad"
+      ],
+      "model_verdict": "bad",
+      "samples": [
+        {
+          "sample_index": 0,
+          "raw_response": "ABSTAIN",
+          "parsed_verdict": "abstain",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:x2:sample-0",
+          "wall_time_ms": 1565.0743329897523,
+          "usage": {
+            "input_tokens": 222,
+            "output_tokens": 3
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        },
+        {
+          "sample_index": 1,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:x2:sample-1",
+          "wall_time_ms": 1199.6363749494776,
+          "usage": {
+            "input_tokens": 222,
+            "output_tokens": 1
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        },
+        {
+          "sample_index": 2,
+          "raw_response": "BAD",
+          "parsed_verdict": "bad",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:x2:sample-2",
+          "wall_time_ms": 1110.0446250056848,
+          "usage": {
+            "input_tokens": 222,
+            "output_tokens": 1
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        }
+      ],
+      "majority_vote": {
+        "good": 0,
+        "bad": 2,
+        "abstain": 1,
+        "verdict": "bad",
+        "tie_broken": false
+      },
+      "tags": [
+        "cross-cutting",
+        "marker-inference",
+        "dialectical-medium"
+      ]
+    },
+    {
+      "id": "x4",
+      "premises": [
+        "cpe",
+        "kb",
+        "lv"
+      ],
+      "conclusions": [
+        "el"
+      ],
+      "analyst_verdicts": [
+        "good"
+      ],
+      "model_verdict": "good",
+      "samples": [
+        {
+          "sample_index": 0,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:x4:sample-0",
+          "wall_time_ms": 1135.7869590865448,
+          "usage": {
+            "input_tokens": 250,
+            "output_tokens": 1
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        },
+        {
+          "sample_index": 1,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:x4:sample-1",
+          "wall_time_ms": 1103.121041902341,
+          "usage": {
+            "input_tokens": 250,
+            "output_tokens": 1
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        },
+        {
+          "sample_index": 2,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:x4:sample-2",
+          "wall_time_ms": 1368.6340000713244,
+          "usage": {
+            "input_tokens": 250,
+            "output_tokens": 1
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        }
+      ],
+      "majority_vote": {
+        "good": 3,
+        "bad": 0,
+        "abstain": 0,
+        "verdict": "good",
+        "tie_broken": false
+      },
+      "tags": [
+        "cross-cutting",
+        "marker-inference",
+        "dialectical-low"
+      ]
+    },
+    {
+      "id": "x5",
+      "premises": [
+        "cv",
+        "iv"
+      ],
+      "conclusions": [
+        "cpe"
+      ],
+      "analyst_verdicts": [
+        "good"
+      ],
+      "model_verdict": "abstain",
+      "samples": [
+        {
+          "sample_index": 0,
+          "raw_response": "ABSTAIN",
+          "parsed_verdict": "abstain",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:x5:sample-0",
+          "wall_time_ms": 1050.5667499965057,
+          "usage": {
+            "input_tokens": 234,
+            "output_tokens": 3
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        },
+        {
+          "sample_index": 1,
+          "raw_response": "ABSTAIN",
+          "parsed_verdict": "abstain",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:x5:sample-1",
+          "wall_time_ms": 1113.9238340547308,
+          "usage": {
+            "input_tokens": 234,
+            "output_tokens": 3
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        },
+        {
+          "sample_index": 2,
+          "raw_response": "ABSTAIN",
+          "parsed_verdict": "abstain",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:x5:sample-2",
+          "wall_time_ms": 1065.929958014749,
+          "usage": {
+            "input_tokens": 234,
+            "output_tokens": 3
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        }
+      ],
+      "majority_vote": {
+        "good": 0,
+        "bad": 0,
+        "abstain": 3,
+        "verdict": "abstain",
+        "tie_broken": false
+      },
+      "tags": [
+        "cross-cutting",
+        "context-only",
+        "dialectical-high"
+      ]
+    },
+    {
+      "id": "x6",
+      "premises": [
+        "cpe"
+      ],
+      "conclusions": [
+        "pv"
+      ],
+      "analyst_verdicts": [
+        "good"
+      ],
+      "model_verdict": "good",
+      "samples": [
+        {
+          "sample_index": 0,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:x6:sample-0",
+          "wall_time_ms": 1199.3027500575408,
+          "usage": {
+            "input_tokens": 216,
+            "output_tokens": 1
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        },
+        {
+          "sample_index": 1,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:x6:sample-1",
+          "wall_time_ms": 1204.550166032277,
+          "usage": {
+            "input_tokens": 216,
+            "output_tokens": 1
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        },
+        {
+          "sample_index": 2,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:x6:sample-2",
+          "wall_time_ms": 1713.6167499702424,
+          "usage": {
+            "input_tokens": 216,
+            "output_tokens": 1
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        }
+      ],
+      "majority_vote": {
+        "good": 3,
+        "bad": 0,
+        "abstain": 0,
+        "verdict": "good",
+        "tie_broken": false
+      },
+      "tags": [
+        "cross-cutting",
+        "consequence",
+        "dialectical-medium"
+      ]
+    },
+    {
+      "id": "x7",
+      "premises": [
+        "ards"
+      ],
+      "conclusions": [
+        "pv"
+      ],
+      "analyst_verdicts": [
+        "bad"
+      ],
+      "model_verdict": "abstain",
+      "samples": [
+        {
+          "sample_index": 0,
+          "raw_response": "ABSTAIN",
+          "parsed_verdict": "abstain",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:x7:sample-0",
+          "wall_time_ms": 1214.6679590223357,
+          "usage": {
+            "input_tokens": 215,
+            "output_tokens": 3
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        },
+        {
+          "sample_index": 1,
+          "raw_response": "ABSTAIN",
+          "parsed_verdict": "abstain",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:x7:sample-1",
+          "wall_time_ms": 1152.7890829602256,
+          "usage": {
+            "input_tokens": 215,
+            "output_tokens": 3
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        },
+        {
+          "sample_index": 2,
+          "raw_response": "ABSTAIN",
+          "parsed_verdict": "abstain",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:x7:sample-2",
+          "wall_time_ms": 1183.407292002812,
+          "usage": {
+            "input_tokens": 215,
+            "output_tokens": 3
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        }
+      ],
+      "majority_vote": {
+        "good": 0,
+        "bad": 0,
+        "abstain": 3,
+        "verdict": "abstain",
+        "tie_broken": false
+      },
+      "tags": [
+        "cross-cutting",
+        "consequence",
+        "dialectical-medium"
+      ]
+    },
+    {
+      "id": "x8",
+      "premises": [
+        "ards",
+        "cpe"
+      ],
+      "conclusions": [
+        "el"
+      ],
+      "analyst_verdicts": [
+        "good"
+      ],
+      "model_verdict": "good",
+      "samples": [
+        {
+          "sample_index": 0,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:x8:sample-0",
+          "wall_time_ms": 1417.3595419852063,
+          "usage": {
+            "input_tokens": 231,
+            "output_tokens": 1
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        },
+        {
+          "sample_index": 1,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:x8:sample-1",
+          "wall_time_ms": 1445.9962079999968,
+          "usage": {
+            "input_tokens": 231,
+            "output_tokens": 1
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        },
+        {
+          "sample_index": 2,
+          "raw_response": "GOOD",
+          "parsed_verdict": "good",
+          "parse_status": "ok",
+          "request_id": "pulm-qwen-2026-05-19-v2:x8:sample-2",
+          "wall_time_ms": 1291.6802909458056,
+          "usage": {
+            "input_tokens": 231,
+            "output_tokens": 1
+          },
+          "finish_reason": "stop",
+          "reasoning_tokens": 0
+        }
+      ],
+      "majority_vote": {
+        "good": 3,
+        "bad": 0,
+        "abstain": 0,
+        "verdict": "good",
+        "tie_broken": false
+      },
+      "tags": [
+        "cross-cutting",
+        "coexistence",
+        "dialectical-high"
+      ]
+    }
+  ]
+}
