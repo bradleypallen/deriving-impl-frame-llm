@@ -116,8 +116,7 @@ class TestResolveVerificationPrompt:
         )
         prompt = resolve_verification_prompt(override)
         assert prompt.user_template == override.template
-        # System preserved from default; analysts who need a custom system
-        # currently have to embed it in the template.
+        # System defaults to DEFAULT_SYSTEM_PROMPT when the override doesn't supply one.
         assert prompt.system == DEFAULT_SYSTEM_PROMPT
         assert prompt.parse_regex == DEFAULT_PARSE_REGEX
 
@@ -128,6 +127,47 @@ class TestResolveVerificationPrompt:
         )
         prompt = resolve_verification_prompt(override)
         assert prompt.parse_regex == r"\[(GOOD|BAD|ABSTAIN)\]"
+
+    def test_override_with_custom_system(self) -> None:
+        override = VerificationPromptOverride(
+            template="Premises: {premise_context}\nConclusion: {conclusion_context}\nVerdict:",
+            system="You are a strict deductive reasoner. Reply GOOD only if the inference is valid.",
+        )
+        prompt = resolve_verification_prompt(override)
+        assert prompt.system == (
+            "You are a strict deductive reasoner. "
+            "Reply GOOD only if the inference is valid."
+        )
+        # User template still substituted.
+        assert prompt.user_template == override.template
+
+    def test_override_with_custom_id(self) -> None:
+        override = VerificationPromptOverride(
+            template="{premise_context} / {conclusion_context}",
+            id="my-defeasible-v1",
+        )
+        prompt = resolve_verification_prompt(override)
+        assert prompt.id == "my-defeasible-v1"
+
+    def test_override_id_falls_back_to_caller_supplied_default(self) -> None:
+        override = VerificationPromptOverride(
+            template="{premise_context} / {conclusion_context}",
+        )
+        prompt = resolve_verification_prompt(override, override_id="explicit-fallback-id")
+        assert prompt.id == "explicit-fallback-id"
+
+    def test_override_all_fields_at_once(self) -> None:
+        override = VerificationPromptOverride(
+            template="P: {premise_context}\nC: {conclusion_context}\n=>",
+            system="You evaluate strict deductive entailment.",
+            parse_regex=r"\b(YES|NO|UNSURE)\b",
+            id="strict-deductive-yes-no-v1",
+        )
+        prompt = resolve_verification_prompt(override)
+        assert prompt.id == "strict-deductive-yes-no-v1"
+        assert prompt.system == "You evaluate strict deductive entailment."
+        assert prompt.user_template == "P: {premise_context}\nC: {conclusion_context}\n=>"
+        assert prompt.parse_regex == r"\b(YES|NO|UNSURE)\b"
 
 
 # ---- VerificationPrompt structure ------------------------------------------

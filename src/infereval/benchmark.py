@@ -102,12 +102,27 @@ class ContextBuilders(BaseModel):
 
 
 class VerificationPromptOverride(BaseModel):
-    """Optional benchmark-level override of the framework's default verification prompt."""
+    """Optional benchmark-level override of the framework's default verification prompt.
+
+    All four fields are optional in practice (``template`` is required by
+    the schema since it is the minimal thing an override needs to
+    contribute). When a field is ``None`` the framework default is used:
+
+    - :attr:`system` ``None`` → :data:`infereval.prompts.DEFAULT_SYSTEM_PROMPT`.
+    - :attr:`parse_regex` ``None`` → :data:`infereval.prompts.DEFAULT_PARSE_REGEX`.
+    - :attr:`id` ``None`` → the caller-supplied ``override_id`` parameter to
+      :func:`infereval.prompts.resolve_verification_prompt`.
+
+    Adding the ``system`` field makes the paraphrase-axis experiment
+    fully JSON-drivable (no Python required to vary the verification prompt).
+    """
 
     model_config = ConfigDict(extra="forbid")
 
     template: str
+    system: str | None = None
     parse_regex: str | None = None
+    id: str | None = None
 
 
 class RSRTarget(BaseModel):
