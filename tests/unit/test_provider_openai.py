@@ -140,6 +140,65 @@ class TestRequestConstruction:
         assert kwargs["max_tokens"] == 32
         assert "max_completion_tokens" not in kwargs
 
+    # --- Temperature handling for GPT-5+/o-series (Issue #20) ---
+
+    def test_temperature_skipped_for_gpt5(self) -> None:
+        # GPT-5.x rejects 'temperature' at any non-default value with 400
+        # invalid_request_error. The provider must skip the parameter
+        # entirely for these models so the request still goes through.
+        mock_client = MagicMock()
+        mock_client.chat.completions.create.return_value = _fake_response()
+        p = OpenAIProvider("gpt-5.5", client=mock_client)
+        p.sample(SampleRequest(prompt="Q", temperature=0.0))
+        kwargs = mock_client.chat.completions.create.call_args.kwargs
+        assert "temperature" not in kwargs
+
+    def test_temperature_skipped_for_gpt5_4(self) -> None:
+        # Same rule applies to the 5.4 generation that's been in the wild
+        # for the cross-family experiment.
+        mock_client = MagicMock()
+        mock_client.chat.completions.create.return_value = _fake_response()
+        p = OpenAIProvider("gpt-5.4", client=mock_client)
+        p.sample(SampleRequest(prompt="Q", temperature=0.7))
+        kwargs = mock_client.chat.completions.create.call_args.kwargs
+        assert "temperature" not in kwargs
+
+    def test_temperature_skipped_for_o_series(self) -> None:
+        # The o-series reasoning models share the constraint.
+        mock_client = MagicMock()
+        mock_client.chat.completions.create.return_value = _fake_response()
+        p = OpenAIProvider("o4-mini", client=mock_client)
+        p.sample(SampleRequest(prompt="Q", temperature=0.5))
+        kwargs = mock_client.chat.completions.create.call_args.kwargs
+        assert "temperature" not in kwargs
+
+    def test_temperature_skipped_for_openrouter_prefixed_gpt5(self) -> None:
+        # The vendor-prefixed model id used by OpenRouter should match.
+        mock_client = MagicMock()
+        mock_client.chat.completions.create.return_value = _fake_response()
+        p = OpenAIProvider("openai/gpt-5.5", client=mock_client)
+        p.sample(SampleRequest(prompt="Q", temperature=0.0))
+        kwargs = mock_client.chat.completions.create.call_args.kwargs
+        assert "temperature" not in kwargs
+
+    def test_temperature_kept_for_gpt4o(self) -> None:
+        # Pre-5.x non-reasoning models still accept temperature; the skip
+        # must NOT apply (regression guard).
+        p, client = _provider_with_mock_client(_fake_response())  # uses gpt-4o
+        p.sample(SampleRequest(prompt="Q", temperature=0.3))
+        kwargs = client.chat.completions.create.call_args.kwargs
+        assert kwargs["temperature"] == 0.3
+
+    def test_temperature_kept_for_gpt41(self) -> None:
+        # GPT-4.1 (the baseline model in the paraphrase-axis experiment)
+        # still accepts temperature.
+        mock_client = MagicMock()
+        mock_client.chat.completions.create.return_value = _fake_response()
+        p = OpenAIProvider("gpt-4.1", client=mock_client)
+        p.sample(SampleRequest(prompt="Q", temperature=1.0))
+        kwargs = mock_client.chat.completions.create.call_args.kwargs
+        assert kwargs["temperature"] == 1.0
+
 
 # ---- Response parsing -----------------------------------------------------
 
