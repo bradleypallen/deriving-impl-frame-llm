@@ -58,12 +58,20 @@ class ProviderSampleError(ProviderError):
 
 @dataclass(frozen=True)
 class SampleRequest:
-    """A single completion request issued to a provider."""
+    """A single completion request issued to a provider.
+
+    The ``max_tokens`` default of 1024 is sized for current frontier models
+    that consume budget on silent internal reasoning (DeepSeek v4-flash,
+    OpenAI o-series, Gemini 2.5 Pro). Pre-reasoning models will only emit
+    a handful of tokens for a one-word verdict regardless of this cap, so
+    the higher default is cheap insurance against budget-clipping. See
+    ``docs/providers.md`` for per-provider guidance.
+    """
 
     prompt: str
     system: str | None = None
     temperature: float = 1.0
-    max_tokens: int = 32
+    max_tokens: int = 1024
     top_p: float | None = None
     seed: int | None = None
     stop: tuple[str, ...] = ()
@@ -71,9 +79,27 @@ class SampleRequest:
     """Client-side correlation id propagated to logs and to :attr:`SampleResult.request_id`."""
 
 
+#: Provider-side finish reasons that signal the response was cut off by the
+#: ``max_tokens`` budget rather than the model deciding to stop. OpenAI uses
+#: ``"length"`` (Chat Completions API and Responses API); Anthropic Messages
+#: uses ``"max_tokens"``. The set is the union so callers can detect budget
+#: clipping without per-provider branching.
+BUDGET_FINISH_REASONS: frozenset[str] = frozenset({"length", "max_tokens"})
+
+
 @dataclass(frozen=True)
 class SampleResult:
-    """One completed sample from a provider."""
+    """One completed sample from a provider.
+
+    The ``finish_reason`` and ``reasoning_tokens`` fields surface
+    provider-side stop-reason and reasoning-token-consumption metadata so
+    that downstream code (the endorser, the JSONL log, the evaluation
+    JSON) can distinguish *budget-clipped* abstains (model ran out of
+    tokens on silent internal reasoning) from *genuine* abstains (model
+    declined to commit). The values are passed through verbatim from
+    each provider — see :data:`BUDGET_FINISH_REASONS` for the canonical
+    union of values that signal a budget hit.
+    """
 
     text: str
     provider: str
@@ -83,6 +109,14 @@ class SampleResult:
     usage: Mapping[str, int] = field(default_factory=dict)
     raw: Mapping[str, Any] | None = None
     """Provider-native response payload, when available, for forensic inspection."""
+    finish_reason: str | None = None
+    """Provider-side stop reason. OpenAI: ``"stop"`` / ``"length"`` / ...;
+    Anthropic: ``"end_turn"`` / ``"max_tokens"`` / ``"stop_sequence"`` / ....
+    ``None`` if the provider didn't report one."""
+    reasoning_tokens: int | None = None
+    """Count of tokens consumed by silent internal reasoning, where the
+    provider exposes it (OpenAI: ``usage.completion_tokens_details.reasoning_tokens``).
+    ``None`` if not reported."""
 
 
 # ---- Retry policy --------------------------------------------------------

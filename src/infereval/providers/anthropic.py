@@ -129,6 +129,7 @@ class AnthropicProvider(BaseProvider):
 
         usage_obj = getattr(response, "usage", None)
         usage: dict[str, int] = {}
+        reasoning_tokens: int | None = None
         if usage_obj is not None:
             in_tok = getattr(usage_obj, "input_tokens", None)
             out_tok = getattr(usage_obj, "output_tokens", None)
@@ -136,6 +137,11 @@ class AnthropicProvider(BaseProvider):
                 usage["input_tokens"] = in_tok
             if isinstance(out_tok, int):
                 usage["output_tokens"] = out_tok
+            # Anthropic's extended-thinking models expose a ``thinking_tokens``
+            # subfield in some SDK versions; fall back to None when absent.
+            think_tok = getattr(usage_obj, "thinking_tokens", None)
+            if isinstance(think_tok, int):
+                reasoning_tokens = think_tok
 
         raw: dict[str, Any] | None = None
         if hasattr(response, "model_dump"):
@@ -147,6 +153,12 @@ class AnthropicProvider(BaseProvider):
         provider_request_id = getattr(response, "id", None)
         request_id = req.request_id if req.request_id is not None else provider_request_id
 
+        # Anthropic's stop_reason vocabulary: "end_turn", "max_tokens",
+        # "stop_sequence", "tool_use", "pause_turn", "refusal".
+        finish_reason = getattr(response, "stop_reason", None)
+        if not isinstance(finish_reason, str):
+            finish_reason = None
+
         log_event(
             log,
             "provider.anthropic.sample",
@@ -155,6 +167,8 @@ class AnthropicProvider(BaseProvider):
             wall_time_ms=wall_time_ms,
             input_tokens=usage.get("input_tokens"),
             output_tokens=usage.get("output_tokens"),
+            finish_reason=finish_reason,
+            reasoning_tokens=reasoning_tokens,
         )
 
         return SampleResult(
@@ -165,6 +179,8 @@ class AnthropicProvider(BaseProvider):
             wall_time_ms=wall_time_ms,
             usage=usage,
             raw=raw,
+            finish_reason=finish_reason,
+            reasoning_tokens=reasoning_tokens,
         )
 
     def _is_transient(self, exc: Exception) -> bool:

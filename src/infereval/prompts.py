@@ -17,12 +17,9 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from typing import Literal
 
 from .benchmark import VerificationPromptOverride
-from .types import Verdict
-
-ParseStatus = Literal["ok", "unparseable", "sample_failed"]
+from .types import ParseStatus, Verdict
 
 DEFAULT_VERIFICATION_PROMPT_ID = "default-v1"
 

@@ -169,7 +169,7 @@
     },
     "ProviderParams": {
       "additionalProperties": true,
-      "description": "Decoding parameters passed to a provider sample call.",
+      "description": "Decoding parameters passed to a provider sample call.\n\nThe ``max_tokens`` default of 1024 is sized for current frontier models\nthat consume budget on silent internal reasoning. See\n:class:`infereval.providers.base.SampleRequest` and\n``docs/providers.md`` for the rationale and per-provider guidance.",
       "properties": {
         "temperature": {
           "default": 1.0,
@@ -177,7 +177,7 @@
           "type": "number"
         },
         "max_tokens": {
-          "default": 32,
+          "default": 1024,
           "title": "Max Tokens",
           "type": "integer"
         },
@@ -237,7 +237,8 @@
           "enum": [
             "ok",
             "unparseable",
-            "sample_failed"
+            "sample_failed",
+            "budget_clipped"
           ],
           "title": "Parse Status",
           "type": "string"
@@ -276,6 +277,30 @@
             }
           ],
           "default": null
+        },
+        "finish_reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Finish Reason"
+        },
+        "reasoning_tokens": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reasoning Tokens"
         }
       },
       "required": [

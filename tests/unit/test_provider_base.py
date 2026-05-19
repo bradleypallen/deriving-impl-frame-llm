@@ -29,7 +29,7 @@ class TestTypes:
         assert r.prompt == "hi"
         assert r.system is None
         assert r.temperature == 1.0
-        assert r.max_tokens == 32
+        assert r.max_tokens == 1024
         assert r.top_p is None
         assert r.seed is None
         assert r.stop == ()

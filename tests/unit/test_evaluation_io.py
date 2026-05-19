@@ -143,6 +143,8 @@ class TestJsonRoundtrip:
                     raw_response="GOOD",
                     parsed_verdict=Verdict.GOOD,
                     wall_time_ms=42.0,
+                    finish_reason="stop",
+                    reasoning_tokens=0 if i % 2 == 0 else 64,
                 )
                 for i in range(5)
             ],
@@ -165,8 +167,43 @@ class TestJsonRoundtrip:
         round_tripped = Evaluation.loads(e.dumps())
         assert round_tripped == e
         assert round_tripped.items[0].samples[2].parsed_verdict == Verdict.GOOD
+        assert round_tripped.items[0].samples[1].finish_reason == "stop"
+        assert round_tripped.items[0].samples[1].reasoning_tokens == 64
         assert round_tripped.items[0].majority_vote is not None
         assert round_tripped.items[0].majority_vote.good == 5
+
+    def test_budget_clipped_sample_round_trips(self) -> None:
+        # A budget-clipped sample carries the new fields and the new
+        # parse_status; round-trip preserves all of them.
+        item = EvaluationItem(
+            id="row-0",
+            premises=["sa"],
+            conclusions=["ra"],
+            analyst_verdicts=[Verdict.GOOD],
+            model_verdict=Verdict.ABSTAIN,
+            samples=[
+                SampleRecord(
+                    sample_index=0,
+                    raw_response="",
+                    parsed_verdict=Verdict.ABSTAIN,
+                    parse_status="budget_clipped",
+                    finish_reason="length",
+                    reasoning_tokens=1024,
+                )
+            ],
+            majority_vote=MajorityVote(good=0, bad=0, abstain=1, verdict=Verdict.ABSTAIN),
+        )
+        e = Evaluation(
+            id="run-budget",
+            benchmark_id="x",
+            model=ModelInfo(provider="mock", model_id="v1"),
+            items=[item],
+        )
+        rt = Evaluation.loads(e.dumps())
+        s = rt.items[0].samples[0]
+        assert s.parse_status == "budget_clipped"
+        assert s.finish_reason == "length"
+        assert s.reasoning_tokens == 1024
 
     def test_premises_serialize_sorted(self) -> None:
         data = _minimal_eval_dict(

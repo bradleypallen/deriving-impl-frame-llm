@@ -18,6 +18,22 @@ from __future__ import annotations
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 from enum import Enum
+from typing import Literal
+
+#: Per-sample parse outcome. Single source of truth shared by the parser
+#: (which only emits the first two values) and by ``SampleRecord`` (which
+#: can carry all four; the latter two are set by the endorser).
+#:
+#: - ``ok`` — parsed a verdict cleanly.
+#: - ``unparseable`` — model produced text but no verdict token matched;
+#:   verdict falls back to ``abstain``.
+#: - ``sample_failed`` — provider call raised after retries; no text.
+#: - ``budget_clipped`` — provider says the response was truncated by
+#:   ``max_tokens`` (OpenAI ``length`` / Anthropic ``max_tokens``); the
+#:   abstain is operational, not a model decision. Set by the endorser
+#:   when an empty/unparseable response co-occurs with a budget finish
+#:   reason.
+ParseStatus = Literal["ok", "unparseable", "sample_failed", "budget_clipped"]
 
 
 class Verdict(str, Enum):

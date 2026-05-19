@@ -17,12 +17,21 @@ def _fake_response(
     input_tokens: int = 7,
     output_tokens: int = 1,
     resp_id: str = "msg_test_123",
+    stop_reason: str | None = "end_turn",
+    thinking_tokens: int | None = None,
 ):
     """A SimpleNamespace mimicking the bits of an anthropic.types.Message we read."""
+    usage_kwargs: dict[str, object] = {
+        "input_tokens": input_tokens,
+        "output_tokens": output_tokens,
+    }
+    if thinking_tokens is not None:
+        usage_kwargs["thinking_tokens"] = thinking_tokens
     return SimpleNamespace(
         id=resp_id,
         content=[SimpleNamespace(text=text, type="text")],
-        usage=SimpleNamespace(input_tokens=input_tokens, output_tokens=output_tokens),
+        usage=SimpleNamespace(**usage_kwargs),
+        stop_reason=stop_reason,
         model_dump=lambda: {"id": resp_id, "content": [{"text": text}]},
     )
 
@@ -78,7 +87,7 @@ class TestRequestConstruction:
         client.messages.create.assert_called_once()
         kwargs = client.messages.create.call_args.kwargs
         assert kwargs["model"] == "claude-haiku-4-5-20251001"
-        assert kwargs["max_tokens"] == 32
+        assert kwargs["max_tokens"] == 1024
         assert kwargs["temperature"] == 1.0
         assert kwargs["messages"] == [
             {"role": "user", "content": "Premises: X. Conclusion: Y. Verdict:"}
@@ -172,6 +181,30 @@ class TestResponseParsing:
         result = p.sample(SampleRequest(prompt="Q"))
         assert result.raw is not None
         assert "id" in result.raw
+
+    def test_finish_reason_populated_from_stop_reason(self) -> None:
+        p, _ = _provider_with_mock_client(_fake_response(stop_reason="end_turn"))
+        result = p.sample(SampleRequest(prompt="Q"))
+        assert result.finish_reason == "end_turn"
+
+    def test_finish_reason_max_tokens_signals_budget_clip(self) -> None:
+        # When Anthropic truncates by max_tokens, the field is the canonical
+        # "budget hit" indicator for downstream code.
+        p, _ = _provider_with_mock_client(_fake_response(stop_reason="max_tokens"))
+        result = p.sample(SampleRequest(prompt="Q"))
+        assert result.finish_reason == "max_tokens"
+
+    def test_reasoning_tokens_from_thinking_tokens(self) -> None:
+        # Extended-thinking models expose thinking_tokens on usage.
+        p, _ = _provider_with_mock_client(_fake_response(thinking_tokens=128))
+        result = p.sample(SampleRequest(prompt="Q"))
+        assert result.reasoning_tokens == 128
+
+    def test_reasoning_tokens_none_when_absent(self) -> None:
+        # Default usage object has no thinking_tokens field; should be None.
+        p, _ = _provider_with_mock_client(_fake_response())
+        result = p.sample(SampleRequest(prompt="Q"))
+        assert result.reasoning_tokens is None
 
     def test_multi_block_content_concatenated(self) -> None:
         resp = SimpleNamespace(
