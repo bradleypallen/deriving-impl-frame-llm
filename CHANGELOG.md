@@ -8,6 +8,52 @@ with the additional commitment that the benchmark and evaluation JSON
 schemas are versioned independently (`schema_version: "1.0"`) and promised
 stable from 1.0 onward, regardless of the framework version.
 
+## [Unreleased]
+
+Targeted for the 0.2.0 milestone. Provider compatibility patches landed
+early during the cross-family experimentation (see below); core 0.2.0
+items remain open.
+
+### Added
+
+- **`experiments/paraphrase_axis_triangulation.py` cross-family sweep**:
+  the script's `MODELS` list now covers 13 frontier models from six
+  families (Anthropic, OpenAI, DeepSeek, Qwen, Gemini, Mistral) plus
+  GPT-4.1 as the original-paper baseline. The script auto-skips models
+  whose API key is missing and isolates per-(model, variant) failures so
+  one bad provider doesn't kill the sweep.
+- **`experiments/results/` directory**: tracked location for committed
+  findings artifacts, sibling to the gitignored `experiments/out/`
+  working directory.
+- **Cross-family findings document** at
+  `experiments/results/cross_family_2026-05-18.md`. Eleven of thirteen
+  frontier models reproduce Simonelli's analyst row exactly under the
+  original δ(ra), an eleven-model independent replication. Includes all
+  78 (Evaluation JSON + JSONL audit log) pairs from the sweep for full
+  reproducibility.
+
+### Fixed
+
+- **OpenAIProvider**: route to `max_completion_tokens` for GPT-5.x and
+  the o-series (o1, o3, o4) reasoning models; keep legacy `max_tokens`
+  for pre-5.x models. OpenAI deprecated `max_tokens` for these families
+  as of mid-2026, and the framework was silently failing every call
+  against them. Closes #9.
+- **AnthropicProvider**: skip the `temperature` parameter for Claude
+  Opus 4.7 and later (the API rejects it as deprecated). Sonnet and
+  Haiku still pass it through unchanged. Closes #10.
+
+### Open (still in scope for 0.2.0)
+
+- #4 — raise default `max_tokens` (still 32, too low for reasoning-capable
+  models). The cross-family sweep used `max_tokens=2048` explicitly.
+- #5 — surface `finish_reason` and `reasoning_tokens` on `SampleRecord`
+  so budget-clipped and provider-side-failed samples are first-class
+  distinguishable from genuine model abstentions at the η level.
+- #6 — allow `system` override in benchmark JSON's `verification_prompt`
+  field (the paraphrase-axis experiment still requires Python to
+  override the system message).
+
 ## [0.1.0] — 2026-05-16
 
 First public release. Implements the methodology of *Note on Simonelli's
