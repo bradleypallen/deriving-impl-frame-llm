@@ -12,6 +12,31 @@ stable from 1.0 onward, regardless of the framework version.
 
 No changes yet.
 
+## [0.2.1] — 2026-05-19
+
+Single-issue patch release. Restores correct evaluation behavior against
+`claude-opus-4-7` (and any Anthropic model) under platform capacity strain.
+
+### Fixed
+
+- **Issue #16** — `AnthropicProvider._is_transient` now classifies HTTP
+  503 (`ServiceUnavailableError`), 504 (`DeadlineExceededError`), and
+  529 (`OverloadedError`) as transient, in addition to the previously
+  recognised `RateLimitError` / `APIConnectionError` / `APITimeoutError`
+  / `InternalServerError`. The corresponding SDK exception subclasses
+  live under `anthropic._exceptions` and are not exported at the
+  top-level namespace, so the fix matches by status code on the public
+  `APIStatusError` base class. Without this fix, 529 storms during
+  capacity events were recorded as `parse_status: sample_failed`,
+  occluding the analyst's verdicts from κ_C / κ_F and depressing
+  coverage. Observed in the wild on 2026-05-19: a 29-item
+  pulmonary-edema benchmark against Opus 4.7 dropped to coverage
+  0.7241 because 22 of 87 samples 529'd; the patched run on the same
+  benchmark recovered to coverage 1.0000 in ~3 minutes wall time vs
+  ~16 minutes for the failed-retry-chain version. Five new unit tests
+  in `tests/unit/test_provider_anthropic.py` cover the new branch and
+  guard the regression boundary (400 must remain non-transient).
+
 ## [0.2.0] — 2026-05-18
 
 Methodology- and provider-level improvements surfaced during 0.1.0 use
