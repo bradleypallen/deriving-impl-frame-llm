@@ -284,6 +284,117 @@ class TestDescribeNewSections:
         assert "verdict distribution by tag group" not in result.output
 
 
+class TestDescribeItemsFlag:
+    """Issue #28: ``--items`` adds an expert-readable item listing."""
+
+    PULM_PATH = REPO_ROOT / "examples" / "pulmonary_edema" / "benchmark.json"
+
+    def test_default_omits_items_section(self) -> None:
+        # The summary output must not change when --items is not supplied.
+        runner = CliRunner()
+        result = runner.invoke(cli, ["describe", str(STOP_SIGN_PATH)])
+        assert "items (" not in result.output
+        # Implication-rendering markers should also be absent.
+        assert " ⊢? " not in result.output
+
+    def test_items_flag_emits_items_section_header(self) -> None:
+        runner = CliRunner()
+        result = runner.invoke(cli, ["describe", "--items", str(STOP_SIGN_PATH)])
+        assert result.exit_code == 0, result.output
+        assert "items (4):" in result.output
+
+    def test_items_renders_resolved_premises_and_conclusion(self) -> None:
+        runner = CliRunner()
+        result = runner.invoke(cli, ["describe", "--items", str(STOP_SIGN_PATH)])
+        # Γ and Δ labels visible.
+        assert "Γ:" in result.output
+        assert "Δ:" in result.output
+        # The stop-sign expressions appear.
+        assert "is a stop sign" in result.output
+        assert "is red" in result.output
+
+    def test_items_renders_verdict_and_tag_annotation(self) -> None:
+        runner = CliRunner()
+        result = runner.invoke(cli, ["describe", "--items", str(STOP_SIGN_PATH)])
+        assert "→  good" in result.output
+        assert "→  bad" in result.output
+        # Stop-sign tags include irrelevant-addition; the bracketed annotation
+        # uses this exact form.
+        assert "[base-inference]" in result.output or "[irrelevant-addition]" in result.output
+
+    def test_items_renders_inline_references_when_present(self) -> None:
+        # Pulmonology benchmark carries item-level references.
+        runner = CliRunner()
+        result = runner.invoke(cli, ["describe", "--items", str(self.PULM_PATH)])
+        assert "references (" in result.output
+        assert "doi:" in result.output
+        assert "note:" in result.output
+        assert "Ware LB, Matthay MA (2005)" in result.output
+        # The a9 FLAG carries through.
+        assert "FLAG FOR PULMONOLOGIST REVIEW" in result.output
+
+    def test_items_groups_by_target_when_tags_present(self) -> None:
+        runner = CliRunner()
+        result = runner.invoke(cli, ["describe", "--items", str(self.PULM_PATH)])
+        assert "T1 (12 items):" in result.output
+        assert "T2 (10 items):" in result.output
+        assert "cross-cutting (7 items):" in result.output
+        # T1 group sorts before T2 sorts before cross-cutting.
+        idx_t1 = result.output.index("T1 (12 items):")
+        idx_t2 = result.output.index("T2 (10 items):")
+        idx_cc = result.output.index("cross-cutting (7 items):")
+        assert idx_t1 < idx_t2 < idx_cc
+
+    def test_items_flat_layout_when_no_target_tags(self, tmp_path: Path) -> None:
+        # Items with only inference-role tags should render as a flat block
+        # (no T1/T2/cross-cutting headers).
+        data = {
+            "schema_version": "1.0",
+            "id": "flat-items",
+            "bearers": {"p": {"expression": "P holds"}, "q": {"expression": "Q follows"}},
+            "analysts": [{"id": "a"}],
+            "items": [
+                {
+                    "id": "i1",
+                    "premises": ["p"],
+                    "conclusions": ["q"],
+                    "analyst_verdicts": ["good"],
+                    "tags": ["custom-tag"],
+                },
+            ],
+        }
+        path = tmp_path / "flat.json"
+        path.write_text(json.dumps(data), encoding="utf-8")
+        runner = CliRunner()
+        result = runner.invoke(cli, ["describe", "--items", str(path)])
+        assert "items (1):" in result.output
+        assert "T1" not in result.output
+        assert "P holds" in result.output
+        assert "Q follows" in result.output
+
+    def test_items_renders_multi_analyst_verdict_tuple(self, tmp_path: Path) -> None:
+        data = {
+            "schema_version": "1.0",
+            "id": "multi-an",
+            "bearers": {"p": {"expression": "P"}, "q": {"expression": "Q"}},
+            "analysts": [{"id": "a"}, {"id": "b"}],
+            "items": [
+                {
+                    "id": "i1",
+                    "premises": ["p"],
+                    "conclusions": ["q"],
+                    "analyst_verdicts": ["good", "bad"],
+                },
+            ],
+        }
+        path = tmp_path / "multi.json"
+        path.write_text(json.dumps(data), encoding="utf-8")
+        runner = CliRunner()
+        result = runner.invoke(cli, ["describe", "--items", str(path)])
+        # Multi-analyst verdict tuple visible on the header line.
+        assert "→  good, bad" in result.output
+
+
 class TestDescribeFailures:
     def test_missing_file(self) -> None:
         runner = CliRunner()

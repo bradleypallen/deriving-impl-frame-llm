@@ -12,6 +12,32 @@ stable from 1.0 onward, regardless of the framework version.
 
 No changes yet.
 
+## [0.2.6] — 2026-05-19
+
+CLI improvement release. Adds an expert-readable per-implication
+listing mode to `infereval describe`.
+
+### Added
+
+- **Issue #28** — `infereval describe --items` (also `-i`). When
+  supplied, prints every implication in a self-contained form a
+  domain expert can read without opening the source JSON:
+  - bearer-id form on the header line (links back to the methodology paper)
+  - resolved English expressions for every premise (`Γ:`) and conclusion (`Δ:`)
+  - analyst verdict (or m-tuple for multi-analyst benchmarks)
+  - tag annotation in `[…]`
+  - full inline reference block — citation + DOI + URL + section + note,
+    each wrapped to 78 cols with continuation indent
+  Items are grouped by target tag (`T1` / `T2` / `cross-cutting`) when
+  those tags are present, otherwise rendered as a single flat block.
+  Off by default so the summary stays compact for large benchmarks.
+  Eight new unit tests cover the flag, the section header, resolved
+  expressions, verdict rendering, inline references (including the
+  pulmonology-benchmark `FLAG FOR PULMONOLOGIST REVIEW` annotation on
+  a9), target-tag grouping with sort order, flat-list fallback for
+  benchmarks without target tags, and the multi-analyst verdict tuple
+  format.
+
 ## [0.2.5] — 2026-05-19
 
 CLI improvement release. Makes `infereval describe` actually useful for

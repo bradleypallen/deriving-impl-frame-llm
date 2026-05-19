@@ -223,9 +223,169 @@ def _render_group_cross_tab(bench: Benchmark) -> None:
     click.echo("")
 
 
+def _render_items(bench: Benchmark) -> None:
+    """Print every item in an expert-readable form (Issue #28).
+
+    For each implication: bearer-id form on the header line (compact,
+    links back to the methodology paper), resolved English expressions
+    for premises and conclusions, analyst verdict(s), tag annotation,
+    and the full reference block — citation + DOI + URL + section + note
+    for every reference attached to the item.
+
+    Items are grouped by target tag (``T1`` / ``T2`` / ``cross-cutting``)
+    when those tags are present, otherwise rendered as a single flat
+    block.
+    """
+    if not bench.items:
+        return
+
+    def _category_of(item: BenchmarkItem) -> str:
+        if not item.tags:
+            return "(other)"
+        for t in item.tags:
+            if len(t) >= 2 and t[0] == "T" and t[1:].isdigit():
+                return str(t)
+            if t == "cross-cutting":
+                return str(t)
+        return "(other)"
+
+    # Group by category if there's at least one target/cross-cutting tag.
+    groups: dict[str, list[BenchmarkItem]] = {}
+    for item in bench.items:
+        groups.setdefault(_category_of(item), []).append(item)
+    has_target_groups = any(g != "(other)" for g in groups)
+
+    def _sort_key(g: str) -> tuple[int, str]:
+        if g.startswith("T") and g[1:].isdigit():
+            return (0, g.zfill(4))
+        if g == "cross-cutting":
+            return (1, g)
+        return (2, g)
+
+    def _item_sort(item: BenchmarkItem) -> tuple[str, int, str]:
+        # Sort within group by leading-letter then numeric suffix so
+        # c1 < c2 < c10 < c11 (string sort would give c1, c10, c11, c2).
+        prefix = item.id[:1]
+        rest = item.id[1:]
+        return (prefix, int(rest) if rest.isdigit() else 0, item.id)
+
+    click.echo(f"items ({bench.n}):")
+    click.echo("")
+
+    def _render_one(item: BenchmarkItem, indent: str = "    ") -> None:
+        pre_ids = "{" + ", ".join(sorted(item.premises)) + "}"
+        con_ids = "{" + ", ".join(sorted(item.conclusions)) + "}"
+
+        # Verdict(s). For single-analyst, render as ``→ good``; for
+        # multi-analyst, render as ``→ good, bad, good`` so the per-
+        # analyst tuple is visible to the reader.
+        if bench.m == 1:
+            verdict_str = f"→  {item.analyst_verdicts[0]}"
+        else:
+            verdict_str = "→  " + ", ".join(item.analyst_verdicts)
+        tag_annot = f"   [{', '.join(item.tags)}]" if item.tags else ""
+
+        click.echo(f"{indent}{item.id}  {pre_ids} ⊢? {con_ids}  {verdict_str}{tag_annot}")
+
+        # Γ premises in English. Wrap each long expression under the
+        # value column for readability on narrow terminals.
+        body_indent = indent + "    "
+        gamma_label = body_indent + "Γ: "
+        gamma_cont = body_indent + "   "
+        if item.premises:
+            premises_sorted = sorted(item.premises)
+            for i, pid in enumerate(premises_sorted):
+                expr = bench.bearers[pid].expression
+                lead = gamma_label if i == 0 else gamma_cont
+                click.echo(
+                    textwrap.fill(
+                        f"{lead}{expr}",
+                        width=_WRAP,
+                        subsequent_indent=gamma_cont,
+                        break_long_words=False,
+                        break_on_hyphens=False,
+                    )
+                )
+
+        delta_label = body_indent + "Δ: "
+        delta_cont = body_indent + "   "
+        if item.conclusions:
+            for i, cid in enumerate(sorted(item.conclusions)):
+                expr = bench.bearers[cid].expression
+                lead = delta_label if i == 0 else delta_cont
+                click.echo(
+                    textwrap.fill(
+                        f"{lead}{expr}",
+                        width=_WRAP,
+                        subsequent_indent=delta_cont,
+                        break_long_words=False,
+                        break_on_hyphens=False,
+                    )
+                )
+
+        # References, if any.
+        if item.references:
+            click.echo(f"{body_indent}references ({len(item.references)}):")
+            for idx, ref in enumerate(item.references, start=1):
+                num = f"{body_indent}  {idx}. "
+                cont = " " * len(num)
+                click.echo(
+                    textwrap.fill(
+                        f"{num}{ref.citation}",
+                        width=_WRAP,
+                        subsequent_indent=cont,
+                        break_long_words=False,
+                        break_on_hyphens=False,
+                    )
+                )
+                if ref.doi:
+                    click.echo(f"{cont}doi: {ref.doi}")
+                if ref.url:
+                    click.echo(f"{cont}url: {ref.url}")
+                if ref.section:
+                    click.echo(f"{cont}section: {ref.section}")
+                if ref.note:
+                    note_lead = f"{cont}note: "
+                    note_cont = cont + "      "
+                    click.echo(
+                        textwrap.fill(
+                            f"{note_lead}{ref.note}",
+                            width=_WRAP,
+                            subsequent_indent=note_cont,
+                            break_long_words=False,
+                            break_on_hyphens=False,
+                        )
+                    )
+
+    if has_target_groups:
+        for cat in sorted(groups, key=_sort_key):
+            items = sorted(groups[cat], key=_item_sort)
+            click.echo(f"  {cat} ({len(items)} items):")
+            click.echo("")
+            for item in items:
+                _render_one(item)
+                click.echo("")
+    else:
+        for item in sorted(bench.items, key=_item_sort):
+            _render_one(item, indent="  ")
+            click.echo("")
+
+
 @click.command("describe", help="Print a summary of a benchmark JSON file.")
 @click.argument("path", type=click.Path(exists=True, dir_okay=False, path_type=Path))
-def describe_cmd(path: Path) -> None:
+@click.option(
+    "--items",
+    "show_items",
+    is_flag=True,
+    default=False,
+    help=(
+        "Also print every implication in expert-readable form: bearer-id "
+        "form, resolved English expressions for Γ and Δ, analyst verdict(s), "
+        "tags, and the full inline reference block. Verbose; intended for "
+        "domain-expert review."
+    ),
+)
+def describe_cmd(path: Path, show_items: bool = False) -> None:
     """Print a benchmark summary (id, |B|, |β|, m, label distribution, κ_F*)."""
     log.info("describe.start path=%s", path)
     bench = Benchmark.load(path)
@@ -295,5 +455,10 @@ def describe_cmd(path: Path) -> None:
             by_target[key] = by_target.get(key, 0) + 1
         for (X, A), count in sorted(by_target.items(), key=lambda kv: (-kv[1], kv[0])):
             click.echo(f"  ⟨{{{','.join(X)}}}, {{{','.join(A)}}}⟩: {count}")
+        click.echo("")
+
+    # Item listing (Issue #28): expert-readable per-implication rendering.
+    if show_items:
+        _render_items(bench)
 
     log.info("describe.ok path=%s", path)
