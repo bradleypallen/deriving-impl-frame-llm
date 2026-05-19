@@ -54,6 +54,20 @@ def _uses_max_completion_tokens(model_id: str) -> bool:
     return bare.startswith(("o1", "o3", "o4", "o5"))
 
 
+def _rejects_temperature(model_id: str) -> bool:
+    """Detect OpenAI models that reject any ``temperature`` other than the default 1.
+
+    As of 2026-05, GPT-5.x and the o-series reasoning models (o1, o3, o4-*)
+    return ``400 invalid_request_error`` if ``temperature`` is supplied at
+    any value other than 1.0. The framework's default decoding params use
+    ``temperature=1.0``, but evaluations frequently set 0.0 for
+    determinism; we strip the parameter for these models so the rest of
+    the API call still goes through. The set matches
+    :func:`_uses_max_completion_tokens` — same generation of models.
+    """
+    return _uses_max_completion_tokens(model_id)
+
+
 class OpenAIProvider(BaseProvider):
     """OpenAI Chat Completions backend.
 
@@ -117,11 +131,14 @@ class OpenAIProvider(BaseProvider):
         kwargs: dict[str, Any] = {
             "model": self.model_id,
             "messages": messages,
-            "temperature": req.temperature,
         }
-        # GPT-5.x and the o-series reasoning models (o1, o3, o4-...) require
-        # ``max_completion_tokens`` and reject the legacy ``max_tokens`` param.
-        # We sniff the model id to route to the right one.
+        # GPT-5.x and the o-series reasoning models (o1, o3, o4-...) reject
+        # any temperature other than the default 1.0 -- skip the parameter
+        # for those models so the rest of the request still goes through.
+        if not _rejects_temperature(self.model_id):
+            kwargs["temperature"] = req.temperature
+        # The same generation requires ``max_completion_tokens`` and rejects
+        # the legacy ``max_tokens`` param.
         if _uses_max_completion_tokens(self.model_id):
             kwargs["max_completion_tokens"] = req.max_tokens
         else:

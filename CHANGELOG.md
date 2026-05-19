@@ -12,6 +12,32 @@ stable from 1.0 onward, regardless of the framework version.
 
 No changes yet.
 
+## [0.2.3] — 2026-05-19
+
+Single-issue patch release. Restores correct evaluation behavior against
+GPT-5.x and the o-series reasoning models when the caller asks for a
+non-default temperature (e.g. ``temperature=0.0`` for determinism).
+
+### Fixed
+
+- **Issue #20** — `OpenAIProvider` now skips the ``temperature`` parameter
+  for GPT-5.x and the o-series reasoning models (o1, o3, o4-*), which
+  reject any value other than the default 1.0 with HTTP 400
+  ``invalid_request_error``. Detection uses a new
+  ``_rejects_temperature(model_id: str)`` predicate that matches the same
+  model set as ``_uses_max_completion_tokens`` — same generation of
+  models, same set of API constraints. The requested temperature is
+  still recorded in ``ProviderParams`` and the evaluation JSON for
+  audit-trail purposes (same posture as Anthropic's handling of ``seed``
+  for ``claude-*``). Without this fix, any evaluation against
+  ``gpt-5.x`` or an o-series model with ``--temperature 0.0`` (the
+  default ``-o`` flag in our experimental scripts) had every sample
+  return as ``parse_status: sample_failed`` and every item abstain.
+  Six new unit tests in ``tests/unit/test_provider_openai.py`` cover
+  the new predicate across the GPT-5 generation, the o-series, and the
+  OpenRouter vendor-prefixed model id, plus a regression guard
+  confirming GPT-4o and GPT-4.1 still accept ``temperature``.
+
 ## [0.2.2] — 2026-05-19
 
 Schema feature release. Adds first-class provenance support for benchmarks.
