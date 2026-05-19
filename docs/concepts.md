@@ -10,6 +10,16 @@ Not "how often does `M` get the right answer to factual questions" (that's stand
 
 The methodology gives you that proxy. It also gives you concrete instruments for asking why `M` disagrees when it does.
 
+## A note on terminology
+
+Two terms that *look* like they might mean the same thing but don't:
+
+- **Item** (`BenchmarkItem`, `EvaluationItem`) — one *row* of the benchmark: an implication `⟨Γ, Δ⟩` paired with analyst verdicts. If your benchmark has 4 items, the analyst labeled 4 implications. This is the unit a supervised-ML reader would intuitively call a "sample" or "example"; `infereval` consistently calls it an **item**.
+
+- **Sample** (`SampleRequest`, `SampleResult`, `SampleRecord`, the `n_samples` parameter) — one *completion drawn from the model*. The methodology samples `M`'s response to a verification prompt `n_samples` times per item (default `n_samples = 5`), parses each completion's verdict token, and majority-votes to compute `E_M`. This is the LLM-literature usage of "sample" — repeated draws from `M`'s output distribution for noise reduction, not rows of a dataset.
+
+So a run with 4 items at `n_samples = 5` issues 20 sample calls total to the provider; the resulting `Evaluation` contains 4 `EvaluationItem`s, each of which contains a list of 5 `SampleRecord`s. Items and samples never collide once you have the vocabulary.
+
 ## The pieces, in order
 
 ### Bearers (`B`)
