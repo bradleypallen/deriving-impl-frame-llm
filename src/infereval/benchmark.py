@@ -31,6 +31,54 @@ from .types import Implication, Verdict
 SCHEMA_VERSION: Literal["1.0"] = "1.0"
 
 
+class Reference(BaseModel):
+    """A traceable provenance entry for a benchmark, bearer, or item.
+
+    The motivating use case is regulated-domain benchmarks (medical, legal,
+    financial) where every non-trivial implication needs a citation to a
+    guideline, statute, or peer-reviewed source. Recording these as
+    structured objects lets downstream tooling render bibliographies,
+    validate DOIs, and connect items to the documents that justify them.
+
+    Only :attr:`citation` is required. The other fields populate when the
+    relevant identifier is known and remain ``None`` otherwise.
+
+    Authoring shorthand: a plain string in any ``references`` list is
+    auto-promoted to a :class:`Reference` with the string as
+    :attr:`citation` and everything else ``None``. See
+    :func:`_promote_reference_shorthand`.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    citation: str
+    doi: str | None = None
+    url: str | None = None
+    section: str | None = None
+    """Pinpoint location within the cited work, e.g. ``"Section 5.2"`` or
+    ``"Hypoxemia criterion"``."""
+    note: str | None = None
+    """What specifically this reference supports, in the author's words."""
+
+
+def _promote_reference_shorthand(v: object) -> object:
+    """Normalize a ``references`` list-entry: strings become ``Reference(citation=s)``.
+
+    Used as a ``mode="before"`` validator on every ``references`` field to
+    let authors write ``["Some citation", {"citation": "...", "doi": "..."}]``
+    interchangeably.
+    """
+    if isinstance(v, list):
+        out: list[object] = []
+        for entry in v:
+            if isinstance(entry, str):
+                out.append({"citation": entry})
+            else:
+                out.append(entry)
+        return out
+    return v
+
+
 class BearerModel(BaseModel):
     """JSON shape for a :class:`infereval.types.Bearer`."""
 
@@ -38,6 +86,14 @@ class BearerModel(BaseModel):
 
     expression: str
     paraphrases: tuple[str, ...] = ()
+    references: list[Reference] = Field(default_factory=list)
+    """Provenance for the bearer's definition, e.g. the guideline section
+    that defines the threshold ``"P/F < 300"`` is measured against."""
+
+    @field_validator("references", mode="before")
+    @classmethod
+    def _promote_refs(cls, v: object) -> object:
+        return _promote_reference_shorthand(v)
 
     def to_runtime(self, bearer_id: str) -> _RuntimeBearer:
         return _RuntimeBearer(
@@ -155,6 +211,11 @@ class BenchmarkItem(BaseModel):
     analyst_verdicts: list[Verdict]
     tags: list[str] = Field(default_factory=list)
     rsr_target: RSRTarget | None = None
+    references: list[Reference] = Field(default_factory=list)
+    """Provenance for this implication: the guideline section, paper, or
+    regulatory document that justifies the analyst's verdict. Empty by
+    default; populating these turns the benchmark into an auditable
+    artifact that a domain expert can cross-check against source material."""
 
     @field_validator("premises", "conclusions", mode="before")
     @classmethod
@@ -162,6 +223,11 @@ class BenchmarkItem(BaseModel):
         if isinstance(v, list):
             return sorted({str(x) for x in v})
         return v
+
+    @field_validator("references", mode="before")
+    @classmethod
+    def _promote_refs(cls, v: object) -> object:
+        return _promote_reference_shorthand(v)
 
     @field_serializer("premises", "conclusions")
     def _serialize_sorted(self, value: list[str]) -> list[str]:
@@ -194,6 +260,17 @@ class Benchmark(BaseModel):
     context_builders: ContextBuilders = Field(default_factory=ContextBuilders)
     verification_prompt: VerificationPromptOverride | None = None
     items: list[BenchmarkItem]
+    references: list[Reference] = Field(default_factory=list)
+    """Corpus-level provenance: the paper, dialogue, or regulatory framework
+    the benchmark is derived from. The stop-sign benchmark would cite
+    Simonelli (2026); a contract-law benchmark would cite the relevant
+    Restatement / UCC sections; a clinical benchmark would cite the
+    governing guidelines."""
+
+    @field_validator("references", mode="before")
+    @classmethod
+    def _promote_refs(cls, v: object) -> object:
+        return _promote_reference_shorthand(v)
 
     @model_validator(mode="after")
     def _check_consistency(self) -> Benchmark:

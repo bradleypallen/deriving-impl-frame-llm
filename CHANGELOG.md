@@ -12,6 +12,42 @@ stable from 1.0 onward, regardless of the framework version.
 
 No changes yet.
 
+## [0.2.2] — 2026-05-19
+
+Schema feature release. Adds first-class provenance support for benchmarks.
+
+### Added
+
+- **Issue #18** — **`Reference` model** and `references: list[Reference]`
+  field on three schema levels: `Benchmark`, `BearerModel`, and
+  `BenchmarkItem`. Motivates regulated-domain benchmarks (medical,
+  legal, financial) where every non-trivial implication needs a citation
+  to a guideline, statute, or peer-reviewed source. `Reference` fields:
+  `citation` (required), `doi`, `url`, `section`, `note`. Authors may
+  pass a plain string anywhere a `Reference` is expected — it
+  auto-promotes to `Reference(citation=s)` via a `mode="before"`
+  validator, so `references: ["Ranieri et al. (2012)"]` and
+  `references: [{"citation": "Ranieri et al. (2012)", "doi": "..."}]`
+  both work. Nine new unit tests in `tests/unit/test_benchmark_io.py`
+  cover the structured form, string shorthand at both item and bearer
+  levels, backwards-compatibility (all-empty defaults on existing
+  benchmarks), populated-everywhere round-tripping, and the `extra
+  = forbid` regression boundary.
+
+### Changed
+
+- **Documentation**: `docs/authoring_benchmarks.md` adds a new "Step 7b:
+  Add references" subsection with a worked example showing both
+  shorthand and structured forms, and a brief justification covering
+  auditability, reproducibility under analyst turnover, and downstream
+  tooling.
+- **Static schema**: `src/infereval/schemas/benchmark.schema.json`
+  regenerated to include the new `$defs.Reference` and the optional
+  `references` arrays at the three levels. `schema_version` stays
+  `"1.0"` — adding optional fields with defaults is the textbook
+  backwards-compatible additive change, and every pre-0.2.2 benchmark
+  validates unchanged.
+
 ## [0.2.1] — 2026-05-19
 
 Single-issue patch release. Restores correct evaluation behavior against

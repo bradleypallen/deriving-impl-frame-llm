@@ -57,6 +57,13 @@
           },
           "title": "Paraphrases",
           "type": "array"
+        },
+        "references": {
+          "items": {
+            "$ref": "#/$defs/Reference"
+          },
+          "title": "References",
+          "type": "array"
         }
       },
       "required": [
@@ -111,6 +118,13 @@
             }
           ],
           "default": null
+        },
+        "references": {
+          "items": {
+            "$ref": "#/$defs/Reference"
+          },
+          "title": "References",
+          "type": "array"
         }
       },
       "required": [
@@ -211,6 +225,69 @@
         "A"
       ],
       "title": "RSRTarget",
+      "type": "object"
+    },
+    "Reference": {
+      "additionalProperties": false,
+      "description": "A traceable provenance entry for a benchmark, bearer, or item.\n\nThe motivating use case is regulated-domain benchmarks (medical, legal,\nfinancial) where every non-trivial implication needs a citation to a\nguideline, statute, or peer-reviewed source. Recording these as\nstructured objects lets downstream tooling render bibliographies,\nvalidate DOIs, and connect items to the documents that justify them.\n\nOnly :attr:`citation` is required. The other fields populate when the\nrelevant identifier is known and remain ``None`` otherwise.\n\nAuthoring shorthand: a plain string in any ``references`` list is\nauto-promoted to a :class:`Reference` with the string as\n:attr:`citation` and everything else ``None``. See\n:func:`_promote_reference_shorthand`.",
+      "properties": {
+        "citation": {
+          "title": "Citation",
+          "type": "string"
+        },
+        "doi": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Doi"
+        },
+        "url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Url"
+        },
+        "section": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Section"
+        },
+        "note": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Note"
+        }
+      },
+      "required": [
+        "citation"
+      ],
+      "title": "Reference",
       "type": "object"
     },
     "TemplateContextBuilder": {
@@ -382,6 +459,13 @@
         "$ref": "#/$defs/BenchmarkItem"
       },
       "title": "Items",
+      "type": "array"
+    },
+    "references": {
+      "items": {
+        "$ref": "#/$defs/Reference"
+      },
+      "title": "References",
       "type": "array"
     }
   },
