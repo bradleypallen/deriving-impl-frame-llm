@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from infereval.benchmark import Benchmark, BenchmarkItem
+from infereval.benchmark import BearerModel, Benchmark, BenchmarkItem, Reference
 from infereval.types import Verdict
 
 # ---- Pydantic validation -------------------------------------------------
@@ -246,3 +246,119 @@ class TestVerificationPromptOverride:
         }
         with pytest.raises(ValidationError):
             Benchmark.model_validate(d)
+
+
+# ---- References ----------------------------------------------------------
+
+
+class TestReferences:
+    """``Reference`` model + per-level ``references`` field (Issue #18)."""
+
+    def test_reference_minimal_only_citation(self) -> None:
+        # Only ``citation`` is required; the rest may be omitted.
+        r = Reference(citation="Berlin def, JAMA 2012")
+        assert r.citation == "Berlin def, JAMA 2012"
+        assert r.doi is None and r.url is None and r.section is None and r.note is None
+
+    def test_reference_full_payload(self) -> None:
+        r = Reference(
+            citation="Maisel et al. (2002). N Engl J Med 347(3), 161-167.",
+            doi="10.1056/NEJMoa020233",
+            url="https://www.nejm.org/doi/full/10.1056/NEJMoa020233",
+            section="Table 2",
+            note="BNP cutoffs and NPV for HF",
+        )
+        dumped = r.model_dump(exclude_none=True)
+        assert dumped["doi"] == "10.1056/NEJMoa020233"
+        assert dumped["section"] == "Table 2"
+        assert dumped["note"] == "BNP cutoffs and NPV for HF"
+
+    def test_reference_rejects_unknown_fields(self) -> None:
+        # ``extra="forbid"`` — typos in field names should fail loudly.
+        with pytest.raises(ValidationError):
+            Reference.model_validate({"citation": "ok", "auther": "typo"})
+
+    def test_string_shorthand_promoted_on_item(self) -> None:
+        # A plain string in the list auto-promotes to Reference(citation=s).
+        item = BenchmarkItem(
+            id="t",
+            premises=["a"],
+            conclusions=["b"],
+            analyst_verdicts=["good"],
+            references=[
+                "Just a string",
+                {"citation": "Structured", "doi": "10.1/foo"},
+            ],
+        )
+        assert len(item.references) == 2
+        assert isinstance(item.references[0], Reference)
+        assert item.references[0].citation == "Just a string"
+        assert item.references[0].doi is None
+        assert item.references[1].citation == "Structured"
+        assert item.references[1].doi == "10.1/foo"
+
+    def test_string_shorthand_promoted_on_bearer(self) -> None:
+        b = BearerModel(expression="X", references=["Source A", "Source B"])
+        assert [r.citation for r in b.references] == ["Source A", "Source B"]
+
+    def test_references_default_empty_on_all_three_levels(
+        self, stop_sign_benchmark_dict: dict
+    ) -> None:
+        # Backwards-compatibility: an existing benchmark JSON with no
+        # ``references`` fields anywhere still validates, and the field
+        # defaults to ``[]`` on Benchmark, every BearerModel, and every
+        # BenchmarkItem.
+        bench = Benchmark.model_validate(stop_sign_benchmark_dict)
+        assert bench.references == []
+        assert all(b.references == [] for b in bench.bearers.values())
+        assert all(it.references == [] for it in bench.items)
+
+    def test_references_populated_at_all_three_levels(
+        self, stop_sign_benchmark_dict: dict
+    ) -> None:
+        d = copy.deepcopy(stop_sign_benchmark_dict)
+        d["references"] = [
+            {
+                "citation": "Simonelli (2026). The Stop Sign Dialogue.",
+                "doi": "10.1234/dialogue",
+            }
+        ]
+        first_bearer_key = next(iter(d["bearers"]))
+        d["bearers"][first_bearer_key]["references"] = ["Carving rationale, p. 3"]
+        d["items"][0]["references"] = [
+            "Allen (2026). Note on Simonelli's Stop Sign Dialogue.",
+            {"citation": "Hlobil & Brandom (2025)", "section": "Definition 3"},
+        ]
+        bench = Benchmark.model_validate(d)
+        assert bench.references[0].doi == "10.1234/dialogue"
+        assert bench.bearers[first_bearer_key].references[0].citation == "Carving rationale, p. 3"
+        assert len(bench.items[0].references) == 2
+        assert bench.items[0].references[1].section == "Definition 3"
+
+    def test_references_round_trip_through_dumps(
+        self, stop_sign_benchmark_dict: dict
+    ) -> None:
+        d = copy.deepcopy(stop_sign_benchmark_dict)
+        d["items"][0]["references"] = [
+            {"citation": "X et al.", "doi": "10.1/x", "section": "Sec 1"},
+        ]
+        bench = Benchmark.model_validate(d)
+        reloaded = Benchmark.loads(bench.dumps())
+        # Round-trip preserves the structured fields.
+        assert reloaded.items[0].references[0].citation == "X et al."
+        assert reloaded.items[0].references[0].doi == "10.1/x"
+        assert reloaded.items[0].references[0].section == "Sec 1"
+        # exclude_none drops the unset fields from the JSON output.
+        json_text = bench.dumps()
+        assert "url" not in json_text
+        assert "note" not in json_text
+
+    def test_reference_in_item_rejects_unknown_field(self) -> None:
+        with pytest.raises(ValidationError):
+            BenchmarkItem(
+                id="t",
+                premises=["a"],
+                conclusions=["b"],
+                analyst_verdicts=["good"],
+                references=[{"citation": "ok", "made_up": True}],
+            )

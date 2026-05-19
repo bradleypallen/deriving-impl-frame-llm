@@ -181,6 +181,45 @@ The validator runs the full Pydantic checks: every bearer id referenced in `prem
 
 For non-Python downstream consumers, the same checks (modulo cross-field ones) live in the committed JSON Schema at [`src/infereval/schemas/benchmark.schema.json`](../src/infereval/schemas/benchmark.schema.json).
 
+## Step 7b: Add references (optional but strongly recommended for regulated domains)
+
+For non-trivial benchmarks — anything beyond a teaching example — every item should be traceable to a source. The schema supports a `references` list on three levels:
+
+- **`Benchmark.references`** — corpus-level provenance: the paper / dialogue / regulatory framework the benchmark is derived from.
+- **`bearers[<id>].references`** — when the bearer definition itself comes from a specific source (e.g. the threshold `"P/F < 300"` is fixed by the Berlin ARDS definition).
+- **`items[i].references`** — the primary use case: the guideline section, paper, or document that justifies the analyst's verdict on that implication.
+
+Each entry is either a plain string (shorthand for `{"citation": "..."}`) or a structured object:
+
+```json
+{
+  "id": "a2",
+  "premises": ["bi", "ad", "pf"],
+  "conclusions": ["ards"],
+  "analyst_verdicts": ["good"],
+  "tags": ["supporter", "criterion"],
+  "references": [
+    "Ware & Matthay (2005). N Engl J Med 353:2788.",
+    {
+      "citation": "Ranieri et al. (2012). Acute respiratory distress syndrome: the Berlin Definition. JAMA 307(23), 2526-2533.",
+      "doi": "10.1001/jama.2012.5669",
+      "section": "Hypoxemia criterion",
+      "note": "P/F < 300 is the moderate-severe threshold"
+    }
+  ]
+}
+```
+
+Fields on a structured `Reference`: `citation` (required, free-form), `doi`, `url`, `section` (pinpoint locator), `note` (what the reference supports, in the author's words). Unknown fields are rejected by validation, so typos in field names fail loudly. All fields beyond `citation` are optional.
+
+Why bother? Three concrete payoffs:
+
+1. **Auditability.** A reviewer who doesn't trust your analyst's verdict on item `a2` can follow the citation to verify the inference is in the standard literature.
+2. **Reproducibility under analyst turnover.** If your domain expert is unavailable later, a new annotator can re-label using the same source material.
+3. **Tooling.** Downstream code can render bibliographies, validate DOIs, or filter benchmarks by source.
+
+`references` defaults to `[]` everywhere — adding them is purely additive and doesn't break existing benchmarks.
+
 ## Step 8: Describe
 
 ```
