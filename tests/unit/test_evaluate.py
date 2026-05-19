@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from infereval.benchmark import Benchmark
+from infereval.benchmark import Benchmark, Reference
 from infereval.evaluation import (
     EndorsementConfig,
     Evaluation,
@@ -194,3 +194,94 @@ class TestFrameFromEvaluation:
         assert frame.contains(Implication.of(["sa", "n"], ["ra"]))
         assert frame.contains(Implication.of(["sa", "n", "nr"], ["ra"]))
         assert not frame.contains(Implication.of(["sa", "ba"], ["ra"]))
+
+
+# ---- References propagation (Issue #22) -----------------------------------
+
+
+class TestReferencesPropagation:
+    """Benchmark-side ``references`` survive ``evaluate()`` into the Evaluation."""
+
+    def _bench_with_refs(self):
+        bench = _stop_sign()
+        # Construct Reference instances directly so we don't trip the
+        # serializer warnings that fire when model_copy bypasses validators.
+        bench = bench.model_copy(update={
+            "references": [
+                Reference(citation="Simonelli (2026). The Stop Sign Dialogue."),
+                Reference(citation="Allen (2026). Note on Simonelli.", doi="10.0/test"),
+            ]
+        })
+        first_item_with_refs = bench.items[0].model_copy(update={
+            "references": [
+                Reference(citation="Hlobil & Brandom (2025)", section="Definition 3"),
+                Reference(citation="Plain string ref"),
+            ]
+        })
+        new_items = [first_item_with_refs] + list(bench.items[1:])
+        return bench.model_copy(update={"items": new_items})
+
+    def test_corpus_references_propagated_to_evaluation(self) -> None:
+        bench = self._bench_with_refs()
+        provider = ScriptedProvider(responses=["GOOD"])
+        eta = evaluate(bench, provider, config=EndorsementConfig(n_samples=1))
+        assert len(eta.references) == 2
+        assert eta.references[0].citation == "Simonelli (2026). The Stop Sign Dialogue."
+        assert eta.references[1].doi == "10.0/test"
+
+    def test_item_references_propagated_to_evaluation_items(self) -> None:
+        bench = self._bench_with_refs()
+        provider = ScriptedProvider(responses=["GOOD"])
+        eta = evaluate(bench, provider, config=EndorsementConfig(n_samples=1))
+        # The stop-sign benchmark file orders items differently from how
+        # they appear in source; find the one whose id matches whatever
+        # _bench_with_refs() decorated. We added refs to bench.items[0]
+        # before calling evaluate(); _bench_id of that item:
+        annotated_id = self._bench_with_refs().items[0].id
+        annotated = next(it for it in eta.items if it.id == annotated_id)
+        assert len(annotated.references) == 2
+        assert annotated.references[0].section == "Definition 3"
+        assert annotated.references[1].citation == "Plain string ref"
+        for it in eta.items:
+            if it.id != annotated_id:
+                assert it.references == []
+        for it in eta.items[1:]:
+            assert it.references == []
+
+    def test_references_survive_dump_load_round_trip(self, tmp_path: Path) -> None:
+        bench = self._bench_with_refs()
+        provider = ScriptedProvider(responses=["GOOD"])
+        eta = evaluate(bench, provider, config=EndorsementConfig(n_samples=1))
+        path = tmp_path / "eta.json"
+        eta.dump(path)
+        reloaded = Evaluation.load(path)
+        assert len(reloaded.references) == 2
+        annotated_id = self._bench_with_refs().items[0].id
+        annotated = next(it for it in reloaded.items if it.id == annotated_id)
+        assert annotated.references[0].section == "Definition 3"
+        assert annotated.references[1].citation == "Plain string ref"
+
+    def test_empty_benchmark_references_yield_empty_evaluation_references(self) -> None:
+        # Backwards-compat regression: an unannotated benchmark produces
+        # an evaluation with all-empty references at both levels.
+        bench = _stop_sign()
+        provider = ScriptedProvider(responses=["GOOD"])
+        eta = evaluate(bench, provider, config=EndorsementConfig(n_samples=1))
+        assert eta.references == []
+        assert all(it.references == [] for it in eta.items)
+
+    def test_evaluation_string_shorthand_promoted(self) -> None:
+        # Round-trip stability when an evaluation JSON is hand-edited with
+        # string-shorthand references (parallel to BenchmarkItem behavior).
+        eta_json = {
+            "id": "test-run",
+            "benchmark_id": "test",
+            "model": {"provider": "mock", "model_id": "scripted-mock-v1"},
+            "items": [],
+            "references": ["A string", {"citation": "Structured"}],
+        }
+        eta = Evaluation.model_validate(eta_json)
+        assert len(eta.references) == 2
+        assert eta.references[0].citation == "A string"
+        assert eta.references[0].doi is None
+        assert eta.references[1].citation == "Structured"

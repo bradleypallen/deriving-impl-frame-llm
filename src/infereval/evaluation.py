@@ -32,6 +32,7 @@ from pydantic import (
 )
 
 from . import __version__
+from .benchmark import Reference, _promote_reference_shorthand
 from .types import Implication, ParseStatus, Verdict
 
 if TYPE_CHECKING:
@@ -158,6 +159,13 @@ class EvaluationItem(BaseModel):
     samples: list[SampleRecord] = Field(default_factory=list)
     majority_vote: MajorityVote | None = None
     tags: list[str] = Field(default_factory=list)
+    references: list[Reference] = Field(default_factory=list)
+    """Per-item provenance, propagated from
+    :attr:`infereval.benchmark.BenchmarkItem.references` at evaluation
+    time. Carries the guideline / paper / regulatory citation that
+    justifies the analyst's verdict so the evaluation JSON is a
+    self-contained, auditable artifact (no need to look up the source
+    benchmark separately)."""
 
     @field_validator("premises", "conclusions", mode="before")
     @classmethod
@@ -165,6 +173,11 @@ class EvaluationItem(BaseModel):
         if isinstance(v, list):
             return sorted({str(x) for x in v})
         return v
+
+    @field_validator("references", mode="before")
+    @classmethod
+    def _promote_refs(cls, v: object) -> object:
+        return _promote_reference_shorthand(v)
 
     @field_serializer("premises", "conclusions")
     def _serialize_sorted(self, value: list[str]) -> list[str]:
@@ -193,6 +206,17 @@ class Evaluation(BaseModel):
     started_at: datetime | None = None
     finished_at: datetime | None = None
     items: list[EvaluationItem]
+    references: list[Reference] = Field(default_factory=list)
+    """Corpus-level provenance, propagated from
+    :attr:`infereval.benchmark.Benchmark.references` at evaluation
+    time. Carries the paper, dialogue, or regulatory framework the
+    benchmark is derived from, so an evaluation JSON read in isolation
+    still names its primary sources."""
+
+    @field_validator("references", mode="before")
+    @classmethod
+    def _promote_refs(cls, v: object) -> object:
+        return _promote_reference_shorthand(v)
 
     @property
     def n(self) -> int:
@@ -357,6 +381,7 @@ def evaluate(
                     samples=record.samples,
                     majority_vote=record.to_majority_vote(),
                     tags=list(bench_item.tags),
+                    references=list(bench_item.references),
                 )
             )
 
@@ -385,4 +410,5 @@ def evaluate(
         started_at=started,
         finished_at=finished,
         items=items,
+        references=list(benchmark.references),
     )
