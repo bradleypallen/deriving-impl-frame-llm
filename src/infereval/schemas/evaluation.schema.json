@@ -5,7 +5,7 @@
   "$defs": {
     "EndorsementConfig": {
       "additionalProperties": false,
-      "description": "Configuration governing how :math:`E_M` is computed.",
+      "description": "Configuration governing how :math:`E_M` is computed.\n\nNote on terminology: ``n_samples`` is the number of *completions\ndrawn from M* per benchmark item, in the LLM-literature sense of\n\"sample\" (one draw from the model's output distribution). It is\n**not** the number of dataset rows \u2014 that is the benchmark's item\ncount and is fixed by the benchmark. The methodology issues\n``n_samples`` provider calls per item, parses each completion's\nverdict token, and majority-votes to compute :math:`E_M` for that\nitem. See ``docs/concepts.md`` for the full terminology note.",
       "properties": {
         "n_samples": {
           "default": 5,

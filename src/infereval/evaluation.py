@@ -76,7 +76,17 @@ class ModelInfo(BaseModel):
 
 
 class EndorsementConfig(BaseModel):
-    """Configuration governing how :math:`E_M` is computed."""
+    """Configuration governing how :math:`E_M` is computed.
+
+    Note on terminology: ``n_samples`` is the number of *completions
+    drawn from M* per benchmark item, in the LLM-literature sense of
+    "sample" (one draw from the model's output distribution). It is
+    **not** the number of dataset rows — that is the benchmark's item
+    count and is fixed by the benchmark. The methodology issues
+    ``n_samples`` provider calls per item, parses each completion's
+    verdict token, and majority-votes to compute :math:`E_M` for that
+    item. See ``docs/concepts.md`` for the full terminology note.
+    """
 
     model_config = ConfigDict(extra="forbid")
 
