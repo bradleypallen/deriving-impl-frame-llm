@@ -12,6 +12,33 @@ stable from 1.0 onward, regardless of the framework version.
 
 No changes yet.
 
+## [0.2.4] — 2026-05-19
+
+Single-issue patch release. Completes the references work begun in
+v0.2.2 (Issue #18) by propagating benchmark-side provenance into the
+evaluation artifact.
+
+### Fixed
+
+- **Issue #22** — `Evaluation` and `EvaluationItem` now carry a
+  `references: list[Reference]` field, populated by `evaluate()` from
+  the source benchmark's corresponding fields. Without this fix, all
+  references on a benchmark (v0.2.2+) were dropped on the floor as soon
+  as `evaluate()` ran, meaning anyone reading just an evaluation JSON
+  file (the primary research artifact — what gets shared, archived,
+  cited, replayed) had no readable provenance trail. The
+  `benchmark_hash` confirms the source benchmark was the right one at
+  run time but does not tell the reader *what guidelines* anchored each
+  item. Five new unit tests in
+  `tests/unit/test_evaluate.py::TestReferencesPropagation` cover the
+  propagation path end-to-end: corpus-level refs, per-item refs,
+  dump+load round-trip, the all-empty-defaults backwards-compatibility
+  regression guard, and the string-shorthand auto-promotion at the
+  evaluation level. Bearer-level references are intentionally not
+  propagated by this fix because `Evaluation` does not currently carry
+  any bearer data — that's its own design question and a separate
+  change.
+
 ## [0.2.3] — 2026-05-19
 
 Single-issue patch release. Restores correct evaluation behavior against
