@@ -12,6 +12,51 @@ stable from 1.0 onward, regardless of the framework version.
 
 No changes yet.
 
+## [0.2.5] — 2026-05-19
+
+CLI improvement release. Makes `infereval describe` actually useful for
+non-trivial benchmarks.
+
+### Added
+
+- **Issue #25** — `infereval describe` now surfaces four sections that
+  were previously invisible:
+  - **`verification prompt`** block (id, template, system message, parse
+    regex) when the benchmark embeds a `VerificationPromptOverride`;
+    omitted when the benchmark uses the framework default.
+  - **`bearers (<n>)`** block listing every bearer id paired with its
+    expression, two-column aligned, wrapping long expressions under the
+    value column. Replaces the previous "you have to open the JSON to
+    know what `cd` means" workflow.
+  - **`references`** summary (counts at corpus / bearer / item levels;
+    bearer-annotation ratio; mean refs per annotated item; the first 3
+    corpus citations). Omitted entirely when no references field is
+    populated. Closes the gap from Issues #18 / #22 — references are
+    now visible in the primary inspection tool.
+  - **`verdict distribution by tag group`** cross-tab. Scans each
+    item's `tags` for the first target-inference identifier (`T1`,
+    `T2`, …) or the literal `cross-cutting` tag; groups the analyst
+    verdicts under those labels. Surfaces the per-target label balance
+    the flat tag-frequency list cannot. Skipped when no item has a
+    recognised group tag.
+
+### Changed
+
+- **Long `description` strings now wrap to 78 columns** (`textwrap.fill`
+  with the value column aligned to the new fixed 13-char label gutter).
+  Previously the description printed on a single physical line that
+  wrapped awkwardly in any narrow terminal.
+- **Header lines (`id` / `title` / `domain` / `description` / `schema`)
+  now share a 13-char label column** so the values line up vertically.
+  Visually consistent with the rest of the report.
+
+### Tests
+
+8 new unit tests in `tests/unit/test_cli_describe.py::TestDescribeNewSections`
+cover all four new sections + the header-alignment regression boundary
++ section-omission behavior on benchmarks that don't carry the relevant
+data.
+
 ## [0.2.4] — 2026-05-19
 
 Single-issue patch release. Completes the references work begun in

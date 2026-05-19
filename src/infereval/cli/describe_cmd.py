@@ -8,16 +8,25 @@ items, analysts, and what the inter-analyst Fleiss baseline
 from __future__ import annotations
 
 import logging
+import textwrap
 from collections import Counter
 from pathlib import Path
 
 import click
 
-from infereval.benchmark import Benchmark
+from infereval.benchmark import Benchmark, BenchmarkItem
 from infereval.metrics import inter_analyst_fleiss
 from infereval.types import Verdict
 
 log = logging.getLogger(__name__)
+
+
+# Width target for wrapped prose. Standard 80-col minus a 2-col left margin.
+_WRAP = 78
+
+# All top-level header lines (id / title / domain / description / schema) use
+# a fixed 13-char column for the label so values line up vertically.
+_HEADER_COL = 13
 
 
 def _format_kappa(value: float | None) -> str:
@@ -36,6 +45,184 @@ def _verdict_counts(verdicts: list[Verdict]) -> str:
     )
 
 
+def _wrap_field(label: str, value: str, *, width: int = _WRAP) -> str:
+    """Format a ``label:<pad><value>`` so the wrap continuation aligns under the value.
+
+    The label is padded to :data:`_HEADER_COL` so the top-level header
+    block stays column-aligned vertically. Subsequent wrap lines indent
+    under the value column.
+    """
+    header = f"{label + ':':<{_HEADER_COL}}"
+    return textwrap.fill(
+        f"{header}{value}",
+        width=width,
+        subsequent_indent=" " * _HEADER_COL,
+        break_long_words=False,
+        break_on_hyphens=False,
+    )
+
+
+def _truncate(value: str, *, limit: int) -> str:
+    if len(value) <= limit:
+        return value
+    return value[: limit - 1] + "…"
+
+
+def _render_verification_prompt(bench: Benchmark) -> None:
+    """Print the benchmark's verification-prompt override, when present."""
+    vp = bench.verification_prompt
+    if vp is None:
+        return
+    click.echo("verification prompt:")
+    if vp.id:
+        click.echo(f"  id:          {vp.id}")
+    # Show the template's first line at most; collapse internal newlines.
+    flat_template = vp.template.replace("\n", " | ").strip()
+    click.echo(f"  template:    {_truncate(flat_template, limit=200)}")
+    if vp.system:
+        flat_system = vp.system.replace("\n", " ").strip()
+        # Wrap so the body indents under the value, not under the label.
+        click.echo(
+            textwrap.fill(
+                f"  system:      {_truncate(flat_system, limit=400)}",
+                width=_WRAP,
+                subsequent_indent="               ",
+                break_long_words=False,
+                break_on_hyphens=False,
+            )
+        )
+    if vp.parse_regex:
+        click.echo(f"  parse_regex: {vp.parse_regex}")
+    click.echo("")
+
+
+def _render_bearers(bench: Benchmark) -> None:
+    """List bearers as ``id: expression`` aligned on the longest id."""
+    if not bench.bearers:
+        return
+    click.echo(f"bearers ({len(bench.bearers)}):")
+    width = max(len(bid) for bid in bench.bearers)
+    for bid in sorted(bench.bearers):
+        expr = bench.bearers[bid].expression
+        # Wrap long expressions under the value column for readability.
+        line_label = f"  {bid.ljust(width)}  "
+        click.echo(
+            textwrap.fill(
+                f"{line_label}{expr}",
+                width=_WRAP,
+                subsequent_indent=" " * len(line_label),
+                break_long_words=False,
+                break_on_hyphens=False,
+            )
+        )
+    click.echo("")
+
+
+def _render_references_summary(bench: Benchmark) -> None:
+    """Print a summary of provenance: count at each level + first few citations."""
+    n_corpus = len(bench.references)
+    bearer_refs = sum(len(b.references) for b in bench.bearers.values())
+    bearer_annotated = sum(1 for b in bench.bearers.values() if b.references)
+    item_refs = sum(len(it.references) for it in bench.items)
+    item_annotated = sum(1 for it in bench.items if it.references)
+
+    if not (n_corpus or bearer_refs or item_refs):
+        return  # Nothing to show.
+
+    click.echo("references:")
+    click.echo(f"  benchmark-level: {n_corpus}")
+    click.echo(
+        f"  bearer-level:    {bearer_refs} "
+        f"(across {bearer_annotated}/{len(bench.bearers)} bearers)"
+    )
+    if item_refs:
+        mean = item_refs / max(item_annotated, 1)
+        click.echo(
+            f"  item-level:      {item_refs} references across "
+            f"{item_annotated}/{bench.n} items; mean {mean:.2f}/annotated-item"
+        )
+    else:
+        click.echo("  item-level:      0")
+
+    if bench.references:
+        click.echo("  first corpus refs:")
+        for ref in bench.references[:3]:
+            citation = _truncate(ref.citation, limit=_WRAP - 6)
+            click.echo(f"    - {citation}")
+        if n_corpus > 3:
+            click.echo(f"    ... and {n_corpus - 3} more")
+    click.echo("")
+
+
+def _render_group_cross_tab(bench: Benchmark) -> None:
+    """For each tag group, show the primary-analyst verdict distribution.
+
+    "Group" is computed by scanning each item's ``tags`` for the **first**
+    target-inference identifier (``T1``, ``T2``, …) or the literal tag
+    ``cross-cutting``. Items lacking such a tag are pooled under
+    ``(other)``. Items with no tags at all are pooled under
+    ``(untagged)``.
+
+    Surfaces label skew per category that the flat tag-frequency list
+    cannot show; e.g. "T1: 12 items, 8 good / 4 bad" vs. "T2: 10 items,
+    7 good / 3 bad" answers "are the supporters and defeaters balanced
+    inside each target?" at a glance.
+
+    Skipped entirely if no item has a recognised category tag.
+    """
+    if bench.m == 0 or not bench.items:
+        return
+
+    def _category_of(item: BenchmarkItem) -> str:
+        if not item.tags:
+            return "(untagged)"
+        for t in item.tags:
+            # T1, T2, … target-inference identifiers (uppercase T followed by digits).
+            if len(t) >= 2 and t[0] == "T" and t[1:].isdigit():
+                return str(t)
+            if t == "cross-cutting":
+                return str(t)
+        return "(other)"
+
+    primary = 0
+    groups: dict[str, Counter[Verdict]] = {}
+    for item in bench.items:
+        cat = _category_of(item)
+        counts = groups.setdefault(cat, Counter())
+        counts[item.analyst_verdicts[primary]] += 1
+
+    # Skip the section entirely if every item ended up in (other) or
+    # (untagged) — there's no informative cross-tab to print.
+    informative = {g for g in groups if not g.startswith("(")}
+    if not informative:
+        return
+
+    # Sort: target-inference groups (T1, T2, …) first by index, then
+    # cross-cutting, then fallback buckets.
+    def _sort_key(g: str) -> tuple[int, str]:
+        if g.startswith("T") and g[1:].isdigit():
+            return (0, g.zfill(4))
+        if g == "cross-cutting":
+            return (1, g)
+        return (2, g)
+
+    ordered = sorted(groups.items(), key=lambda kv: _sort_key(kv[0]))
+
+    name = bench.analysts[primary].id
+    click.echo(f"verdict distribution by tag group (analyst [{primary}] {name}):")
+    name_width = max(len(g) for g, _ in ordered)
+    for cat, counts in ordered:
+        g = counts.get(Verdict.GOOD, 0)
+        b = counts.get(Verdict.BAD, 0)
+        a = counts.get(Verdict.ABSTAIN, 0)
+        n = g + b + a
+        click.echo(
+            f"  {cat.ljust(name_width)}  "
+            f"good={g:<3} bad={b:<3} abstain={a:<3} n={n}"
+        )
+    click.echo("")
+
+
 @click.command("describe", help="Print a summary of a benchmark JSON file.")
 @click.argument("path", type=click.Path(exists=True, dir_okay=False, path_type=Path))
 def describe_cmd(path: Path) -> None:
@@ -43,15 +230,14 @@ def describe_cmd(path: Path) -> None:
     log.info("describe.start path=%s", path)
     bench = Benchmark.load(path)
 
-    click.echo(f"id:          {bench.id}")
+    click.echo(_wrap_field("id", bench.id))
     if bench.title:
-        click.echo(f"title:       {bench.title}")
+        click.echo(_wrap_field("title", bench.title))
     if bench.domain:
-        click.echo(f"domain:      {bench.domain}")
+        click.echo(_wrap_field("domain", bench.domain))
     if bench.description:
-        # Wrap long descriptions naturally; keep it simple.
-        click.echo(f"description: {bench.description}")
-    click.echo(f"schema:      {bench.schema_version}")
+        click.echo(_wrap_field("description", bench.description))
+    click.echo(_wrap_field("schema", bench.schema_version))
     click.echo("")
     click.echo(f"|B| (bearers):  {len(bench.bearers)}")
     click.echo(f"n (items):      {bench.n}")
@@ -77,6 +263,12 @@ def describe_cmd(path: Path) -> None:
         if kappa_star is None:
             click.echo("  (undefined: analysts are unanimous or all-non-substantive)")
     click.echo("")
+
+    # New sections (Issue #25): verification prompt, bearers, references, cross-tab.
+    _render_verification_prompt(bench)
+    _render_bearers(bench)
+    _render_references_summary(bench)
+    _render_group_cross_tab(bench)
 
     # Tag frequencies, if any.
     tag_counts: Counter[str] = Counter()
