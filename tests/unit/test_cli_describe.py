@@ -109,6 +109,181 @@ class TestDescribeMultiAnalyst:
         assert "unanimous or all-non-substantive" in result.output
 
 
+class TestDescribeNewSections:
+    """Issue #25: bearers, verification prompt, references, group cross-tab."""
+
+    def test_bearers_section_lists_all_with_expressions(self) -> None:
+        runner = CliRunner()
+        result = runner.invoke(cli, ["describe", str(STOP_SIGN_PATH)])
+        assert "bearers (5):" in result.output
+        # Each stop-sign bearer id + its expression should appear.
+        # ('a' is rendered in the expression as $a$; just check the substantive words.)
+        assert "is a stop sign" in result.output
+        assert "is red" in result.output
+        assert "nighttime" in result.output
+
+    def test_header_columns_align(self) -> None:
+        # id / title / domain / schema all use the same 13-char label column.
+        runner = CliRunner()
+        result = runner.invoke(cli, ["describe", str(STOP_SIGN_PATH)])
+        # Each header label is followed by enough spaces to reach column 13.
+        # "id:" is 3 chars -> 10 spaces; "title:" is 6 -> 7 spaces; etc.
+        assert "id:          stop-sign-example-1" in result.output
+        assert "schema:      1.0" in result.output
+
+    def test_verification_prompt_section_renders_when_override_present(
+        self, tmp_path: Path
+    ) -> None:
+        # Synthesise a benchmark with an embedded verification prompt override.
+        data = {
+            "schema_version": "1.0",
+            "id": "vp-test",
+            "bearers": {"p": {"expression": "P"}, "q": {"expression": "Q"}},
+            "analysts": [{"id": "a"}],
+            "verification_prompt": {
+                "template": "Premises: {premise_context}\nConclusion: {conclusion_context}\nVerdict:",
+                "system": "You are a careful evaluator.",
+                "parse_regex": "\\b(GOOD|BAD|ABSTAIN)\\b",
+                "id": "my-prompt-v1",
+            },
+            "items": [
+                {"id": "i1", "premises": ["p"], "conclusions": ["q"], "analyst_verdicts": ["good"]},
+            ],
+        }
+        path = tmp_path / "vp.json"
+        path.write_text(json.dumps(data), encoding="utf-8")
+        runner = CliRunner()
+        result = runner.invoke(cli, ["describe", str(path)])
+        assert "verification prompt:" in result.output
+        assert "my-prompt-v1" in result.output
+        assert "careful evaluator" in result.output
+        assert "GOOD|BAD|ABSTAIN" in result.output
+
+    def test_verification_prompt_section_omitted_when_no_override(self) -> None:
+        # The stop-sign benchmark uses the framework default — no override.
+        runner = CliRunner()
+        result = runner.invoke(cli, ["describe", str(STOP_SIGN_PATH)])
+        assert "verification prompt:" not in result.output
+
+    def test_references_section_omitted_when_no_refs_present(self) -> None:
+        # Stop-sign benchmark predates v0.2.2 and has no references field
+        # populated — the references section must not appear.
+        runner = CliRunner()
+        result = runner.invoke(cli, ["describe", str(STOP_SIGN_PATH)])
+        assert "references:" not in result.output
+
+    def test_references_section_renders_when_refs_present(self, tmp_path: Path) -> None:
+        data = {
+            "schema_version": "1.0",
+            "id": "refs-test",
+            "bearers": {
+                "p": {"expression": "P", "references": ["Bearer-level ref"]},
+                "q": {"expression": "Q"},
+            },
+            "analysts": [{"id": "a"}],
+            "items": [
+                {
+                    "id": "i1",
+                    "premises": ["p"],
+                    "conclusions": ["q"],
+                    "analyst_verdicts": ["good"],
+                    "references": [
+                        {"citation": "Item ref 1", "doi": "10.1/foo"},
+                        "Item ref 2",
+                    ],
+                },
+            ],
+            "references": [
+                {"citation": "Corpus ref alpha", "doi": "10.0/a"},
+                "Corpus ref beta",
+            ],
+        }
+        path = tmp_path / "refs.json"
+        path.write_text(json.dumps(data), encoding="utf-8")
+        runner = CliRunner()
+        result = runner.invoke(cli, ["describe", str(path)])
+        assert "references:" in result.output
+        assert "benchmark-level: 2" in result.output
+        assert "bearer-level:    1 (across 1/2 bearers)" in result.output
+        assert "item-level:      2 references across 1/1 items" in result.output
+        assert "Corpus ref alpha" in result.output
+        assert "Corpus ref beta" in result.output
+
+    def test_group_cross_tab_renders_for_pulmonology_style_tags(
+        self, tmp_path: Path
+    ) -> None:
+        # Synthesise a 3-item benchmark with T1, T2, cross-cutting tags.
+        data = {
+            "schema_version": "1.0",
+            "id": "groups-test",
+            "bearers": {"p": {"expression": "P"}, "q": {"expression": "Q"}},
+            "analysts": [{"id": "a"}],
+            "items": [
+                {
+                    "id": "i1",
+                    "premises": ["p"],
+                    "conclusions": ["q"],
+                    "analyst_verdicts": ["good"],
+                    "tags": ["supporter", "T1", "dialectical-low"],
+                },
+                {
+                    "id": "i2",
+                    "premises": ["p"],
+                    "conclusions": ["q"],
+                    "analyst_verdicts": ["bad"],
+                    "tags": ["defeater", "T2", "dialectical-medium"],
+                },
+                {
+                    "id": "i3",
+                    "premises": ["p"],
+                    "conclusions": ["q"],
+                    "analyst_verdicts": ["good"],
+                    "tags": ["cross-cutting", "marker-inference"],
+                },
+            ],
+        }
+        path = tmp_path / "groups.json"
+        path.write_text(json.dumps(data), encoding="utf-8")
+        runner = CliRunner()
+        result = runner.invoke(cli, ["describe", str(path)])
+        assert "verdict distribution by tag group" in result.output
+        # T1 / T2 / cross-cutting all present with their verdict counts.
+        assert "T1" in result.output
+        assert "T2" in result.output
+        assert "cross-cutting" in result.output
+        # T1 should sort before T2 should sort before cross-cutting.
+        idx_t1 = result.output.index("\n  T1")
+        idx_t2 = result.output.index("\n  T2")
+        idx_cc = result.output.index("\n  cross-cutting")
+        assert idx_t1 < idx_t2 < idx_cc
+
+    def test_group_cross_tab_omitted_when_no_recognised_groups(
+        self, tmp_path: Path
+    ) -> None:
+        # An item with only inference-role tags (no T1/T2/cross-cutting)
+        # produces no informative grouping; the section is skipped.
+        data = {
+            "schema_version": "1.0",
+            "id": "no-groups",
+            "bearers": {"p": {"expression": "P"}, "q": {"expression": "Q"}},
+            "analysts": [{"id": "a"}],
+            "items": [
+                {
+                    "id": "i1",
+                    "premises": ["p"],
+                    "conclusions": ["q"],
+                    "analyst_verdicts": ["good"],
+                    "tags": ["custom-tag"],
+                },
+            ],
+        }
+        path = tmp_path / "no-groups.json"
+        path.write_text(json.dumps(data), encoding="utf-8")
+        runner = CliRunner()
+        result = runner.invoke(cli, ["describe", str(path)])
+        assert "verdict distribution by tag group" not in result.output
+
+
 class TestDescribeFailures:
     def test_missing_file(self) -> None:
         runner = CliRunner()
