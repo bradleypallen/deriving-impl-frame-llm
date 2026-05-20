@@ -87,7 +87,7 @@ If you have multiple natural phrasings of the same bearer, list them in `paraphr
 }
 ```
 
-The paraphrases are unused by `default-v1` runs (a future release will let you cycle through them for paraphrase-axis experiments without authoring multiple benchmarks). For now, including them is documentation.
+**Paraphrases are runtime-active as of v0.3.1.** `infereval evaluate --paraphrase-variant K` runs against `paraphrases[K-1]` for each bearer that has it (falling back to `expression` for bearers that don't reach that variant). `infereval evaluate --paraphrase-cycle` runs once per variant and writes one `eta-vN.json` per variant. This is what addresses R10 (paraphrase variation under fixed inferential content) — content-vs-form robustness becomes a one-flag operation. See [`construct_validity_workflow.md`](construct_validity_workflow.md) §2.2 for the full workflow.
 
 ## Step 4: Declare the analyst panel
 
@@ -102,6 +102,23 @@ The paraphrases are unused by `default-v1` runs (a future release will let you c
 `m = len(analysts)` is the number of analysts. Each item's `analyst_verdicts` list must have exactly `m` entries, in the same order as the `analysts` array.
 
 The number of analysts matters: `κ_F*(β)`, the inter-analyst baseline, is only defined when `m ≥ 2` and the analysts are not unanimous on every item. With `m = 1` (like our stop-sign example) you have a benchmark but no baseline.
+
+**Document analyst competence in `notes`** (R1). The framework records the declaration but cannot vet the credentials — write something a domain reviewer would accept: "Board-eligible pulmonologist, 12 years bedside experience in differential diagnosis" beats "physician."
+
+### Step 4b: Declare panels (optional, R4)
+
+For the independent reference check (R4), declare analysts as belonging to named panels:
+
+```json
+"analysts": [
+  {"id": "physician-a", "panel": "primary", "notes": "..."},
+  {"id": "physician-b", "panel": "primary", "notes": "..."},
+  {"id": "physician-c", "panel": "reviewer", "notes": "..."}
+],
+"primary_panel": "primary"
+```
+
+The validator enforces: if *any* analyst declares a `panel`, *all* must (partial-panel benchmarks are rejected); `primary_panel` must name a panel that at least one analyst belongs to. With ≥ 2 panels declared, `infereval describe` renders per-panel κ_F\* + cross-panel Cohen's κ, and the construct-validity report can mark `cross_panel_check_run: true`. See [`interpreting_metrics.md`](interpreting_metrics.md) for what to read off the per-panel block.
 
 ## Step 5: Declare context builders (usually leave default)
 
@@ -170,6 +187,65 @@ What each field does:
 - **`analyst_verdicts`**: `m`-tuple of `"good" | "bad" | "abstain"`. Order matches the `analysts` array.
 - **`tags`**: arbitrary labels for `by-tag` decomposition. `infereval metrics --by-tag <tag>` filters to items carrying that tag. Common conventions: `base-inference`, `irrelevant-addition`, `defeater`, plus domain-specific descriptors.
 - **`rsr_target`** (optional): the target inference `⟨X, A⟩` this item helps characterize the RSR of. Items with the same `rsr_target` form a coherent subset for `infereval metrics --by-rsr-target`. Use it whenever you have multiple items probing the same target.
+- **`factor_levels`** (optional, v0.3.0): per-factor level assignments for crossed-design benchmarks. See Step 6b.
+- **`construction_metadata`** (optional, v0.3.2): per-item provenance. See Step 6c.
+- **`references`** (optional, v0.2.2): literature anchoring per item. See Step 7b.
+
+## Step 6b: Declare factors and items' factor levels (optional, R7+R12)
+
+For a *structured* benchmark — one whose items cross declared dimensions — declare the design at the benchmark level:
+
+```json
+"factors": {
+  "side_premise_type": ["base", "supporter", "defeater", "mixed-evidence"],
+  "target_inference": ["T1", "T2", "cross-cutting"]
+},
+"factor_constraints": {
+  "min_items_per_cell": 2
+}
+```
+
+Then position each item in the design:
+
+```json
+{
+  "id": "c2",
+  "premises": ["bi", "ad", "el"],
+  "conclusions": ["cpe"],
+  "analyst_verdicts": ["good", "good"],
+  "tags": ["supporter", "biomarker"],
+  "factor_levels": {
+    "side_premise_type": "supporter",
+    "target_inference": "T1"
+  }
+}
+```
+
+The validator rejects (a) items with `factor_levels` keys not in `factors`, (b) items with level values not in the declared levels list, and (c) benchmarks where any cell of the crossed design has fewer than `min_items_per_cell` items. The error message lists the underpopulated cells so you can see exactly where to add items.
+
+The payoff is the factor-effects model fit in `infereval model` (v0.4.1): per-factor joint Wald tests + per-level coefficients on the declared design. Without factors, that command refuses to fit with a clear error.
+
+## Step 6c: Record construction provenance (optional, R5+R8+R9)
+
+For benchmarks intended for serious construct-validity work, every item gets a `construction_metadata` block:
+
+```json
+"construction_metadata": {
+  "authored_by": "physician-c",
+  "authored_on": "2026-04-15",
+  "authored_blind_to_models": ["claude-opus-4-7", "gpt-5", "gemini-2.5-pro"],
+  "source": "Sanford Guide to Antimicrobial Therapy 2025, Chapter 12"
+}
+```
+
+All four fields are optional but each addresses a specific construct-validity requirement:
+
+- **`authored_by`** (R5): who authored the item. Used in the `infereval describe` provenance summary.
+- **`authored_on`** (R9): ISO date the item was authored. Required for temporal training-data separation arguments.
+- **`authored_blind_to_models`** (R8): every model the author had not observed on a draft of this item. The key declaration for *held-out* items — see [`construct_validity_workflow.md`](construct_validity_workflow.md) §0.5 on why blindness has to be decided up front.
+- **`source`**: the primary material the author worked from (distinct from `references`, which records the literature *supporting* the verdict).
+
+The framework validates structure (Pydantic types, `extra="forbid"`) but does not enforce that `authored_on` post-dates any training cutoff — content is the analyst's responsibility, but its *presence* is auditable.
 
 ## Step 7: Validate
 
@@ -224,9 +300,23 @@ Why bother? Three concrete payoffs:
 
 ```
 infereval describe path/to/your-benchmark.json
+infereval describe --items path/to/your-benchmark.json
 ```
 
-Prints the bearer count, item count, analyst panel, per-analyst label distribution, `κ_F*` baseline (when `m ≥ 2` and the analysts are non-unanimous), tag frequencies, and RSR-target groupings. This is your sanity check — does the benchmark look like what you intended?
+Prints the bearer count, item count, analyst panel, per-analyst label distribution, `κ_F*` baseline (when `m ≥ 2` and the analysts are non-unanimous), tag frequencies, and RSR-target groupings. As of v0.3.x the output also includes:
+
+- the **bearer dictionary** (every id with its English expression)
+- the **verification prompt** block when an override is set
+- a **references summary** with per-level counts
+- a **factorial design** section when `factors` is declared, listing total cells / populated cells / floor-meeting cells with underpopulated cells flagged
+- a **paraphrase variants** line when any bearer has `paraphrases`
+- the **analyst panels** block with per-panel κ_F\* and (for exactly two panels) cross-panel κ_C
+- a **construction provenance** summary when any item carries `construction_metadata`
+- a **verdict distribution by tag group** cross-tab (T1 / T2 / cross-cutting)
+
+`--items` extends the report with a per-implication block: bearer-id form on the header, resolved English Γ / Δ, the analyst verdict tuple, the tags, the per-item `construction:` line, and the full inline reference block. This is the format you give a domain expert when you want them to audit every item without opening the JSON.
+
+This is your sanity check — does the benchmark look like what you intended?
 
 ## Step 9: Smoke-test with the mock provider
 
@@ -287,4 +377,5 @@ infereval metrics medical-eta.json --benchmark path/to/your-benchmark.json \
 
 - Run a real evaluation: [`providers.md`](providers.md).
 - Read the output: [`interpreting_metrics.md`](interpreting_metrics.md).
+- Use the full construct-validity toolchain (structure / model / sweep / report) to produce a defensible mastery claim: [`construct_validity_workflow.md`](construct_validity_workflow.md).
 - See the conceptual framework that makes all this coherent: [`concepts.md`](concepts.md) and `revised.tex`.

@@ -82,6 +82,25 @@ The paper's Remark 5 makes the point: `κ_F*(β)` tells you how well the analyst
 
 If your benchmark has `m = 1`, expect `κ_F*` to always be undefined and rely on `κ_C` for headline numbers.
 
+### Per-panel and cross-panel: independent-reference checks (v0.3.0+)
+
+If your benchmark declares **reference panels** (per-analyst `panel` plus a benchmark-level `primary_panel`, see [`authoring_benchmarks.md`](authoring_benchmarks.md) Step 4b), `infereval describe` and `infereval report` surface two extra metrics:
+
+```
+κ_F*(β) per panel:
+  primary (n_analysts=3) : +0.6824
+  check   (n_analysts=2) : +0.7100
+
+κ_C cross-panel (primary vs check) : +0.5800
+```
+
+| Metric | What it is | Why it matters |
+|---|---|---|
+| `inter_analyst_fleiss_per_panel` | `κ_F*` computed within each declared panel | Tells you how internally coherent each panel is on its own. A primary panel with `κ_F* = 0.10` and a check panel with `κ_F* = 0.70` means the primary panel is the one to inspect for analyst-disagreement. |
+| `cross_panel_kappa` | Cohen's `κ_C` between the two panels' per-item consensuses (default `primary` vs the first declared check panel; override with `--check`) | The construct-validity convergence check (R4 in `closing_the_construct_validity_gap.md`). A high cross-panel `κ_C` plus a high `κ_C(η, primary-consensus)` is the convergent half of a multi-trait/multi-method argument. A model that agrees with `primary` but disagrees with `check` is a warning sign that the `primary` consensus is panel-specific rather than carving-specific. |
+
+The same `undefined` rules apply as for the corresponding base metrics (empty substantive intersection, `p_e = 1`, single-analyst panel).
+
 ## Decompositions: when the overall number isn't enough
 
 A single `κ_C = 0.40` could mean many different things:
@@ -122,6 +141,56 @@ infereval metrics eta.json --benchmark bench.json \
 ```
 
 Filter to items probing one specific target inference. Useful when a benchmark covers multiple target inferences (multiple `rsr_target` groupings) and you want the per-target story.
+
+## Beyond `metrics`: structure, factor effects, sensitivity (v0.4.0+)
+
+`infereval metrics` answers "how well does `M` agree with the analysts on this benchmark, this run". Three other CLI commands answer adjacent construct-validity questions; their outputs are also consumed by `infereval report`.
+
+### `infereval structure benchmark.json` — content-validity gate
+
+Three deterministic checks on the benchmark itself (no model, no evaluation needed):
+
+| Check | What it verifies | A failure means |
+|---|---|---|
+| **Containment** | Every declared bearer appears in at least one item's `Γ` or `Δ` | An orphaned bearer — likely a carving slip; either delete it or add an item that exercises it. |
+| **RSR role consistency** | For each `rsr_target` group, the role hierarchy (base → addition → defeater) is logically consistent | Misordered roles within a target — the RSR analysis won't be interpretable. |
+| **Base-case stability** | Every `rsr_target` group contains at least one base-inference item (the `Γ` from which additions are built) | No anchor for the RSR sweep — additions and defeaters have nothing to attach to. |
+
+Read it as a gate: if `structure` returns non-zero, the benchmark fails content validity (R3) and metrics from it should be reported with that caveat. `report` echoes the `structure` verdict in §3 of its output.
+
+### `infereval model eta.json --benchmark β.json` — factor effects (v0.4.1)
+
+Logistic regression of per-sample agreement (1 if `M` matches the reference, 0 otherwise) on the declared `benchmark.factors` levels, with item-clustered standard errors. Requires `infereval[stats]`.
+
+The output has two parts:
+
+1. **Per-factor joint Wald tests** (`factor_wald`) — one p-value per declared factor, testing the null "this factor has no effect on agreement". A small p-value (e.g. `< 0.05`) means agreement varies systematically across the factor's levels — that factor is doing inferential work. A large p-value means the factor is not differentiating the model's behavior at this sample size.
+2. **Per-level coefficients** (`effects`) — log-odds of agreement at this level relative to the alphabetically-first level of the same factor (the baseline). Positive coef → higher agreement than baseline; negative → lower. The `p_value` is the per-level Wald test; the `conf_int_low`/`high` is the 95% CI on the log-odds.
+
+`pseudo_r2` (McFadden) gives a rough sense of overall fit; values above ~0.2 indicate the declared factors meaningfully predict per-sample agreement. This is the GLMM-proxy specified in R10 of the construct-validity programme.
+
+### `infereval sweep` — sensitivity analysis (v0.4.2)
+
+Re-runs `metrics` across a swept parameter (e.g. `--vary tie_break --values abstain,good,bad`) and reports a **stability verdict** based on the range of `κ_C` across the sweep:
+
+| `κ_C` range | Verdict | Reading |
+|---|---|---|
+| `< 0.05` | `stable across the sweep range` | Choice of parameter doesn't materially affect agreement. Safe to publish at any of the swept values. |
+| `0.05 ≤ r < 0.10` | `moderately sensitive` | Some dependence on the parameter; report the specific value used and acknowledge the range. |
+| `≥ 0.10` | `varies substantively` | Headline numbers are not robust to the parameter. Consider tighter parameter choices or a wider analyst panel before publishing a mastery claim. |
+
+The point is **not** to pick the best parameter post-hoc — that's p-hacking. The point is to show that the parameter you committed to (`infereval evaluate ...`) wasn't load-bearing. `report` consumes the sweep summary and downgrades the construct-validity verdict by one tier if the sweep is anything other than stable (R11).
+
+### `infereval report` — the construct-validity envelope (v0.5.0)
+
+Consumes the claims file plus the outputs of the four analytical commands above and emits a single Markdown report with a deterministic verdict over five tiers (`Strongly substantiated` / `Substantiated` / `Partially substantiated` / `Limited` / `Insufficient`). The verdict is a function of the claims declared (R-numbers) plus the structural and inferential evidence; it is not a free-text summary.
+
+Two interactions to be aware of:
+
+- **Suppression asymmetry**: if `negative_findings_suppressed: true` is set in the claims file, the verdict downgrades one tier. This makes silence about negative findings explicitly costly in the headline number.
+- **Sweep instability penalty**: any sweep verdict other than "stable" triggers a one-tier downgrade with a logged rationale.
+
+The full mapping from claims and evidence to verdict tier is documented in [`closing_the_construct_validity_gap.md`](closing_the_construct_validity_gap.md); the practitioner's walk-through is in [`construct_validity_workflow.md`](construct_validity_workflow.md).
 
 ## Edge cases the framework reports rather than hides
 
@@ -175,6 +244,8 @@ If the kappa numbers don't match your prior intuition for the model, the order o
 ## Where to go next
 
 - [`concepts.md`](concepts.md) for the methodology's terms.
-- [`authoring_benchmarks.md`](authoring_benchmarks.md) if your interpretation suggests you need a richer benchmark.
+- [`authoring_benchmarks.md`](authoring_benchmarks.md) if your interpretation suggests you need a richer benchmark — especially the panel/factor/construction-metadata fields that feed the new analytical commands.
+- [`construct_validity_workflow.md`](construct_validity_workflow.md) for the end-to-end practitioner's guide: how to chain `structure` → `metrics` → `model` → `sweep` → `report` into reproducible evidence for an inferential-mastery claim.
+- [`closing_the_construct_validity_gap.md`](closing_the_construct_validity_gap.md) for which construct-validity requirements (R1–R21) each metric speaks to.
 - [`providers.md`](providers.md) for per-provider quirks (specifically, what to set `--max-tokens` to).
 - `experiments/paraphrase_axis_triangulation.py` for a worked example of the diagnostic chain above.
