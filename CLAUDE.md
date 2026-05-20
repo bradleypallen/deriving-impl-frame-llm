@@ -106,6 +106,7 @@ These are framework defaults, overridable per evaluation:
 - **Verification prompt:** fresh `default-v1` template (GOOD/BAD/ABSTAIN tokens with brief glosses). Follows `allen2025nesy` methodology but is not a literal quote.
 - **`n_samples`:** 5 (odd, clean 3-way majority).
 - **`max_tokens`:** 1024 at both the Python API (`ProviderParams.max_tokens`) and the CLI (`--max-tokens`). Aligned in v0.5.2 — earlier CLI default of 32 was a holdover that silently budget-clipped reasoning models. Bump to 2048–4096 for `o1-pro` / `o3-pro` / `qwen3-max-thinking` and other heavy-reasoning variants.
+- **Verdict-audit caps (v0.5.3):** `compute_verdict` is *not* a function of the claims file alone — it consults the structure report and the benchmark. Two audit rules cap the verdict at `partially_defensible`: any structural anomaly in a check marked `_run=True` ("ran but did not pass"), and `m < 2` analysts at `items_in_benchmark` scope ("no inter-analyst baseline to certify against"). Future analytical checks that produce artifacts should follow the same pattern: thread the artifact into `compute_verdict` and cap when the artifact reveals the check didn't pass.
 - **Tie-break:** `abstain` (matches paper's treatment of abstain as safe fallback). Configurable: `abstain` / `good` / `bad` / `first`.
 - **$\delta$ / $\mathrm{ctx}_\Gamma$ / $\mathrm{ctx}_\Delta$ placement:** both JSON template form (default) and Python plugin form (escape hatch).
 - **TeX in `expression` strings:** **strip TeX-math `$...$` delimiters at prompt construction time.** Expressions stay LaTeX-source-friendly in benchmark JSON; prompts see the de-TeX'd form.
@@ -118,7 +119,7 @@ These are framework defaults, overridable per evaluation:
 - **Schema versioning:** independent of framework (`schema_version: "1.0"`). Schema stability promised from 1.0 onward, not 0.x. **The 0.3.x–0.5.x construct-validity series added optional fields only** — every pre-0.3.0 benchmark continues to validate against the current schema, and that additive-only invariant must be preserved for further benchmark-schema changes within the 1.0 line.
 - **`DerivedFrame` materialization:** lazy (membership via Def. 3 iff). Full $I_M$ over $\wp(B)\times\wp(B)$ is unbounded.
 
-## Construct-validity infrastructure (v0.3.0–v0.5.2)
+## Construct-validity infrastructure (v0.3.0–v0.5.3)
 
 The nine-feature programme shipped over eleven patch/minor releases addresses the R1–R21 requirements catalogued in [`docs/closing_the_construct_validity_gap.md`](docs/closing_the_construct_validity_gap.md). Practitioner walk-through is in [`docs/construct_validity_workflow.md`](docs/construct_validity_workflow.md). Quick map for future work:
 
@@ -130,6 +131,7 @@ The nine-feature programme shipped over eleven patch/minor releases addresses th
 | `paraphrases` runtime activation via `--paraphrase-variant K` / `--paraphrase-cycle` | 0.3.1 | Paraphrase-axis robustness becomes a one-flag operation. `paraphrases` field was already permitted in 0.1.0 but ignored at runtime. |
 | `construction_metadata` per item (`authored_by`, `authored_on`, `authored_blind_to_models`, `source`) | 0.3.2 | Item-level provenance for held-out / training-data-separation arguments. |
 | `analyst.panel` + `benchmark.primary_panel` | 0.3.3 | Reference-panel declaration for cross-panel convergent-validity checks; validator enforces all-or-none on the `panel` field. |
+| `factor_kinds` (benchmark-level) | 0.5.3 | Per-factor valence label (`"substantive"` vs `"experimentally_controlled"`). Used by `collect_negative_findings` to render null Wald-test findings with the correct valence — substantive nulls weaken the claim, controlled nulls strengthen it. |
 
 **New analytical CLI commands (all consume `eta.json` + `benchmark.json` and feed `infereval report`):**
 
@@ -138,7 +140,7 @@ The nine-feature programme shipped over eleven patch/minor releases addresses th
 | `infereval structure` | 0.4.0 | Three deterministic checks on the benchmark — Containment, RSR role consistency, base-case stability. Content-validity gate. |
 | `infereval model` | 0.4.1 | Logistic regression of per-sample agreement on declared `factors`, item-clustered SEs, per-factor joint Wald tests + per-level coefficients. Requires `[stats]`. |
 | `infereval sweep` | 0.4.2 | Re-runs `metrics` across a swept parameter (e.g. `--vary tie_break --values abstain,good,bad`); emits a stability verdict based on κ_C range (`<0.05` stable, `<0.10` moderately sensitive, `≥0.10` substantively variable). |
-| `infereval report` | 0.5.0 | Combines claims file + the four analytical outputs into a Markdown report with a deterministic five-tier verdict. Auto-collects negative findings (0.5.1); `--suppress-negatives` downgrades the verdict one tier. |
+| `infereval report` | 0.5.0 | Combines claims file + the four analytical outputs into a Markdown report with a deterministic five-tier verdict. Auto-collects negative findings (0.5.1); `--suppress-negatives` downgrades the verdict one tier. v0.5.3 added verdict audit caps (structural anomalies and m<2 cap the verdict at `partially_defensible`) and `factor_kinds` valence labels on negative findings. |
 
 **Notes for future work in this area:**
 
@@ -153,6 +155,6 @@ The nine-feature programme shipped over eleven patch/minor releases addresses th
 - The methodology defaults above are locked in conversation. Don't drift from them without checking with the user first.
 - Per user-global instruction: **always include structured logging for post-experimental run analysis and reporting.** Every model call, every sample, every majority-vote outcome should be auditable from the JSONL log.
 - **Schemas are generated, not hand-edited.** After any change to the Pydantic models in `benchmark.py` or `evaluation.py`, regenerate the committed Draft 2020-12 schemas with `python -c "from infereval.schemas import emit_static_schemas; emit_static_schemas()"`. A drift test keeps these in sync; CI will flag a hand-edit. Version bumps also flow into `evaluation.schema.json:framework_version.default` via the same regeneration step.
-- **Release flow** (matches v0.3.0–v0.5.2): bump `src/infereval/__init__.py:__version__`, update `CHANGELOG.md` (Keep-a-Changelog format), regenerate schemas, open + rebase-merge a PR, then tag (`git tag -a vX.Y.Z <merge-sha> -m "..."` and `git push origin vX.Y.Z`), then `python -m build` and `gh release create vX.Y.Z dist/*.whl dist/*.tar.gz --title "..." --notes "..."`. PyPI upload is a manual `twine upload` step — there is no GitHub Actions workflow.
+- **Release flow** (matches v0.3.0–v0.5.3): bump `src/infereval/__init__.py:__version__`, update `CHANGELOG.md` (Keep-a-Changelog format), regenerate schemas, open + rebase-merge a PR, then tag (`git tag -a vX.Y.Z <merge-sha> -m "..."` and `git push origin vX.Y.Z`), then `python -m build` and `gh release create vX.Y.Z dist/*.whl dist/*.tar.gz --title "..." --notes "..."`. PyPI upload is a manual `twine upload` step — there is no GitHub Actions workflow.
 - **PR merge style**: rebase-merge via `gh api -X PUT repos/<owner>/<repo>/pulls/<num>/merge -f merge_method=rebase`. Worktree-safe (doesn't require switching the local HEAD).
 - **macOS UF_HIDDEN gotcha**: if an editable install seems to disappear from `.venv`, run `chflags -R nohidden .venv` before pytest. Documented in the user's `MEMORY.md`.

@@ -246,6 +246,99 @@ class TestRunAllChecks:
         assert report.all_satisfied  # no anomalies on a trivial benchmark
 
 
+# ---- Partial-evaluation guard (v0.5.3 review fix) ------------------------
+
+
+class TestPartialEvaluationGuard:
+    """Regression for the review's issue #2: the structural checks must
+    not raise KeyError when the evaluation is missing items that the
+    benchmark carries an rsr_target for. This happens in real flows —
+    a `--paraphrase-cycle` run emits per-variant evaluations, and any
+    re-run on a tag subset will leave items missing too. The contract
+    matches the metrics module: skip missing items with a warning,
+    don't raise.
+    """
+
+    def _two_base_one_role_bench(self) -> Benchmark:
+        return _bench([
+            {"id": "b1", "premises": ["p"], "conclusions": ["q"],
+             "analyst_verdicts": ["good"], "tags": ["base-inference"],
+             "rsr_target": {"X": ["p"], "A": ["q"]}},
+            {"id": "b2", "premises": ["p"], "conclusions": ["q"],
+             "analyst_verdicts": ["good"], "tags": ["base-inference"],
+             "rsr_target": {"X": ["p"], "A": ["q"]}},
+            {"id": "r1", "premises": ["p", "r"], "conclusions": ["q"],
+             "analyst_verdicts": ["good"], "tags": ["irrelevant-addition"],
+             "rsr_target": {"X": ["p"], "A": ["q"]}},
+        ])
+
+    def _partial_eval(self, bench: Benchmark, present_ids: set[str], verdicts: list[str]):
+        """Build an evaluation that contains only items in present_ids."""
+        from infereval.evaluation import Evaluation, EvaluationItem, ModelInfo
+        from infereval.types import Verdict
+
+        items = []
+        v_iter = iter(verdicts)
+        for it in bench.items:
+            if it.id not in present_ids:
+                continue
+            v = Verdict(next(v_iter))
+            items.append(EvaluationItem(
+                id=it.id,
+                premises=list(it.premises),
+                conclusions=list(it.conclusions),
+                analyst_verdicts=list(it.analyst_verdicts),
+                tags=list(it.tags),
+                model_verdict=v,
+                samples=[],
+            ))
+        return Evaluation(
+            id="partial-test", benchmark_id=bench.id,
+            model=ModelInfo(provider="mock", model_id="scripted-mock-v1"),
+            items=items,
+        )
+
+    def test_rsr_role_consistency_skips_missing_role_item(self, caplog) -> None:
+        bench = self._two_base_one_role_bench()
+        # Drop r1 — the role-tagged item is absent from the evaluation.
+        eta = self._partial_eval(bench, {"b1", "b2"}, ["good", "good"])
+        with caplog.at_level("WARNING"):
+            check = rsr_role_consistency_check(eta, bench)
+        assert check.items_checked == 0  # role-tagged item was skipped
+        assert "r1" in caplog.text
+        assert "absent from evaluation" in caplog.text
+
+    def test_rsr_role_consistency_skips_missing_base_item(self, caplog) -> None:
+        bench = self._two_base_one_role_bench()
+        # Drop b1 — one of two base-inference items is absent.
+        eta = self._partial_eval(bench, {"b2", "r1"}, ["good", "good"])
+        with caplog.at_level("WARNING"):
+            check = rsr_role_consistency_check(eta, bench)
+        # b2 is the only base present; the role check proceeds against
+        # its verdict. r1 (irrelevant-addition) is GOOD as expected.
+        assert check.items_checked == 1
+        assert check.items_satisfying == 1
+        assert "b1" in caplog.text
+
+    def test_base_case_stability_skips_missing_base_item(self, caplog) -> None:
+        bench = self._two_base_one_role_bench()
+        # Drop b1 — only one base remains, so the stability check has
+        # nothing to compare against.
+        eta = self._partial_eval(bench, {"b2", "r1"}, ["good", "good"])
+        with caplog.at_level("WARNING"):
+            check = base_case_stability_check(eta, bench)
+        assert check.items_checked == 0
+        assert "b1" in caplog.text
+
+    def test_run_all_checks_does_not_raise_on_partial_eval(self) -> None:
+        bench = self._two_base_one_role_bench()
+        eta = self._partial_eval(bench, {"b2"}, ["good"])
+        # Pre-fix: KeyError: 'b1' from rsr_role_consistency_check.
+        report = run_all_checks(eta, bench)
+        assert report.evaluation_id == eta.id
+        assert len(report.checks) == 3
+
+
 # ---- CLI integration -----------------------------------------------------
 
 

@@ -352,6 +352,22 @@ class Benchmark(BaseModel):
     """Optional constraints the benchmark validator enforces on the
     factorial design. Currently supports ``min_items_per_cell``. See
     :class:`FactorConstraints`."""
+    factor_kinds: dict[str, Literal["substantive", "experimentally_controlled"]] = Field(
+        default_factory=dict
+    )
+    """Optional per-factor valence tag used by ``infereval report`` to
+    label null-effect findings. ``"substantive"`` factors are the
+    things the analyst wants the model's behavior to differ across
+    (a null Wald test on a substantive factor *weakens* the mastery
+    claim — the model failed to differentiate where it should).
+    ``"experimentally_controlled"`` factors are things the analyst
+    *wants* not to matter (paraphrase variants, prompt seeds; a null
+    Wald test on a controlled factor *strengthens* the claim —
+    content-not-form behavior). Keys must be names declared in
+    :attr:`factors`; factors omitted from this map get no valence
+    label and the report describes the null-effect finding
+    neutrally. Phase 4 of the construct-validity infrastructure
+    (added in v0.5.3 in response to external review)."""
     primary_panel: str | None = None
     """Optional name of the primary analyst panel. Determines which
     panel ``κ_F*(β)`` reports against by default and which column feeds
@@ -446,6 +462,16 @@ class Benchmark(BaseModel):
                         f"but {fval!r} is not a declared level for {fkey!r} "
                         f"(declared levels: {self.factors[fkey]})"
                     )
+
+        # factor_kinds keys must reference declared factors. (Values are
+        # constrained to {"substantive", "experimentally_controlled"} by
+        # the Literal typing at the field declaration.)
+        for fkey in self.factor_kinds:
+            if fkey not in self.factors:
+                raise ValueError(
+                    f"factor_kinds references unknown factor {fkey!r} "
+                    f"(declared factors: {sorted(self.factors)})"
+                )
 
         # min_items_per_cell — every cell of the fully crossed design must
         # contain ≥ k items (an item is in a cell iff its factor_levels
