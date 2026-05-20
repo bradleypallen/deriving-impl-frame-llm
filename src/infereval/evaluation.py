@@ -212,6 +212,14 @@ class Evaluation(BaseModel):
     time. Carries the paper, dialogue, or regulatory framework the
     benchmark is derived from, so an evaluation JSON read in isolation
     still names its primary sources."""
+    paraphrase_variant: int = 0
+    """Index of the paraphrase variant used at evaluation time. ``0``
+    (default) means the canonical :attr:`BearerModel.expression` was
+    used for every bearer. ``k >= 1`` means ``bearer.paraphrases[k-1]``
+    was used per :func:`infereval.endorsement._expressions_for` (with
+    fallback to the canonical for bearers that don't carry that
+    paraphrase). Phase 1.2 of the construct-validity infrastructure
+    (R10: paraphrase variation under fixed inferential content)."""
 
     @field_validator("references", mode="before")
     @classmethod
@@ -273,6 +281,7 @@ def evaluate(
     strip_tex: bool = True,
     run_id: str | None = None,
     log_path: Path | str | None = None,
+    variant: int = 0,
 ) -> Evaluation:
     """Run a model against a benchmark and assemble the resulting :math:`\\eta`.
 
@@ -353,6 +362,7 @@ def evaluate(
             endorsement_config=cfg.model_dump(mode="json"),
             verification_prompt_id=prompt.id,
             strip_tex=strip_tex,
+            paraphrase_variant=variant,
             framework_version=__version__,
         )
 
@@ -370,6 +380,7 @@ def evaluate(
                 verification_prompt=prompt,
                 strip_tex=strip_tex,
                 request_id_prefix=f"{rid}:{bench_item.id}",
+                variant=variant,
             )
             items.append(
                 EvaluationItem(
@@ -411,4 +422,5 @@ def evaluate(
         finished_at=finished,
         items=items,
         references=list(benchmark.references),
+        paraphrase_variant=variant,
     )

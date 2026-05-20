@@ -540,3 +540,35 @@ class TestFactorialDesign:
         assert cells[("b",)] == 0
         # Total counted = 1 (the item with no factor_levels is excluded)
         assert sum(cells.values()) == 1
+
+
+# ---- Paraphrase variants helper (Issue #32, Phase 1.2) ------------------
+
+
+class TestParaphraseVariantsHelper:
+    """``Benchmark.n_paraphrase_variants`` reflects the runtime variant count."""
+
+    def test_returns_one_when_no_paraphrases(self, stop_sign_benchmark_dict: dict) -> None:
+        # Stop-sign bearers have no paraphrases.
+        bench = Benchmark.model_validate(stop_sign_benchmark_dict)
+        assert bench.n_paraphrase_variants == 1
+
+    def test_returns_one_plus_max_paraphrase_count(self) -> None:
+        data = {
+            "schema_version": "1.0",
+            "id": "para-helper",
+            "bearers": {
+                "sa": {"expression": "a is a stop sign",
+                       "paraphrases": ["alt1", "alt2", "alt3"]},
+                "ra": {"expression": "a is red", "paraphrases": ["alt1"]},
+                "n": {"expression": "it is nighttime"},  # no paraphrases
+            },
+            "analysts": [{"id": "a"}],
+            "items": [{
+                "id": "i1", "premises": ["sa"], "conclusions": ["ra"],
+                "analyst_verdicts": ["good"],
+            }],
+        }
+        bench = Benchmark.model_validate(data)
+        # max paraphrases = 3 (on sa); variant count = 4.
+        assert bench.n_paraphrase_variants == 4

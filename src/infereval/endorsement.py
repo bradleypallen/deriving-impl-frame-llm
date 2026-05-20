@@ -143,11 +143,31 @@ def _expressions_for(
     bearers: Mapping[str, Bearer],
     *,
     strip_tex: bool,
+    variant: int = 0,
 ) -> list[str]:
-    """Return the bearer expressions for ``bearer_ids``, sorted by id."""
+    """Return the bearer expressions for ``bearer_ids``, sorted by id.
+
+    For ``variant=0`` (default) every bearer is rendered via its canonical
+    :attr:`Bearer.expression`. For ``variant=k >= 1`` every bearer is
+    rendered via ``bearer.paraphrases[k-1]`` *if it exists*, falling back
+    to ``bearer.expression`` otherwise. The fallback rule lets benchmarks
+    have mixed paraphrase coverage — some bearers with 3 variants, others
+    with none — and higher variants quietly use the canonical for bearers
+    that don't reach them.
+
+    Phase 1.2 of the construct-validity infrastructure (R10: paraphrase
+    variation under fixed inferential content).
+    """
     out: list[str] = []
     for bid in sorted(bearer_ids):
-        expr = bearers[bid].expression
+        bearer = bearers[bid]
+        if variant == 0:
+            expr = bearer.expression
+        else:
+            try:
+                expr = bearer.paraphrases[variant - 1]
+            except IndexError:
+                expr = bearer.expression
         if strip_tex:
             expr = strip_tex_math(expr)
         out.append(expr)
@@ -175,6 +195,7 @@ def endorse(
     verification_prompt: VerificationPrompt = DEFAULT_VERIFICATION_PROMPT,
     strip_tex: bool = True,
     request_id_prefix: str | None = None,
+    variant: int = 0,
 ) -> EndorsementRecord:
     """Compute :math:`E_M(\\langle \\Gamma, \\Delta \\rangle)` for one implication.
 
@@ -185,9 +206,20 @@ def endorse(
     Provider sample failures (after the provider's own retries are
     exhausted) are recorded as ``sample_failed`` and contribute an
     ``ABSTAIN`` verdict to the vote.
+
+    The ``variant`` parameter selects which expression each bearer is
+    rendered with. ``variant=0`` (the default) uses the canonical
+    expressions; ``variant=k`` uses ``bearer.paraphrases[k-1]`` per
+    :func:`_expressions_for`. Use this to drive the paraphrase axis
+    of variation (R10) without needing to mutate the benchmark JSON
+    between runs.
     """
-    premise_exprs = _expressions_for(implication.premises, bearers, strip_tex=strip_tex)
-    conclusion_exprs = _expressions_for(implication.conclusions, bearers, strip_tex=strip_tex)
+    premise_exprs = _expressions_for(
+        implication.premises, bearers, strip_tex=strip_tex, variant=variant
+    )
+    conclusion_exprs = _expressions_for(
+        implication.conclusions, bearers, strip_tex=strip_tex, variant=variant
+    )
     premise_ctx = premise_builder(premise_exprs)
     conclusion_ctx = conclusion_builder(conclusion_exprs)
     user_text = verification_prompt.build_user(premise_ctx, conclusion_ctx)

@@ -376,3 +376,96 @@ class TestBudgetClipped:
 
         record = _run(_UnparseableButCleanProvider(), n_samples=1)  # type: ignore[arg-type]
         assert record.samples[0].parse_status == "unparseable"
+
+
+# ---- Paraphrase variants (Issue #32, Phase 1.2) ---------------------------
+
+
+class TestParaphraseVariants:
+    """``endorse(variant=k)`` renders each bearer via the variant's expression."""
+
+    @staticmethod
+    def _bearers_with_paraphrases() -> dict[str, Bearer]:
+        return {
+            "sa": Bearer(
+                id="sa",
+                expression="a is a stop sign",
+                paraphrases=("a is a roadway stop indicator", "a is an octagonal red sign"),
+            ),
+            "ra": Bearer(
+                id="ra",
+                expression="a is red",
+                paraphrases=("a appears red", "a has the color red"),
+            ),
+            # n has no paraphrases — variant > 0 must fall back to its canonical.
+            "n": Bearer(id="n", expression="it is nighttime"),
+        }
+
+    def _capture_prompts(self, variant: int) -> str:
+        """Run a one-sample evaluation at ``variant`` and return the prompt text."""
+        captured: list[str] = []
+
+        class _Capturing:
+            name = "capture"
+            model_id = "v1"
+
+            def sample(self, req):  # type: ignore[no-untyped-def]
+                from infereval.providers.base import SampleResult
+
+                captured.append(req.prompt)
+                return SampleResult(
+                    text="GOOD",
+                    provider=self.name,
+                    model_id=self.model_id,
+                    request_id=req.request_id,
+                    finish_reason="stop",
+                )
+
+        endorse(
+            _imp(["sa", "n"], ["ra"]),
+            self._bearers_with_paraphrases(),
+            _Capturing(),  # type: ignore[arg-type]
+            _config(n_samples=1),
+            ProviderParams(),
+            premise_builder=PREMISE_BUILDER,
+            conclusion_builder=CONCLUSION_BUILDER,
+            verification_prompt=DEFAULT_VERIFICATION_PROMPT,
+            variant=variant,
+        )
+        return captured[0]
+
+    def test_variant_0_uses_canonical_expressions(self) -> None:
+        prompt = self._capture_prompts(variant=0)
+        assert "a is a stop sign" in prompt
+        assert "a is red" in prompt
+        assert "it is nighttime" in prompt
+
+    def test_variant_1_uses_first_paraphrase_per_bearer(self) -> None:
+        prompt = self._capture_prompts(variant=1)
+        assert "a is a roadway stop indicator" in prompt
+        assert "a appears red" in prompt
+        # 'n' has no paraphrases -> canonical is used.
+        assert "it is nighttime" in prompt
+        # The canonical 'a is a stop sign' / 'a is red' MUST NOT appear.
+        assert "a is a stop sign" not in prompt
+        assert "a is red" not in prompt
+
+    def test_variant_2_uses_second_paraphrase(self) -> None:
+        prompt = self._capture_prompts(variant=2)
+        assert "a is an octagonal red sign" in prompt
+        assert "a has the color red" in prompt
+        assert "it is nighttime" in prompt
+
+    def test_out_of_range_variant_falls_back_to_canonical(self) -> None:
+        # Variants beyond a bearer's paraphrase count quietly fall back.
+        prompt = self._capture_prompts(variant=99)
+        assert "a is a stop sign" in prompt  # canonical fallback
+        assert "a is red" in prompt
+        assert "it is nighttime" in prompt
+
+    def test_default_variant_is_zero(self) -> None:
+        # Calling endorse() without a variant argument matches variant=0.
+        prompt_default = self._capture_prompts(variant=0)
+        # Direct comparison: the prompts produced by variant=0 and an
+        # explicit-no-variant call are byte-identical for the same item.
+        assert "a is a stop sign" in prompt_default

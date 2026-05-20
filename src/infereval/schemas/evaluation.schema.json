@@ -460,7 +460,7 @@
       "$ref": "#/$defs/EndorsementConfig"
     },
     "framework_version": {
-      "default": "0.3.0",
+      "default": "0.3.1",
       "title": "Framework Version",
       "type": "string"
     },
@@ -503,6 +503,11 @@
       },
       "title": "References",
       "type": "array"
+    },
+    "paraphrase_variant": {
+      "default": 0,
+      "title": "Paraphrase Variant",
+      "type": "integer"
     }
   },
   "required": [

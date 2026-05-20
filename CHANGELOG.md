@@ -12,6 +12,55 @@ stable from 1.0 onward, regardless of the framework version.
 
 No changes yet.
 
+## [0.3.1] — 2026-05-19
+
+Second piece of the construct-validity infrastructure series. Promotes
+the `BearerModel.paraphrases` field from documentation-only to
+runtime-active and exposes it on the CLI as `--paraphrase-variant` /
+`--paraphrase-cycle`. Addresses **R10** — *the single most-cited
+concern in the source document about content-vs-form sensitivity*.
+
+### Added
+
+- **Issue #32 (Phase 1.2)** — **runtime paraphrase-axis support**.
+  - `infereval.endorsement._expressions_for(..., variant=k)` now picks
+    `bearer.paraphrases[k-1]` per bearer for `k >= 1`, falling back to
+    `bearer.expression` when the bearer doesn't have that paraphrase.
+    `variant=0` (default) preserves existing behavior.
+  - `infereval.endorsement.endorse(..., variant=k)` and
+    `infereval.evaluation.evaluate(..., variant=k)` thread the variant
+    through.
+  - New `Evaluation.paraphrase_variant: int = 0` field records which
+    variant was used at evaluation time.
+  - New `Benchmark.n_paraphrase_variants -> int` helper returns
+    `1 + max(len(b.paraphrases) for b in bearers)`.
+  - **CLI**: `infereval evaluate` gains `--paraphrase-variant K` (single
+    non-default variant) and `--paraphrase-cycle` (all K variants).
+    Mutually exclusive. `--paraphrase-cycle` suffixes the output path,
+    log path, and run-id with `-vN` per variant so the per-variant
+    artifacts are unambiguous.
+  - **CLI**: `infereval describe` adds a one-line `paraphrase variants:`
+    summary when any bearer carries paraphrases (`K (Y/Z bearers carry
+    paraphrases; max M each)`). Omitted otherwise.
+  - Validation: `--paraphrase-variant K` rejects `K >=
+    benchmark.n_paraphrase_variants`; the two flags together is
+    rejected with a clear error.
+  - 12 new unit tests covering `_expressions_for` variant semantics
+    (canonical / first / second / out-of-range), the `evaluate()`
+    integration (recording / round-trip / backwards-compat), the
+    `n_paraphrase_variants` helper, CLI behaviors (variant recording,
+    cycle file-suffixing, log-suffixing, run-id-suffixing, out-of-range
+    rejection, mutual-exclusion rejection, no-effect on benchmarks
+    without paraphrases), and the `describe` rendering (omitted /
+    rendered with correct variant count and coverage line).
+
+### Backwards compatibility
+
+`Evaluation.paraphrase_variant` defaults to `0`. Every pre-0.3.1
+evaluation JSON validates unchanged. No bearer-side schema changes —
+`paraphrases` was already in the schema, just unused at runtime.
+`schema_version` stays `"1.0"`.
+
 ## [0.3.0] — 2026-05-19
 
 **Construct-validity infrastructure series begins.** First piece of the

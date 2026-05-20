@@ -285,3 +285,43 @@ class TestReferencesPropagation:
         assert eta.references[0].citation == "A string"
         assert eta.references[0].doi is None
         assert eta.references[1].citation == "Structured"
+
+
+# ---- Paraphrase variants (Issue #32, Phase 1.2) ---------------------------
+
+
+class TestParaphraseVariantInEvaluation:
+    """``Evaluation.paraphrase_variant`` records which variant was used."""
+
+    def test_default_variant_is_zero(self) -> None:
+        bench = _stop_sign()
+        provider = ScriptedProvider(responses=["GOOD"])
+        eta = evaluate(bench, provider, config=EndorsementConfig(n_samples=1))
+        assert eta.paraphrase_variant == 0
+
+    def test_variant_recorded_when_supplied(self) -> None:
+        bench = _stop_sign()
+        provider = ScriptedProvider(responses=["GOOD"])
+        eta = evaluate(bench, provider, config=EndorsementConfig(n_samples=1), variant=3)
+        assert eta.paraphrase_variant == 3
+
+    def test_variant_survives_dump_load(self, tmp_path: Path) -> None:
+        bench = _stop_sign()
+        provider = ScriptedProvider(responses=["GOOD"])
+        eta = evaluate(bench, provider, config=EndorsementConfig(n_samples=1), variant=2)
+        path = tmp_path / "eta.json"
+        eta.dump(path)
+        reloaded = Evaluation.load(path)
+        assert reloaded.paraphrase_variant == 2
+
+    def test_evaluation_loads_pre_032_evaluation_with_default_variant(self) -> None:
+        # An evaluation JSON predating Issue #32 has no paraphrase_variant
+        # field; the model should default it to 0.
+        eta_json = {
+            "id": "pre-0.3.1",
+            "benchmark_id": "test",
+            "model": {"provider": "mock", "model_id": "scripted-mock-v1"},
+            "items": [],
+        }
+        eta = Evaluation.model_validate(eta_json)
+        assert eta.paraphrase_variant == 0

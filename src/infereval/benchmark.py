@@ -438,6 +438,23 @@ class Benchmark(BaseModel):
         return all(n >= k for n in self.cells().values())
 
     @property
+    def n_paraphrase_variants(self) -> int:
+        """Number of paraphrase variants this benchmark admits at evaluation time.
+
+        Returns ``1 + max(len(b.paraphrases) for b in bearers)``, or just
+        ``1`` if no bearer carries any paraphrase. Variant ``0`` always
+        uses the canonical :attr:`BearerModel.expression`; variant
+        ``k >= 1`` uses ``bearer.paraphrases[k-1]`` when available and
+        falls back to the canonical otherwise (per
+        :func:`infereval.endorsement._expressions_for`).
+
+        Phase 1.2 of the construct-validity infrastructure (R10).
+        """
+        if not self.bearers:
+            return 1
+        return 1 + max(len(b.paraphrases) for b in self.bearers.values())
+
+    @property
     def m(self) -> int:
         """Number of analysts :math:`m`."""
         return len(self.analysts)
