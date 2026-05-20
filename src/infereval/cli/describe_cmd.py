@@ -154,6 +154,52 @@ def _render_references_summary(bench: Benchmark) -> None:
     click.echo("")
 
 
+def _render_panels(bench: Benchmark) -> None:
+    """Print analyst-panel summary + per-panel κ_F* + cross-panel κ_C.
+
+    Surfaces R4 (independent reference check) infrastructure. Omitted
+    when no analyst declares a panel. Phase 1.4 of the construct-validity
+    infrastructure.
+    """
+    names = bench.panel_names()
+    if not names:
+        return
+
+    from infereval.metrics import cross_panel_kappa, inter_analyst_fleiss_per_panel
+
+    primary = bench.resolved_primary_panel()
+    per_panel = inter_analyst_fleiss_per_panel(bench)
+
+    click.echo(f"analyst panels: {len(names)} (primary = {primary})")
+    name_w = max(len(n) for n in names)
+    for n in names:
+        analysts = bench.analysts_in_panel(n)
+        m = len(analysts)
+        ids = ", ".join(a.id for a in analysts)
+        kappa = per_panel.get(n)
+        kappa_str = _format_kappa(kappa) if kappa is not None else (
+            "undefined (n<2)" if m < 2 else "undefined (unanimous)"
+        )
+        click.echo(
+            f"  {n.ljust(name_w)}  {ids}  (n={m})  κ_F* = {kappa_str}"
+        )
+
+    # Cross-panel κ_C when exactly two panels are declared.
+    if len(names) == 2 and primary is not None:
+        check = next(n for n in names if n != primary)
+        cp = cross_panel_kappa(bench, primary=primary, check=check)
+        if cp is not None:
+            click.echo(
+                f"  cross-panel κ_C({primary} vs {check}): {_format_kappa(cp)}"
+            )
+        else:
+            click.echo(
+                f"  cross-panel κ_C({primary} vs {check}): undefined "
+                "(no substantive intersection or degenerate marginal)"
+            )
+    click.echo("")
+
+
 def _render_construction_provenance(bench: Benchmark) -> None:
     """Print a summary of per-item construction provenance.
 
@@ -606,6 +652,7 @@ def describe_cmd(path: Path, show_items: bool = False) -> None:
     _render_references_summary(bench)
     _render_factorial_design(bench)
     _render_paraphrase_variants(bench)
+    _render_panels(bench)
     _render_construction_provenance(bench)
     _render_group_cross_tab(bench)
 

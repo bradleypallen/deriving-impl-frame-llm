@@ -379,6 +379,54 @@ class TestDescribeFactorialDesign:
         assert "cells meeting min:  0 / 3" in out
 
 
+class TestDescribePanels:
+    """Issue #36 (Phase 1.4): `describe` surfaces analyst panels."""
+
+    def _panelled_path(self, tmp_path: Path) -> Path:
+        data = {
+            "schema_version": "1.0",
+            "id": "panel-describe",
+            "bearers": {"p": {"expression": "P"}, "q": {"expression": "Q"}},
+            "analysts": [
+                {"id": "a1", "panel": "primary"},
+                {"id": "a2", "panel": "primary"},
+                {"id": "a3", "panel": "reviewer"},
+                {"id": "a4", "panel": "reviewer"},
+            ],
+            "primary_panel": "primary",
+            "items": [
+                {"id": f"i{i}", "premises": ["p"], "conclusions": ["q"],
+                 "analyst_verdicts": v}
+                for i, v in enumerate([
+                    ["good", "good", "good", "good"],
+                    ["good", "good", "bad", "bad"],
+                    ["bad", "bad", "bad", "bad"],
+                    ["good", "good", "good", "good"],
+                ])
+            ],
+        }
+        path = tmp_path / "panel.json"
+        path.write_text(json.dumps(data), encoding="utf-8")
+        return path
+
+    def test_section_omitted_for_unpanelled_benchmark(self) -> None:
+        runner = CliRunner()
+        result = runner.invoke(cli, ["describe", str(STOP_SIGN_PATH)])
+        assert "analyst panels:" not in result.output
+
+    def test_section_renders_with_per_panel_kappa(self, tmp_path: Path) -> None:
+        runner = CliRunner()
+        result = runner.invoke(cli, ["describe", str(self._panelled_path(tmp_path))])
+        assert "analyst panels: 2 (primary = primary)" in result.output
+        # Per-panel lines.
+        assert "primary" in result.output and "(n=2)" in result.output
+        assert "reviewer" in result.output
+        # κ_F* per panel.
+        assert "κ_F* =" in result.output
+        # Cross-panel line.
+        assert "cross-panel κ_C(primary vs reviewer):" in result.output
+
+
 class TestDescribeConstructionProvenance:
     """Issue #34 (Phase 1.3): `describe` surfaces construction metadata."""
 

@@ -27,6 +27,7 @@ into a single object suitable for JSON-printing, with ``by_tag`` and
 from __future__ import annotations
 
 import logging
+from collections import Counter
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
@@ -259,10 +260,175 @@ def inter_analyst_fleiss(source: Evaluation | Benchmark) -> float | None:
     a logged warning) when :math:`m < 2` or when the analysts are
     unanimous on every item -- the two conditions Remark 5 calls out as
     making the baseline unavailable.
+
+    For panelled benchmarks (Issue #36, Phase 1.4), this returns the
+    κ_F* of the *primary* panel only — see
+    :func:`inter_analyst_fleiss_per_panel` for per-panel breakdown and
+    :func:`cross_panel_kappa` for the cross-panel agreement metric.
     """
+    # Late import to avoid the metrics <-> benchmark cycle.
+    from .benchmark import Benchmark as _Benchmark
+
+    if isinstance(source, _Benchmark) and source.panel_names():
+        primary = source.resolved_primary_panel()
+        if primary is None:
+            return None
+        indices = source.analyst_indices_in_panel(primary)
+        tuples = [[it.analyst_verdicts[j] for j in indices] for it in source.items]
+        return _fleiss_over_tuples(tuples)
     items = source.items
     tuples = [list(it.analyst_verdicts) for it in items]
     return _fleiss_over_tuples(tuples)
+
+
+def inter_analyst_fleiss_per_panel(
+    benchmark: Benchmark,
+) -> dict[str, float | None]:
+    """:math:`\\kappa_F^*` computed per analyst panel.
+
+    Returns a mapping ``panel_name -> κ_F*`` for every panel declared on
+    the benchmark. A panel value is ``None`` when the panel has fewer
+    than 2 analysts or when the analysts are unanimous on every item
+    (per the same conditions :func:`inter_analyst_fleiss` honours).
+
+    Empty dict if the benchmark is unpanelled. Phase 1.4 of the
+    construct-validity infrastructure (R4).
+    """
+    out: dict[str, float | None] = {}
+    for name in benchmark.panel_names():
+        indices = benchmark.analyst_indices_in_panel(name)
+        tuples = [
+            [it.analyst_verdicts[j] for j in indices] for it in benchmark.items
+        ]
+        out[name] = _fleiss_over_tuples(tuples)
+    return out
+
+
+def _panel_consensus_verdict(
+    item_verdicts: Sequence[Verdict],
+    indices: Sequence[int],
+) -> Verdict:
+    """Majority verdict among the indexed analysts; abstain on tie.
+
+    Used as the per-item consensus for cross-panel agreement
+    calculations. Matches the conservative tie-break the framework uses
+    elsewhere (per CLAUDE.md locked methodology defaults).
+    """
+    counts = Counter(item_verdicts[j] for j in indices)
+    if not counts:
+        return Verdict.ABSTAIN
+    top = counts.most_common(1)[0][1]
+    winners = [v for v, c in counts.items() if c == top]
+    if len(winners) > 1:
+        return Verdict.ABSTAIN
+    return winners[0]
+
+
+def cross_panel_kappa(
+    benchmark: Benchmark,
+    *,
+    primary: str | None = None,
+    check: str | None = None,
+) -> float | None:
+    """Cohen's :math:`\\kappa_C` between two panels' per-item consensus verdicts.
+
+    Computes a per-panel consensus verdict for each item (majority among
+    panel members, abstain on tie) and then runs Cohen's kappa between
+    the two columns, restricted to items where both panels yield a
+    substantive verdict.
+
+    Parameters
+    ----------
+    benchmark
+        Panelled benchmark.
+    primary
+        Name of the primary panel. Defaults to
+        ``benchmark.resolved_primary_panel()``.
+    check
+        Name of the panel to compare against. When ``None`` and exactly
+        two panels are declared, picks the non-primary one
+        automatically.
+
+    Returns
+    -------
+    float | None
+        Cohen's kappa over the substantive-on-both items, or ``None``
+        when fewer than two non-trivial agreement counts are available,
+        or when either named panel doesn't exist.
+
+    Phase 1.4 of the construct-validity infrastructure (R4 — guards
+    against shared-error agreement within the primary panel by
+    surfacing the independent panel's view).
+    """
+    names = benchmark.panel_names()
+    if primary is None:
+        primary = benchmark.resolved_primary_panel()
+    if primary is None or primary not in names:
+        log.warning(
+            "cross_panel_kappa: primary panel %r not declared on benchmark %r",
+            primary,
+            benchmark.id,
+        )
+        return None
+    if check is None:
+        others = [n for n in names if n != primary]
+        if len(others) != 1:
+            log.warning(
+                "cross_panel_kappa: 'check' panel must be supplied when the "
+                "benchmark declares != 2 panels (declared: %s)",
+                names,
+            )
+            return None
+        check = others[0]
+    if check not in names:
+        log.warning(
+            "cross_panel_kappa: check panel %r not declared on benchmark %r",
+            check,
+            benchmark.id,
+        )
+        return None
+
+    primary_idx = benchmark.analyst_indices_in_panel(primary)
+    check_idx = benchmark.analyst_indices_in_panel(check)
+
+    primary_col = [
+        _panel_consensus_verdict(it.analyst_verdicts, primary_idx)
+        for it in benchmark.items
+    ]
+    check_col = [
+        _panel_consensus_verdict(it.analyst_verdicts, check_idx)
+        for it in benchmark.items
+    ]
+
+    # Restrict to items where both panels reached a substantive consensus.
+    pairs = [
+        (p, c)
+        for p, c in zip(primary_col, check_col, strict=True)
+        if p != Verdict.ABSTAIN and c != Verdict.ABSTAIN
+    ]
+    if not pairs:
+        log.warning(
+            "cross_panel_kappa: empty substantive intersection between panels "
+            "%r and %r on benchmark %r",
+            primary,
+            check,
+            benchmark.id,
+        )
+        return None
+
+    cats = (Verdict.GOOD, Verdict.BAD)
+    n = len(pairs)
+    p_obs = sum(1 for p, c in pairs if p == c) / n
+    pa = {v: sum(1 for p, _ in pairs if p == v) / n for v in cats}
+    pc = {v: sum(1 for _, c in pairs if c == v) / n for v in cats}
+    p_exp = sum(pa[v] * pc[v] for v in cats)
+    if abs(1 - p_exp) < 1e-12:
+        log.warning(
+            "cross_panel_kappa: chance-expected agreement = 1 (one panel is "
+            "fully degenerate to a single class); kappa is undefined"
+        )
+        return None
+    return (p_obs - p_exp) / (1 - p_exp)
 
 
 # ---- High-level aggregator -----------------------------------------------

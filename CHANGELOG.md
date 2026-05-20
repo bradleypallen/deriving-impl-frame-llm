@@ -12,6 +12,61 @@ stable from 1.0 onward, regardless of the framework version.
 
 No changes yet.
 
+## [0.3.3] — 2026-05-19
+
+**Phase 1 of the construct-validity infrastructure series closes.**
+Final Phase 1 piece adds reference-panel declaration and the
+cross-panel agreement metric. Addresses **R4** (independent reference
+check).
+
+### Added
+
+- **Issue #36 (Phase 1.4)** — **reference-panel declaration**.
+  - `AnalystModel.panel: str | None = None` — analysts sharing a panel
+    string are members of the same panel for cross-panel agreement
+    analysis.
+  - `Benchmark.primary_panel: str | None = None` — names the panel
+    that `κ_F*` and the cross-panel statistic report against by
+    default.
+  - Validation: if any analyst declares a panel, all must (no
+    partial-panel benchmarks); if `primary_panel` is set, at least one
+    analyst must belong to it.
+  - Helpers `Benchmark.panel_names()`, `analysts_in_panel(name)`,
+    `analyst_indices_in_panel(name)`, `resolved_primary_panel()`.
+  - **New metric** `inter_analyst_fleiss_per_panel(benchmark)` returns
+    `κ_F*` per declared panel as `{panel_name: float | None}`.
+  - **New metric** `cross_panel_kappa(benchmark, primary=..., check=...)`
+    computes Cohen's κ between two panels' per-item consensus
+    verdicts (majority within each panel, abstain on tie), restricted
+    to items where both panels yield a substantive consensus. Guards
+    against shared-error agreement within the primary pool (the
+    specific concern Campbell & Fiske 1959 raise).
+  - `inter_analyst_fleiss(benchmark)` now returns the *primary panel's*
+    κ_F* for panelled benchmarks (unpanelled behavior unchanged).
+  - **CLI**: `infereval describe` adds an `analyst panels:` section
+    listing each panel's members, per-panel κ_F*, and (when exactly
+    two panels are declared) the cross-panel κ_C. Omitted when no
+    analyst declares a panel.
+  - 14 new tests across schema validation, helpers, the per-panel +
+    cross-panel metrics (with hand-verified κ value), and the CLI
+    rendering.
+
+### Backwards compatibility
+
+`AnalystModel.panel` and `Benchmark.primary_panel` both default to
+`None`. Every pre-0.3.3 benchmark validates unchanged.
+`inter_analyst_fleiss(benchmark)` returns the same value as before
+for flat benchmarks. `schema_version` stays `"1.0"`.
+
+### Phase 1 closes
+
+All four Phase 1 features from *Closing the Construct-Validity Gap in
+infereval* are now shipped: factorial-design metadata (#30 / v0.3.0),
+runtime paraphrase-axis support (#32 / v0.3.1), construction-provenance
+metadata (#34 / v0.3.2), and reference-panel declaration (#36 / v0.3.3).
+Phase 2 (analytical extensions — structural coherence checks, mixed-
+effects model fitting, sensitivity-analysis sweeps) is next.
+
 ## [0.3.2] — 2026-05-19
 
 Third piece of the construct-validity infrastructure series. Adds

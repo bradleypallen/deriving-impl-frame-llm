@@ -671,3 +671,68 @@ class TestConstructionMetadata:
         # Unset fields are excluded from output (exclude_none) but parse back to None.
         assert cm.source is None
         assert cm.authored_blind_to_models == []
+
+
+# ---- Reference panels (Issue #36, Phase 1.4) ----------------------------
+
+
+def _panelled_benchmark_dict() -> dict:
+    return {
+        "schema_version": "1.0",
+        "id": "panel-test",
+        "bearers": {"p": {"expression": "P"}, "q": {"expression": "Q"}},
+        "analysts": [
+            {"id": "a1", "panel": "primary"},
+            {"id": "a2", "panel": "primary"},
+            {"id": "a3", "panel": "reviewer"},
+        ],
+        "primary_panel": "primary",
+        "items": [
+            {"id": "i1", "premises": ["p"], "conclusions": ["q"],
+             "analyst_verdicts": ["good", "good", "good"]},
+        ],
+    }
+
+
+class TestReferencePanels:
+    """``AnalystModel.panel`` + ``Benchmark.primary_panel`` + helpers."""
+
+    def test_well_formed_panelled_benchmark_validates(self) -> None:
+        bench = Benchmark.model_validate(_panelled_benchmark_dict())
+        assert bench.panel_names() == ["primary", "reviewer"]
+
+    def test_partial_panel_rejected(self) -> None:
+        d = _panelled_benchmark_dict()
+        # Remove panel from the middle analyst -> partial.
+        d["analysts"][1].pop("panel")
+        with pytest.raises(ValidationError, match="Partial-panel"):
+            Benchmark.model_validate(d)
+
+    def test_primary_panel_must_exist(self) -> None:
+        d = _panelled_benchmark_dict()
+        d["primary_panel"] = "ghost"
+        with pytest.raises(ValidationError, match="primary_panel='ghost'"):
+            Benchmark.model_validate(d)
+
+    def test_analyst_indices_in_panel(self) -> None:
+        bench = Benchmark.model_validate(_panelled_benchmark_dict())
+        assert bench.analyst_indices_in_panel("primary") == [0, 1]
+        assert bench.analyst_indices_in_panel("reviewer") == [2]
+        assert bench.analyst_indices_in_panel("nonexistent") == []
+
+    def test_resolved_primary_panel(self) -> None:
+        # Explicit primary_panel wins.
+        bench = Benchmark.model_validate(_panelled_benchmark_dict())
+        assert bench.resolved_primary_panel() == "primary"
+
+        # Unset primary_panel falls back to alphabetically-first panel name.
+        d = _panelled_benchmark_dict()
+        d["primary_panel"] = None
+        bench2 = Benchmark.model_validate(d)
+        assert bench2.resolved_primary_panel() == "primary"
+
+    def test_unpanelled_benchmark_unchanged(self, stop_sign_benchmark_dict: dict) -> None:
+        bench = Benchmark.model_validate(stop_sign_benchmark_dict)
+        assert bench.panel_names() == []
+        assert bench.primary_panel is None
+        assert bench.resolved_primary_panel() is None
