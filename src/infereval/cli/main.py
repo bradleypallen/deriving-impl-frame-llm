@@ -13,6 +13,7 @@ from infereval import __version__
 from infereval.cli.describe_cmd import describe_cmd
 from infereval.cli.evaluate_cmd import evaluate_cmd
 from infereval.cli.metrics_cmd import metrics_cmd
+from infereval.cli.structure_cmd import structure_cmd
 from infereval.cli.validate_cmd import validate_cmd
 
 
@@ -34,6 +35,7 @@ cli.add_command(validate_cmd)
 cli.add_command(describe_cmd)
 cli.add_command(evaluate_cmd)
 cli.add_command(metrics_cmd)
+cli.add_command(structure_cmd)
 
 
 if __name__ == "__main__":
