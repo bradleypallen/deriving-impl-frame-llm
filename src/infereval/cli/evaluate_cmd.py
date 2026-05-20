@@ -110,7 +110,7 @@ def _print_dry_run(benchmark: Benchmark) -> None:
 )
 @click.option("--n-samples", type=click.IntRange(min=1), default=5, show_default=True)
 @click.option("--temperature", type=float, default=1.0, show_default=True)
-@click.option("--max-tokens", type=click.IntRange(min=1), default=32, show_default=True)
+@click.option("--max-tokens", type=click.IntRange(min=1), default=1024, show_default=True)
 @click.option("--top-p", type=float, default=None)
 @click.option("--seed", type=int, default=None,
               help="Random seed. Honored by OpenAI; ignored (with warning) by Anthropic.")

@@ -35,18 +35,11 @@ Model id conventions (as of 2026-05): `claude-haiku-4-5-20251001`, `claude-sonne
 ### Recommended defaults
 
 ```python
-# Python API:
 EndorsementConfig(n_samples=5)
-ProviderParams(temperature=0.0, max_tokens=1024)   # Python API default
+ProviderParams(temperature=0.0, max_tokens=1024)   # framework default
 ```
 
-```bash
-# CLI — pass --max-tokens explicitly; the CLI's own default is 32:
-infereval evaluate bench.json --provider anthropic --model claude-haiku-4-5 \
-    --output eta.json --n-samples 5 --temperature 0.0 --max-tokens 1024
-```
-
-**CLI/API default mismatch.** The Python `ProviderParams.max_tokens` default is `1024`, but the CLI's `--max-tokens` flag defaults to `32` (a historical short-verdict heuristic that predates reasoning-token-aware models). `infereval evaluate` *always* passes the CLI default through to the provider when `--max-tokens` is omitted — so unless you pass it explicitly, you get 32, not 1024. For any Anthropic model with extended thinking (Opus 4.7+) or any reasoning-capable model in the OpenAI / OpenRouter sections below, **pass `--max-tokens 1024` (or higher) explicitly** at the CLI. A bump to 1024 is sufficient for Haiku, Sonnet, and Opus on the `default-v1` prompt; older Anthropic models emit only a handful of tokens for a one-word verdict regardless of this cap.
+The framework defaults to `max_tokens=1024` at both the Python API and the CLI (`--max-tokens 1024`), which is sufficient for Haiku, Sonnet, and Opus on the `default-v1` prompt (Opus 4.7+ engages extended thinking, which consumes part of the budget). Older Anthropic models emit only a handful of tokens for a one-word verdict regardless of this cap.
 
 ## OpenAI
 
@@ -65,23 +58,17 @@ Model id conventions: `gpt-4.1`, `gpt-4.1-mini`, `gpt-4.1-nano`, `gpt-5`, `gpt-5
 
 - **`seed` is honored** for most chat-completion models. Passes through as-is. Reproducibility under fixed `seed + temperature` is the best you'll get from any provider.
 - **API surface choice**: the framework uses Chat Completions, not the newer Responses API. This was a deliberate decision to maximize OpenRouter compatibility (Chat Completions is the shared interface). If you need Responses-API-specific features (e.g. structured outputs with strict schemas), drop to the OpenAI SDK directly and pass a `client=` kwarg to `OpenAIProvider`.
-- **Reasoning models** (`o1`, `o3`, `o4-mini`, ...) use internal reasoning tokens that consume the `max_tokens` budget invisibly. See the OpenRouter section below for the canonical case (DeepSeek v4-flash); the OpenAI reasoning models exhibit the same behavior. The CLI's `--max-tokens=32` default is **far too low** for any of these; pass `--max-tokens 1024` for the common case, and 2048–4096 for `o1-pro` / `o3-pro` / heavy thinking variants.
+- **Reasoning models** (`o1`, `o3`, `o4-mini`, ...) use internal reasoning tokens that consume the `max_tokens` budget invisibly. See the OpenRouter section below for the canonical case (DeepSeek v4-flash); the OpenAI reasoning models exhibit the same behavior. The framework default of 1024 handles the common case; bump to 2048–4096 for `o1-pro` / `o3-pro` / heavy thinking variants.
 
 ### Recommended defaults
 
 ```python
-# Python API — defaults work for both reasoning and non-reasoning OpenAI models:
+# Default — works for both reasoning and non-reasoning OpenAI models:
 EndorsementConfig(n_samples=5)
-ProviderParams(temperature=0.0, max_tokens=1024, seed=42)   # Python API default
+ProviderParams(temperature=0.0, max_tokens=1024, seed=42)   # framework default
 
 # Heavy-reasoning models (o3-pro, o1-pro, gpt-5.4-pro) — raise the cap:
 ProviderParams(temperature=0.0, max_tokens=4096, seed=42)
-```
-
-```bash
-# CLI — pass --max-tokens explicitly (CLI default is 32):
-infereval evaluate bench.json --provider openai --model gpt-4.1 \
-    --output eta.json --n-samples 5 --temperature 0.0 --max-tokens 1024 --seed 42
 ```
 
 ## OpenRouter
@@ -105,24 +92,17 @@ Model id conventions: `<vendor>/<model>` (`anthropic/claude-3.5-sonnet`, `openai
 
 - **Attribution headers** (`HTTP-Referer`, `X-Title`) are recommended for accountability and show up in your OpenRouter dashboard. The framework supports them as `--http-referer` and `--x-title` flags (or `http_referer=`, `x_title=` kwargs in the Python API).
 - **The API key env var is `OPENROUTER_API_KEY`**, *not* `OPENAI_API_KEY`. The framework explicitly does not fall back to the OpenAI key (and a test enforces this), so you can have both set without cross-contamination.
-- **DeepSeek v4-flash uses silent reasoning tokens.** This is the canonical reasoning-tokens case. At a low `max_tokens` (e.g. the CLI's `--max-tokens=32` default), the model returns `content=None`, `finish_reason="length"`, and `reasoning_tokens` equal to the cap. Two important framework behaviors here: (a) the **Python API default** for `ProviderParams.max_tokens` is `1024`, which clears this case for v4-flash and most reasoning models, but **the CLI's `--max-tokens` default is `32`** — always pass `--max-tokens 1024` (or higher) explicitly at the CLI for any reasoning-capable model; (b) the framework **distinguishes budget-clipped abstains from genuine ones**: when `finish_reason ∈ {"length", "max_tokens"}` and no verdict could be parsed, the resulting `SampleRecord.parse_status` is `"budget_clipped"` (not `"unparseable"`). Inspect that field in your evaluation JSON to spot any remaining budget issues. For heavy-reasoning models (`openai/o1-pro`, `openai/o3-pro`, `qwen3-max-thinking`), bump `--max-tokens` further (2048-4096).
+- **DeepSeek v4-flash uses silent reasoning tokens.** This is the canonical reasoning-tokens case. At a low `max_tokens` (e.g. 32, which was the framework default before v0.5.2), the model returns `content=None`, `finish_reason="length"`, and `reasoning_tokens` equal to the cap. The framework now: (a) defaults `max_tokens` to **1024** at both the Python API and the CLI, which clears this case for v4-flash and most reasoning models; (b) **distinguishes budget-clipped abstains from genuine ones**: when `finish_reason ∈ {"length", "max_tokens"}` and no verdict could be parsed, the resulting `SampleRecord.parse_status` is `"budget_clipped"` (not `"unparseable"`). Inspect that field in your evaluation JSON to spot any remaining budget issues. For heavy-reasoning models (`openai/o1-pro`, `openai/o3-pro`, `qwen3-max-thinking`), bump `--max-tokens` further (2048-4096).
 - **Per-model pricing varies enormously.** Check the OpenRouter model page before launching a large benchmark. `deepseek/deepseek-v4-flash` is cheap (~$0.10 per million input tokens); `openai/o3` is not.
 
 ### Recommended defaults
 
 ```python
-# Python API — works for both reasoning and non-reasoning models:
-ProviderParams(temperature=0.0, max_tokens=1024)   # Python API default
+# Default works for both reasoning and non-reasoning models:
+ProviderParams(temperature=0.0, max_tokens=1024)   # framework default
 
 # Heavy reasoning (deepseek-r1, openai/o1-pro, qwen3-max-thinking):
 ProviderParams(temperature=0.0, max_tokens=4096)
-```
-
-```bash
-# CLI — always pass --max-tokens explicitly (CLI default is 32):
-infereval evaluate bench.json --provider openrouter --model deepseek/deepseek-v4-flash \
-    --output eta.json --n-samples 5 --temperature 0.0 --max-tokens 1024 \
-    --http-referer https://github.com/your-org/your-repo --x-title your-experiment
 ```
 
 ### Listing currently available DeepSeek models
@@ -179,7 +159,7 @@ A helper to do step 2 cleanly is on the roadmap (issue not yet open); for now `t
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| Coverage near zero, lots of `parse_status: budget_clipped` with empty `raw_response` | `max_tokens` too low for a reasoning-capable model (the CLI default is `32`, which is below the reasoning-token floor for DeepSeek / OpenAI-o-family / Qwen-thinking models) | Pass `--max-tokens 1024` explicitly at the CLI (the Python API default is already 1024). Bump to 2048-4096 for heavy reasoning models. |
+| Coverage near zero, lots of `parse_status: budget_clipped` with empty `raw_response` | `max_tokens` too low for a reasoning-capable model | Raise `--max-tokens`. The framework default (1024) clears most cases; bump to 2048-4096 for heavy reasoning models. |
 | Coverage near zero, `parse_status: unparseable` (not `budget_clipped`) | Genuine unparseable output: model is talking but not producing a verdict token | Inspect a few `raw_response` strings; consider a verification prompt that's stricter about the output format |
 | `ProviderConfigError: ANTHROPIC_API_KEY not set` despite `export ANTHROPIC_API_KEY=...` in `~/.bashrc` | Shell didn't re-source profile | `source ~/.bashrc` or open a new terminal; verify with `echo $ANTHROPIC_API_KEY \| head -c 8` |
 | `ProviderConfigError: anthropic SDK not installed` | `infereval` installed without provider extras | `pip install 'infereval[anthropic]'` (or `[openai]` / `[all]`) |

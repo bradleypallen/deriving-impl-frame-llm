@@ -302,7 +302,7 @@ def evaluate(
         (n_samples=5, tie_break=abstain, default verification prompt id).
     params
         Provider decoding parameters. Defaults to ``ProviderParams()``
-        (temperature=1.0, max_tokens=32).
+        (temperature=1.0, max_tokens=1024).
     verification_prompt
         If supplied, overrides the framework default. If the benchmark
         has ``verification_prompt`` set, it takes precedence over the
