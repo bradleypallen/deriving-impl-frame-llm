@@ -379,6 +379,41 @@ class TestDescribeFactorialDesign:
         assert "cells meeting min:  0 / 3" in out
 
 
+class TestDescribeParaphraseVariants:
+    """Issue #32 (Phase 1.2): `describe` shows paraphrase coverage."""
+
+    def test_section_omitted_when_no_bearer_has_paraphrases(self) -> None:
+        runner = CliRunner()
+        result = runner.invoke(cli, ["describe", str(STOP_SIGN_PATH)])
+        assert "paraphrase variants" not in result.output
+
+    def test_section_renders_variant_count_and_coverage(self, tmp_path: Path) -> None:
+        data = {
+            "schema_version": "1.0",
+            "id": "para-describe",
+            "bearers": {
+                "sa": {"expression": "a is a stop sign", "paraphrases": ["alt1", "alt2"]},
+                "ra": {"expression": "a is red", "paraphrases": ["alt1"]},
+                "n": {"expression": "it is nighttime"},  # no paraphrases
+            },
+            "analysts": [{"id": "a"}],
+            "items": [{
+                "id": "i1", "premises": ["sa"], "conclusions": ["ra"],
+                "analyst_verdicts": ["good"],
+            }],
+        }
+        path = tmp_path / "para.json"
+        path.write_text(json.dumps(data), encoding="utf-8")
+        runner = CliRunner()
+        result = runner.invoke(cli, ["describe", str(path)])
+        # K = 1 + max(2, 1) = 3.
+        assert "paraphrase variants: 3" in result.output
+        # 2 of 3 bearers have paraphrases.
+        assert "2/3 bearers carry paraphrases" in result.output
+        # max 2 each
+        assert "max 2 each" in result.output
+
+
 class TestDescribeItemsFlag:
     """Issue #28: ``--items`` adds an expert-readable item listing."""
 

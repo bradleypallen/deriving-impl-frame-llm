@@ -39,6 +39,26 @@ PROVIDER_CHOICES = ["anthropic", "openai", "openrouter"]
 TIE_BREAK_CHOICES = ["abstain", "good", "bad", "first"]
 
 
+def _variant_path(path: Path, variant: int) -> Path:
+    """Insert a ``-vN`` suffix before the final file extension.
+
+    >>> _variant_path(Path("out/eval.json"), 2)
+    PosixPath('out/eval-v2.json')
+    >>> _variant_path(Path("run.jsonl"), 0)
+    PosixPath('run-v0.jsonl')
+
+    Compound extensions like ``.tar.gz`` are not handled specially —
+    only the final ``.gz`` is preserved (``eval.tar.gz`` becomes
+    ``eval.tar-v0.gz``). Evaluation outputs use single-suffix paths
+    (``.json``, ``.jsonl``) where this isn't an issue.
+
+    Used by :func:`evaluate_cmd` when ``--paraphrase-cycle`` writes one
+    output per variant; single-variant runs keep the user-supplied
+    filename unchanged.
+    """
+    return path.with_name(f"{path.stem}-v{variant}{path.suffix}")
+
+
 def _print_dry_run(benchmark: Benchmark) -> None:
     """Build and print the per-item prompts without calling any provider."""
     from infereval.endorsement import _expressions_for
@@ -146,6 +166,25 @@ def _print_dry_run(benchmark: Benchmark) -> None:
     default=None,
     help="OpenRouter attribution: X-Title header.",
 )
+@click.option(
+    "--paraphrase-variant",
+    "paraphrase_variant",
+    type=click.IntRange(min=0),
+    default=None,
+    help="Select a single paraphrase variant (0 = canonical expressions; "
+    "k >= 1 = bearer.paraphrases[k-1] with fallback to canonical). Mutually "
+    "exclusive with --paraphrase-cycle. Phase 1.2 of the construct-validity "
+    "infrastructure (R10).",
+)
+@click.option(
+    "--paraphrase-cycle",
+    "paraphrase_cycle",
+    is_flag=True,
+    default=False,
+    help="Run the benchmark once per declared paraphrase variant; output "
+    "paths gain a '-vN' suffix per variant. Mutually exclusive with "
+    "--paraphrase-variant. Useful for paraphrase-axis robustness analysis.",
+)
 def evaluate_cmd(
     benchmark_path: Path,
     provider_name: str | None,
@@ -164,6 +203,8 @@ def evaluate_cmd(
     replay_from: Path | None,
     http_referer: str | None,
     x_title: str | None,
+    paraphrase_variant: int | None = None,
+    paraphrase_cycle: bool = False,
 ) -> None:
     """Run a model against a benchmark and write the evaluation JSON."""
     log.info("evaluate.cli.start benchmark=%s dry_run=%s", benchmark_path, dry_run)
@@ -224,33 +265,80 @@ def evaluate_cmd(
         seed=seed,
     )
 
-    try:
-        eta = evaluate(
-            benchmark,
-            provider,
-            config=config,
-            params=params,
-            strip_tex=strip_tex,
-            run_id=run_id,
-            log_path=log_path,
+    # Resolve which paraphrase variant(s) to run. Mutually-exclusive flags;
+    # default (neither supplied) preserves existing behavior (variant 0,
+    # single run). --paraphrase-cycle expands to the list [0..K-1] where K
+    # is benchmark.n_paraphrase_variants. --paraphrase-variant K runs a
+    # single variant and validates that K is in range.
+    if paraphrase_cycle and paraphrase_variant is not None:
+        click.echo(
+            "ERROR: --paraphrase-variant and --paraphrase-cycle are mutually exclusive.",
+            err=True,
         )
-    except ProviderError as exc:
-        click.echo(f"ERROR: provider error during evaluation: {exc}", err=True)
-        sys.exit(1)
+        sys.exit(2)
+    if paraphrase_cycle:
+        variants = list(range(benchmark.n_paraphrase_variants))
+        if len(variants) == 1:
+            click.echo(
+                "NOTE: --paraphrase-cycle had no effect — no bearer in this "
+                "benchmark carries paraphrases (only canonical variant 0 in play).",
+            )
+    elif paraphrase_variant is not None:
+        if paraphrase_variant >= benchmark.n_paraphrase_variants:
+            click.echo(
+                f"ERROR: --paraphrase-variant={paraphrase_variant} out of range; "
+                f"benchmark admits variants 0..{benchmark.n_paraphrase_variants - 1}.",
+                err=True,
+            )
+            sys.exit(2)
+        variants = [paraphrase_variant]
+    else:
+        variants = [0]
 
-    output.parent.mkdir(parents=True, exist_ok=True)
-    eta.dump(output)
+    for v in variants:
+        # Suffix per-variant paths only when actually cycling, so single-
+        # variant runs retain the user-supplied filenames unchanged.
+        out_path = _variant_path(output, v) if len(variants) > 1 else output
+        log_path_v = (
+            _variant_path(log_path, v)
+            if (len(variants) > 1 and log_path is not None)
+            else log_path
+        )
+        run_id_v = f"{run_id}-v{v}" if (len(variants) > 1 and run_id is not None) else run_id
 
-    msg = (
-        f"OK: wrote {output} "
-        f"(run_id={eta.id!r}, items={eta.n}, samples_per_item={n_samples})"
-    )
-    if log_path is not None:
-        msg += f"; log -> {log_path}"
-    click.echo(msg)
-    log.info(
-        "evaluate.cli.done benchmark=%s output=%s run_id=%s",
-        benchmark_path,
-        output,
-        eta.id,
-    )
+        try:
+            eta = evaluate(
+                benchmark,
+                provider,
+                config=config,
+                params=params,
+                strip_tex=strip_tex,
+                run_id=run_id_v,
+                log_path=log_path_v,
+                variant=v,
+            )
+        except ProviderError as exc:
+            click.echo(
+                f"ERROR: provider error during evaluation (variant={v}): {exc}",
+                err=True,
+            )
+            sys.exit(1)
+
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        eta.dump(out_path)
+
+        suffix = f", variant={v}" if len(variants) > 1 else ""
+        msg = (
+            f"OK: wrote {out_path} "
+            f"(run_id={eta.id!r}, items={eta.n}, samples_per_item={n_samples}{suffix})"
+        )
+        if log_path_v is not None:
+            msg += f"; log -> {log_path_v}"
+        click.echo(msg)
+        log.info(
+            "evaluate.cli.done benchmark=%s output=%s run_id=%s variant=%d",
+            benchmark_path,
+            out_path,
+            eta.id,
+            v,
+        )

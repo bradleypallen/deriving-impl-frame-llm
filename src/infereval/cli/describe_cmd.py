@@ -154,6 +154,25 @@ def _render_references_summary(bench: Benchmark) -> None:
     click.echo("")
 
 
+def _render_paraphrase_variants(bench: Benchmark) -> None:
+    """Print a single line summarising paraphrase coverage across bearers.
+
+    Omitted when no bearer carries any paraphrase. Phase 1.2 of the
+    construct-validity infrastructure (R10).
+    """
+    bearers_with = [bid for bid, b in bench.bearers.items() if b.paraphrases]
+    if not bearers_with:
+        return
+    max_paras = max(len(bench.bearers[bid].paraphrases) for bid in bearers_with)
+    n_variants = 1 + max_paras
+    click.echo(
+        f"paraphrase variants: {n_variants} "
+        f"({len(bearers_with)}/{len(bench.bearers)} bearers carry paraphrases; "
+        f"max {max_paras} each)"
+    )
+    click.echo("")
+
+
 def _render_factorial_design(bench: Benchmark) -> None:
     """Print the declared factorial design and its cell coverage.
 
@@ -485,6 +504,7 @@ def describe_cmd(path: Path, show_items: bool = False) -> None:
     _render_bearers(bench)
     _render_references_summary(bench)
     _render_factorial_design(bench)
+    _render_paraphrase_variants(bench)
     _render_group_cross_tab(bench)
 
     # Tag frequencies, if any.

@@ -274,3 +274,195 @@ class TestOutputShape:
         with out_path.open("r", encoding="utf-8") as f:
             data = json.load(f)
         assert data["benchmark_hash"].startswith("sha256:")
+
+
+# ---- Paraphrase variants on the CLI (Issue #32, Phase 1.2) ---------------
+
+
+def _para_benchmark_dict() -> dict:
+    """A minimal 1-item benchmark with paraphrases on both sa and ra."""
+    return {
+        "schema_version": "1.0",
+        "id": "para-cli",
+        "bearers": {
+            "sa": {
+                "expression": "a is a stop sign",
+                "paraphrases": ["a is a roadway stop indicator", "a is an octagonal red sign"],
+            },
+            "ra": {
+                "expression": "a is red",
+                "paraphrases": ["a appears red"],
+            },
+        },
+        "analysts": [{"id": "a"}],
+        "items": [
+            {"id": "i1", "premises": ["sa"], "conclusions": ["ra"], "analyst_verdicts": ["good"]},
+        ],
+    }
+
+
+class TestParaphraseCycleCLI:
+    """``--paraphrase-variant`` and ``--paraphrase-cycle`` flags on evaluate."""
+
+    def _bench_path(self, tmp_path: Path) -> Path:
+        path = tmp_path / "para.json"
+        path.write_text(json.dumps(_para_benchmark_dict()), encoding="utf-8")
+        return path
+
+    def test_paraphrase_variant_records_value(self, tmp_path: Path) -> None:
+        out_path = tmp_path / "eta.json"
+        provider = ScriptedProvider(responses=["GOOD"])
+        with patch(
+            "infereval.cli.evaluate_cmd.get_provider", return_value=provider
+        ):
+            runner = CliRunner()
+            result = runner.invoke(
+                cli,
+                [
+                    "evaluate", str(self._bench_path(tmp_path)),
+                    "--provider", "openai", "--model", "gpt-4o",
+                    "--output", str(out_path), "--n-samples", "1",
+                    "--paraphrase-variant", "1",
+                ],
+            )
+        assert result.exit_code == 0, result.output
+        eta = Evaluation.load(out_path)
+        assert eta.paraphrase_variant == 1
+
+    def test_paraphrase_cycle_writes_one_file_per_variant(self, tmp_path: Path) -> None:
+        out_path = tmp_path / "eta.json"
+        # Need enough scripted responses to cover all variants × items.
+        provider = ScriptedProvider(responses=["GOOD"] * 10)
+        with patch(
+            "infereval.cli.evaluate_cmd.get_provider", return_value=provider
+        ):
+            runner = CliRunner()
+            result = runner.invoke(
+                cli,
+                [
+                    "evaluate", str(self._bench_path(tmp_path)),
+                    "--provider", "openai", "--model", "gpt-4o",
+                    "--output", str(out_path), "--n-samples", "1",
+                    "--paraphrase-cycle",
+                ],
+            )
+        assert result.exit_code == 0, result.output
+        # Benchmark has K=3 variants (sa has 2 paraphrases -> 1+2 = 3).
+        v0 = tmp_path / "eta-v0.json"
+        v1 = tmp_path / "eta-v1.json"
+        v2 = tmp_path / "eta-v2.json"
+        assert v0.exists() and v1.exists() and v2.exists()
+        # Unsuffixed file should NOT exist (cycle writes only suffixed).
+        assert not out_path.exists()
+        # Each file records its own variant.
+        assert Evaluation.load(v0).paraphrase_variant == 0
+        assert Evaluation.load(v1).paraphrase_variant == 1
+        assert Evaluation.load(v2).paraphrase_variant == 2
+
+    def test_paraphrase_cycle_suffixes_log_path_per_variant(self, tmp_path: Path) -> None:
+        out_path = tmp_path / "eta.json"
+        log_path = tmp_path / "run.jsonl"
+        provider = ScriptedProvider(responses=["GOOD"] * 10)
+        with patch(
+            "infereval.cli.evaluate_cmd.get_provider", return_value=provider
+        ):
+            runner = CliRunner()
+            result = runner.invoke(
+                cli,
+                [
+                    "evaluate", str(self._bench_path(tmp_path)),
+                    "--provider", "openai", "--model", "gpt-4o",
+                    "--output", str(out_path), "--log", str(log_path),
+                    "--n-samples", "1", "--paraphrase-cycle",
+                ],
+            )
+        assert result.exit_code == 0, result.output
+        assert (tmp_path / "run-v0.jsonl").exists()
+        assert (tmp_path / "run-v1.jsonl").exists()
+        assert (tmp_path / "run-v2.jsonl").exists()
+        # Unsuffixed log should NOT exist.
+        assert not log_path.exists()
+
+    def test_paraphrase_cycle_suffixes_run_id_per_variant(self, tmp_path: Path) -> None:
+        out_path = tmp_path / "eta.json"
+        provider = ScriptedProvider(responses=["GOOD"] * 10)
+        with patch(
+            "infereval.cli.evaluate_cmd.get_provider", return_value=provider
+        ):
+            runner = CliRunner()
+            result = runner.invoke(
+                cli,
+                [
+                    "evaluate", str(self._bench_path(tmp_path)),
+                    "--provider", "openai", "--model", "gpt-4o",
+                    "--output", str(out_path), "--n-samples", "1",
+                    "--paraphrase-cycle", "--run-id", "my-run",
+                ],
+            )
+        assert result.exit_code == 0, result.output
+        assert Evaluation.load(tmp_path / "eta-v0.json").id == "my-run-v0"
+        assert Evaluation.load(tmp_path / "eta-v2.json").id == "my-run-v2"
+
+    def test_paraphrase_variant_out_of_range_rejected(self, tmp_path: Path) -> None:
+        out_path = tmp_path / "eta.json"
+        provider = ScriptedProvider(responses=["GOOD"])
+        with patch(
+            "infereval.cli.evaluate_cmd.get_provider", return_value=provider
+        ):
+            runner = CliRunner()
+            result = runner.invoke(
+                cli,
+                [
+                    "evaluate", str(self._bench_path(tmp_path)),
+                    "--provider", "openai", "--model", "gpt-4o",
+                    "--output", str(out_path), "--n-samples", "1",
+                    "--paraphrase-variant", "99",
+                ],
+            )
+        assert result.exit_code != 0
+        assert "out of range" in result.output
+        assert "0..2" in result.output  # K-1 = 2
+
+    def test_paraphrase_flags_mutually_exclusive(self, tmp_path: Path) -> None:
+        out_path = tmp_path / "eta.json"
+        provider = ScriptedProvider(responses=["GOOD"])
+        with patch(
+            "infereval.cli.evaluate_cmd.get_provider", return_value=provider
+        ):
+            runner = CliRunner()
+            result = runner.invoke(
+                cli,
+                [
+                    "evaluate", str(self._bench_path(tmp_path)),
+                    "--provider", "openai", "--model", "gpt-4o",
+                    "--output", str(out_path), "--n-samples", "1",
+                    "--paraphrase-variant", "1", "--paraphrase-cycle",
+                ],
+            )
+        assert result.exit_code != 0
+        assert "mutually exclusive" in result.output
+
+    def test_paraphrase_cycle_on_benchmark_without_paraphrases(self, tmp_path: Path) -> None:
+        # Stop-sign benchmark has no bearer paraphrases -> K=1. Cycle
+        # should still complete (single run with variant=0), emit a note
+        # about no effect, and write the unsuffixed output.
+        out_path = tmp_path / "eta.json"
+        provider = ScriptedProvider(responses=["GOOD"] * 10)
+        with patch(
+            "infereval.cli.evaluate_cmd.get_provider", return_value=provider
+        ):
+            runner = CliRunner()
+            result = runner.invoke(
+                cli,
+                [
+                    "evaluate", str(STOP_SIGN_PATH),
+                    "--provider", "openai", "--model", "gpt-4o",
+                    "--output", str(out_path), "--n-samples", "1",
+                    "--paraphrase-cycle",
+                ],
+            )
+        assert result.exit_code == 0, result.output
+        assert "no effect" in result.output
+        # Single variant -> unsuffixed file (per the "len(variants) > 1" gate).
+        assert out_path.exists()
+        assert not (tmp_path / "eta-v0.json").exists()
