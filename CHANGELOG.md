@@ -12,6 +12,53 @@ stable from 1.0 onward, regardless of the framework version.
 
 No changes yet.
 
+## [0.4.1] — 2026-05-19
+
+Second piece of Phase 2 (analytical extensions). Adds factor-effects
+modeling of model–analyst agreement against the design factors
+declared in Phase 1.1. Addresses **R7** (multiple items per condition)
+and deepens **R12** (per-condition decomposition).
+
+### Added
+
+- **Issue #40 (Phase 2.2)** — **factor-effects model fitting**.
+  - New module `infereval.modeling` with `fit_factor_model(eval, bench)`
+    producing a `ModelFit` containing per-level coefficients +
+    per-factor joint Wald p-values + McFadden's pseudo-R² + the
+    methodology notes.
+  - Implementation: logistic regression of agreement
+    (`sample.parsed_verdict == analyst_reference`) on declared
+    factor levels, with **item-clustered standard errors** as a
+    proxy for the per-item random-effect structure of a proper GLMM.
+    The CLI / module / CHANGELOG explicitly call out the caveat:
+    this is not a full GLMM (bambi/PyMC), but the marginal fixed-
+    effects coefficients and joint Wald tests — which is what the
+    document's "main effect of side-premise type, p < 0.001" output
+    most directly needs — are recoverable.
+  - **New CLI command** `infereval model <eta.json> --benchmark
+    <bench>` prints the coefficient table, per-factor Wald tests,
+    pseudo-R², and methodology notes.
+  - Outcome reference: `--reference consensus` (default, analyst
+    panel majority) or `--reference analyst:<id>` to pick a single
+    analyst column.
+  - 8 new tests covering: predictable factor detection, error on
+    benchmark without declared factors, error on all-abstain
+    dataset, pseudo-R² in unit interval, CLI integration, CLI
+    error on mismatched benchmark id.
+
+### Dependency
+
+- New optional extra `[stats]`: `statsmodels>=0.14`. Install via
+  `pip install 'infereval[stats]'`. The module imports it lazily so
+  the rest of the framework works without it; importing
+  `fit_factor_model` raises a clear `ModelingError` with the install
+  hint if statsmodels is missing.
+
+### Backwards compatibility
+
+Pure-additive. New module, new CLI command, new optional extra.
+No schema changes. No behavior change to existing commands.
+
 ## [0.4.0] — 2026-05-19
 
 **Phase 2 of the construct-validity infrastructure series begins.**
