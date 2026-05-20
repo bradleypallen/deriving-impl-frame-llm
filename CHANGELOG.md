@@ -12,6 +12,76 @@ stable from 1.0 onward, regardless of the framework version.
 
 No changes yet.
 
+## [0.5.1] — 2026-05-20
+
+**The construct-validity infrastructure series closes.** Final piece —
+negative-results aggregation in the report (R21). Per the source
+document, this is the construct-validity infrastructure working at
+the reporting level: easy to surface failures by default, expensive to
+hide them.
+
+### Added
+
+- **Issue #46 (Phase 3.2)** — **negative-results aggregation**.
+  - New `collect_negative_findings(structure_report=…, sweep_summary=…,
+    model_fit=…)` scans the three Phase 2 artifacts for findings that
+    weaken or complicate the mastery claim:
+    - Each structural anomaly is one finding.
+    - Sweep instability (anything other than "stable") is one finding.
+    - Each non-significant factor (Wald p > 0.05) is one finding.
+  - **New Section 4b: Negative findings** in the rendered report.
+    Renders one of four bodies depending on input:
+    - "No Phase 2 artifacts supplied; the auto-collection step had
+      nothing to scan."
+    - "No negative findings detected in the supplied Phase 2 artifacts."
+    - Grouped lists per source (structural anomalies / sweep
+      instability / null factors).
+    - When `--suppress-negatives` is set, a single banner explaining
+      the suppression.
+  - **New CLI flag `--suppress-negatives`** with three asymmetric
+    side-effects:
+    1. The Negative findings body is replaced by a suppression banner
+       documenting the flag.
+    2. A `Negative-findings suppression: ENABLED` warning is added to
+       the report header (visible to any reader).
+    3. The Summary verdict **downgrades one tier**: defensible →
+       partially_defensible → not_defensible. Hiding evidence is
+       itself a negative construct-validity signal.
+  - 13 new tests across `collect_negative_findings` behavior, section
+    rendering for the four input cases, the suppression banner, the
+    header warning, the verdict downgrade, and CLI integration.
+
+### Construct-validity infrastructure series closes
+
+All nine features from *Closing the Construct-Validity Gap in
+infereval* are now shipped:
+
+**Phase 1 — schema and metadata**:
+- v0.3.0 — factorial-design metadata (#30, R7+R12)
+- v0.3.1 — runtime paraphrase-axis support (#32, R10)
+- v0.3.2 — construction-provenance metadata (#34, R5+R8+R9)
+- v0.3.3 — reference-panel declaration + cross-panel κ (#36, R4)
+
+**Phase 2 — analytical extensions**:
+- v0.4.0 — structural coherence checks (#38, R13)
+- v0.4.1 — factor-effects model fitting (#40, R7+R12)
+- v0.4.2 — sensitivity-analysis sweeps (#42, R11)
+
+**Phase 3 — reporting and methodological discipline**:
+- v0.5.0 — construct-validity report (#44, R16-R20)
+- v0.5.1 — negative-results aggregation (#46, R21)
+
+The remaining requirements that the document calls out as
+*irreducibly outside the framework* — independent analyst panels,
+held-out item construction, training-data separation, cross-domain
+studies, replication, the in-principle interpretive commitments — are
+research-program responsibilities the framework can make tractable
+but not substitute for.
+
+### Backwards compatibility
+
+Pure-additive. No schema changes.
+
 ## [0.5.0] — 2026-05-20
 
 **Phase 3 of the construct-validity infrastructure series begins.**

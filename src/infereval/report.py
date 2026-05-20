@@ -164,6 +164,102 @@ class ReportVerdict:
     rationale: list[str]
 
 
+# ---- Negative-findings aggregation (Phase 3.2) ---------------------------
+
+
+@dataclass(frozen=True)
+class NegativeFinding:
+    """One auto-collected negative finding from a Phase 2 artifact.
+
+    A finding is "negative" in the construct-validity sense — a check
+    that ran and returned a result that *weakens or complicates* the
+    mastery claim. Per *Closing the Construct-Validity Gap in infereval*
+    (Phase 3.2 / R21), the framework surfaces these by default in the
+    report.
+    """
+
+    source: Literal["structure", "sweep", "model_fit"]
+    summary: str
+    """One-line description rendered in the Negative findings section."""
+
+
+def collect_negative_findings(
+    *,
+    structure_report: dict[str, object] | None = None,
+    sweep_summary: dict[str, object] | None = None,
+    model_fit: dict[str, object] | None = None,
+) -> list[NegativeFinding]:
+    """Scan the supplied Phase 2 artifacts and return their negative findings.
+
+    Sources:
+
+    - **structure_report**: each anomaly across all checks is one finding.
+    - **sweep_summary**: instability (verdict not "stable across the sweep
+      range") is one finding.
+    - **model_fit**: factors whose Wald p > 0.05 are surfaced as
+      no-significant-effect findings; the analyst can read "good"
+      (paraphrase-variant null = content-not-form) or "bad" (the
+      experimentally-manipulated factor was null) from context.
+    """
+    findings: list[NegativeFinding] = []
+
+    if structure_report is not None:
+        checks_raw = structure_report.get("checks", [])
+        checks = checks_raw if isinstance(checks_raw, list) else []
+        for check in checks:
+            if not isinstance(check, dict):
+                continue
+            anomalies = check.get("anomalies", ()) if isinstance(check, dict) else ()
+            if not anomalies:
+                continue
+            check_name = check.get("name", "?")
+            for a in anomalies:
+                if isinstance(a, dict):
+                    item_id = a.get("item_id", "?")
+                    expl = a.get("explanation", "")
+                    findings.append(
+                        NegativeFinding(
+                            source="structure",
+                            summary=f"{check_name} / {item_id}: {expl}",
+                        )
+                    )
+
+    if sweep_summary is not None:
+        verdict_raw = sweep_summary.get("stability_verdict", "")
+        verdict_str = str(verdict_raw).lower()
+        # The SweepResult.stability_verdict strings live in three flavours:
+        # "stable" (positive), "moderately sensitive" (negative),
+        # "substantively" (negative). "Stable" doesn't appear in the
+        # negative ones, so its absence is the right signal.
+        if verdict_str and "stable" not in verdict_str:
+            param = sweep_summary.get("parameter", "?")
+            findings.append(
+                NegativeFinding(
+                    source="sweep",
+                    summary=f"Sweep over `{param}`: {sweep_summary.get('stability_verdict')}",
+                )
+            )
+
+    if model_fit is not None:
+        wald_raw = model_fit.get("factor_wald", {})
+        wald = wald_raw if isinstance(wald_raw, dict) else {}
+        for factor, p in wald.items():
+            if not isinstance(p, (int, float)):
+                continue
+            if p > 0.05:
+                findings.append(
+                    NegativeFinding(
+                        source="model_fit",
+                        summary=(
+                            f"`{factor}`: Wald p = {p:.3f} "
+                            "(no significant effect detected)"
+                        ),
+                    )
+                )
+
+    return findings
+
+
 # Per-scope, which competing-explanation checks are *required* for the
 # claim to be defensible. Stricter scopes require more checks.
 _REQUIRED_CHECKS_BY_SCOPE: dict[str, frozenset[str]] = {
@@ -279,6 +375,7 @@ def render_markdown(
     sweep_summary: dict[str, object] | None = None,
     model_fit: dict[str, object] | None = None,
     generated_at: datetime | None = None,
+    suppress_negatives: bool = False,
 ) -> str:
     """Produce the construct-validity report as Markdown.
 
@@ -302,10 +399,52 @@ def render_markdown(
     cov = coverage(evaluation)
     verdict = compute_verdict(claims)
 
+    # Collect negative findings up-front so we can both render them and
+    # apply the suppression penalty to the verdict in one place.
+    findings = collect_negative_findings(
+        structure_report=structure_report,
+        sweep_summary=sweep_summary,
+        model_fit=model_fit,
+    )
+    any_phase2_supplied = any(
+        x is not None for x in (structure_report, sweep_summary, model_fit)
+    )
+
+    # If suppression is enabled, the Summary verdict downgrades one tier:
+    # defensible -> partially_defensible -> not_defensible. Hiding
+    # evidence is itself a negative construct-validity signal.
+    if suppress_negatives:
+        downgraded_label = {
+            "defensible": "partially_defensible",
+            "partially_defensible": "not_defensible",
+            "not_defensible": "not_defensible",
+        }[verdict.label]
+        if downgraded_label != verdict.label:
+            verdict = ReportVerdict(
+                label=downgraded_label,  # type: ignore[arg-type]
+                one_liner=(
+                    "Verdict downgraded one tier because "
+                    "--suppress-negatives is enabled."
+                ),
+                rationale=[
+                    *verdict.rationale,
+                    "Negative-findings suppression downgrades the verdict "
+                    "(Phase 3.2 / R21).",
+                ],
+            )
+
     lines: list[str] = []
     lines.append("# Construct-validity report")
     lines.append("")
     lines.append(f"_Generated: {generated_at.isoformat()}_")
+    if suppress_negatives:
+        lines.append("")
+        lines.append(
+            "> ⚠️ **Negative-findings suppression: ENABLED.** This is an "
+            "explicit author choice via `--suppress-negatives`; the "
+            "framework normally surfaces negative findings by default. "
+            "Reviewers: ask why this flag was set."
+        )
     lines.append("")
 
     # 1. Identity
@@ -398,6 +537,47 @@ def render_markdown(
         lines.append("- **Factor-effects model fit** (R7, R12): NOT SUPPLIED.")
     lines.append("")
 
+    # 4b. Negative findings (Phase 3.2, R21)
+    lines.append("## 4b. Negative findings")
+    lines.append("")
+    if suppress_negatives:
+        lines.append(
+            "⚠️ **Suppressed via `--suppress-negatives`.** This is an "
+            "explicit author choice; the framework normally surfaces "
+            "negative findings by default. Reviewers: ask why this flag "
+            "was set."
+        )
+    elif not any_phase2_supplied:
+        lines.append(
+            "No Phase 2 artifacts supplied; the auto-collection step had "
+            "nothing to scan. See Unaddressed competing explanations (§5) "
+            "for the analyst-declared check status."
+        )
+    elif not findings:
+        lines.append("No negative findings detected in the supplied Phase 2 artifacts.")
+    else:
+        lines.append(
+            "The framework auto-collects negative findings from the "
+            "supplied Phase 2 artifacts. Each item below represents a "
+            "check that ran but returned a finding that *weakens or "
+            "complicates* the mastery claim."
+        )
+        lines.append("")
+        # Group by source for readability.
+        for src_label, src_key in [
+            ("Structural anomalies", "structure"),
+            ("Sweep instability", "sweep"),
+            ("Factor-effects null findings", "model_fit"),
+        ]:
+            src_items = [f for f in findings if f.source == src_key]
+            if not src_items:
+                continue
+            lines.append(f"### {src_label} ({len(src_items)} flagged)")
+            for f in src_items:
+                lines.append(f"- {f.summary}")
+            lines.append("")
+    lines.append("")
+
     # 5. Unaddressed competing explanations
     lines.append("## 5. Unaddressed competing explanations")
     lines.append("")
@@ -470,8 +650,10 @@ __all__ = [
     "ConstitutionClaim",
     "ConstructValidityClaims",
     "MasterySenseClaim",
+    "NegativeFinding",
     "ReportVerdict",
     "ScopeClaim",
+    "collect_negative_findings",
     "compute_verdict",
     "render_markdown",
 ]

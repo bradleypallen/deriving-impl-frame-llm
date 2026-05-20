@@ -337,3 +337,188 @@ class TestReportCLI:
         ])
         assert result.exit_code != 0
         assert "benchmark_id" in result.output
+
+
+# ---- Phase 3.2: negative-results aggregation -----------------------------
+
+
+class TestCollectNegativeFindings:
+    """Auto-collection from Phase 2 artifacts (Issue #46, Phase 3.2)."""
+
+    def test_no_artifacts_returns_empty(self) -> None:
+        from infereval.report import collect_negative_findings
+        assert collect_negative_findings() == []
+
+    def test_structure_anomalies_surface(self) -> None:
+        from infereval.report import collect_negative_findings
+        sr = {
+            "checks": [
+                {
+                    "name": "rsr_role_consistency",
+                    "anomalies": [
+                        {"item_id": "a9", "explanation": "role mismatch"},
+                    ],
+                }
+            ]
+        }
+        findings = collect_negative_findings(structure_report=sr)
+        assert len(findings) == 1
+        assert findings[0].source == "structure"
+        assert "a9" in findings[0].summary
+
+    def test_sweep_instability_surfaces(self) -> None:
+        from infereval.report import collect_negative_findings
+        sweep = {
+            "parameter": "n_samples",
+            "stability_verdict": "κ_C range = 0.062; agreement is moderately sensitive",
+        }
+        findings = collect_negative_findings(sweep_summary=sweep)
+        assert len(findings) == 1
+        assert findings[0].source == "sweep"
+
+    def test_stable_sweep_not_flagged(self) -> None:
+        from infereval.report import collect_negative_findings
+        sweep = {
+            "parameter": "n_samples",
+            "stability_verdict": "κ_C range = 0.005; agreement is stable across the sweep range.",
+        }
+        findings = collect_negative_findings(sweep_summary=sweep)
+        assert findings == []
+
+    def test_model_fit_null_factors_surface(self) -> None:
+        from infereval.report import collect_negative_findings
+        mf = {"factor_wald": {"role": 0.001, "para": 0.42}}
+        findings = collect_negative_findings(model_fit=mf)
+        names = [f.summary for f in findings]
+        # role is significant -> not flagged; para is null -> flagged.
+        assert any("para" in n for n in names)
+        assert not any("role" in n for n in names)
+
+    def test_all_significant_factors_yields_no_findings(self) -> None:
+        from infereval.report import collect_negative_findings
+        mf = {"factor_wald": {"role": 0.001, "para": 0.001}}
+        findings = collect_negative_findings(model_fit=mf)
+        assert findings == []
+
+
+class TestNegativeFindingsRendering:
+    """Section 4b rendering, including the --suppress-negatives behavior."""
+
+    def _bench_and_eta(self) -> tuple[Benchmark, object]:
+        bench = Benchmark.load(STOP_SIGN_PATH)
+        provider = ScriptedProvider(responses=["GOOD"] * 12)
+        eta = evaluate(bench, provider, config=EndorsementConfig(n_samples=1))
+        return bench, eta
+
+    def test_no_artifacts_renders_nothing_to_scan(self) -> None:
+        bench, eta = self._bench_and_eta()
+        md = render_markdown(
+            evaluation=eta, benchmark=bench, claims=_minimal_claims(),
+        )
+        assert "## 4b. Negative findings" in md
+        assert "No Phase 2 artifacts supplied" in md
+
+    def test_clean_artifacts_render_no_negatives_detected(self) -> None:
+        bench, eta = self._bench_and_eta()
+        md = render_markdown(
+            evaluation=eta, benchmark=bench, claims=_minimal_claims(),
+            structure_report={"checks": [], "total_anomalies": 0},
+            sweep_summary={"parameter": "n_samples", "stability_verdict": "stable"},
+            model_fit={"factor_wald": {"role": 0.001}},
+        )
+        assert "No negative findings detected" in md
+
+    def test_anomalies_render_with_explanation(self) -> None:
+        bench, eta = self._bench_and_eta()
+        sr = {
+            "checks": [
+                {
+                    "name": "rsr_role_consistency",
+                    "anomalies": [
+                        {"item_id": "a9", "explanation": "role mismatch"}
+                    ],
+                }
+            ]
+        }
+        md = render_markdown(
+            evaluation=eta, benchmark=bench, claims=_minimal_claims(),
+            structure_report=sr,
+        )
+        assert "### Structural anomalies (1 flagged)" in md
+        assert "a9" in md
+        assert "role mismatch" in md
+
+    def test_suppress_negatives_replaces_body(self) -> None:
+        bench, eta = self._bench_and_eta()
+        sr = {
+            "checks": [
+                {"name": "x", "anomalies": [{"item_id": "i1", "explanation": "y"}]}
+            ]
+        }
+        md = render_markdown(
+            evaluation=eta, benchmark=bench, claims=_minimal_claims(),
+            structure_report=sr,
+            suppress_negatives=True,
+        )
+        # The body is replaced with the suppression banner.
+        assert "Suppressed via `--suppress-negatives`" in md
+        # Anomaly content does NOT leak through.
+        assert "### Structural anomalies" not in md
+
+    def test_suppress_negatives_adds_header_warning(self) -> None:
+        bench, eta = self._bench_and_eta()
+        md = render_markdown(
+            evaluation=eta, benchmark=bench, claims=_minimal_claims(),
+            suppress_negatives=True,
+        )
+        # Header warning appears near the top.
+        assert "Negative-findings suppression: ENABLED" in md
+
+    def test_suppress_negatives_downgrades_verdict_one_tier(self) -> None:
+        bench, eta = self._bench_and_eta()
+        # All checks run -> would be defensible -> downgraded to partially.
+        md = render_markdown(
+            evaluation=eta, benchmark=bench,
+            claims=_minimal_claims(
+                structural_check_run=True, sensitivity_sweep_run=True
+            ),
+            suppress_negatives=True,
+        )
+        # Verdict body says "downgraded one tier"
+        assert "downgraded one tier" in md
+        # Badge is ⚠️ (partially), not ✅ (defensible).
+        verdict_section = md.split("## 6. Summary verdict")[1]
+        assert "⚠️" in verdict_section
+        # No "✅" appears in the verdict section (the rest of the doc shouldn't have one either).
+        assert "✅" not in verdict_section
+
+
+class TestSuppressNegativesCLI:
+    def test_cli_flag_writes_suppression_banner(self, tmp_path: Path) -> None:
+        from click.testing import CliRunner
+
+        from infereval.cli.main import cli
+
+        bench = Benchmark.load(STOP_SIGN_PATH)
+        provider = ScriptedProvider(responses=["GOOD"] * 12)
+        eta = evaluate(bench, provider, config=EndorsementConfig(n_samples=1))
+        eta_path = tmp_path / "eta.json"
+        eta.dump(eta_path)
+
+        claims_path = tmp_path / "claims.json"
+        claims_path.write_text(_minimal_claims().model_dump_json(), encoding="utf-8")
+
+        out_path = tmp_path / "report.md"
+        runner = CliRunner()
+        result = runner.invoke(cli, [
+            "report",
+            "--evaluation", str(eta_path),
+            "--benchmark", str(STOP_SIGN_PATH),
+            "--claims", str(claims_path),
+            "-o", str(out_path),
+            "--suppress-negatives",
+        ])
+        assert result.exit_code == 0, result.output
+        text = out_path.read_text(encoding="utf-8")
+        assert "Negative-findings suppression: ENABLED" in text
+        assert "Suppressed via `--suppress-negatives`" in text
