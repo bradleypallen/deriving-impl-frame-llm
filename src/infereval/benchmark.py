@@ -13,6 +13,7 @@ The runtime conversion to :class:`infereval.types.Implication` lives on
 from __future__ import annotations
 
 import json
+from datetime import date
 from pathlib import Path
 from typing import Annotated, Literal
 
@@ -200,6 +201,42 @@ class RSRTarget(BaseModel):
         return v
 
 
+class ConstructionMetadata(BaseModel):
+    """Per-item construction provenance for benchmark audit.
+
+    Records who authored an item, when, against what training-cutoff
+    posture, and from what source materials. Phase 1.3 of the
+    construct-validity infrastructure series, providing the data model
+    for requirements R5 (documented construction), R8 (held-out items),
+    and R9 (training-data separation).
+
+    Content is the analyst's responsibility — the framework validates
+    structure (Pydantic types, ``extra="forbid"``) but does not enforce
+    that, e.g., ``authored_on`` actually post-dates a model's training
+    cutoff. The point is to make the *presence* of these declarations
+    auditable.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    authored_by: str | None = None
+    """Identifier for the author of the item, e.g. ``"physician-c"``."""
+    authored_on: date | None = None
+    """ISO date the item was authored."""
+    authored_blind_to_models: list[str] = Field(default_factory=list)
+    """Model identifiers the author had not observed at construction
+    time. Critical for R8 (held-out items): if the author had seen
+    M's draft-version output on the item, M's agreement on the final
+    item does not constitute independent evidence."""
+    source: str | None = None
+    """Free-form source citation for the primary material the author
+    worked from (e.g. ``"Sanford Guide to Antimicrobial Therapy 2025"``).
+    Distinct from :attr:`BenchmarkItem.references`, which carries the
+    framework-level :class:`Reference` objects supporting the verdict;
+    ``source`` is intended for the *primary material*, not the literature
+    that justifies the analyst's call."""
+
+
 class FactorConstraints(BaseModel):
     """Constraints the benchmark validator should enforce on the factorial design.
 
@@ -245,6 +282,13 @@ class BenchmarkItem(BaseModel):
     the corresponding levels list. Empty by default — items without
     factor_levels appear in no cell and are ignored by the
     ``min_items_per_cell`` check."""
+    construction_metadata: ConstructionMetadata | None = None
+    """Per-item provenance for construct-validity audit: who authored
+    the item, when, which models the author was blind to at
+    construction time, and what source material they worked from.
+    ``None`` by default; populate selectively for items where the
+    provenance matters. Phase 1.3 of the construct-validity
+    infrastructure (R5, R8, R9)."""
 
     @field_validator("premises", "conclusions", mode="before")
     @classmethod
