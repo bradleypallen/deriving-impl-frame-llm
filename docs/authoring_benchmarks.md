@@ -351,7 +351,7 @@ infereval evaluate path/to/your-benchmark.json \
     --log medical-run.jsonl
 ```
 
-Note: explicitly pass `--max-tokens 512` if you're hitting any reasoning-capable model. The framework default of 32 is too low for DeepSeek-style models that use silent reasoning tokens. See [`providers.md`](providers.md) for the per-provider list.
+Note: the framework default of `--max-tokens 1024` (as of v0.5.2) clears most reasoning-capable models including DeepSeek-style silent-reasoning-token models. Bump to 2048-4096 only for heavy-reasoning variants (`o1-pro`, `o3-pro`, `qwen3-max-thinking`). See [`providers.md`](providers.md) for the per-provider list.
 
 Then:
 

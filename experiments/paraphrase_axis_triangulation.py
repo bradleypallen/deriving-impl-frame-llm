@@ -55,13 +55,14 @@ cross-model comparison table.
 Notes
 -----
 
-- ``max_tokens=512`` is used (not the framework default of 32) because
-  DeepSeek v4-flash uses *silent reasoning tokens* that consume the
-  ``max_tokens`` budget before producing visible output. At 32 tokens the
-  ``content`` field is empty (``finish_reason=length``, ``reasoning_tokens=32``)
-  and the framework correctly maps this to abstain — but the abstain is a
-  "ran out of budget", not a model judgment. See the related 0.2.0 issue
-  on raising the framework default.
+- ``max_tokens=512`` is used here for historical continuity with the
+  recorded fixtures. As of v0.5.2 the framework default is ``1024`` at
+  both the Python API and the CLI, which also clears DeepSeek v4-flash's
+  silent-reasoning-token consumption. At very low values like 32 tokens
+  the ``content`` field comes back empty (``finish_reason=length``,
+  ``reasoning_tokens=32``) and the framework records the resulting
+  abstain as ``parse_status="budget_clipped"`` — a "ran out of budget"
+  abstain rather than a model judgment.
 
 - The defeasibility-explicit verification prompt below is used uniformly,
   with both system message and user template controlled. The 0.1.0

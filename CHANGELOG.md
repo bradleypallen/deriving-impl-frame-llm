@@ -12,6 +12,41 @@ stable from 1.0 onward, regardless of the framework version.
 
 No changes yet.
 
+## [0.5.2] — 2026-05-20
+
+Tiny but consequential default-alignment release. The CLI's `--max-tokens`
+flag and the Python `ProviderParams.max_tokens` field now agree.
+
+### Fixed
+
+- **CLI `--max-tokens` default raised from 32 to 1024**, aligning with the
+  Python API default. The previous CLI default (`32`) was a holdover from
+  a pre-reasoning-token era; for any reasoning-capable model
+  (DeepSeek v4-flash, OpenAI o-family, Qwen-thinking variants, Anthropic
+  Opus 4.7+ extended thinking) it silently produced budget-clipped
+  abstains unless the user remembered to pass `--max-tokens` explicitly.
+  The framework already correctly classified those abstains as
+  `parse_status="budget_clipped"` (since v0.2.0), so the impact was on
+  novice users running the CLI with only the required flags.
+- **Docstring on `infereval.evaluation.evaluate`** corrected: the default
+  `ProviderParams()` is `(temperature=1.0, max_tokens=1024)`, not
+  `max_tokens=32` as the docstring previously claimed.
+- **Documentation cleanup** following from the default alignment:
+  `docs/providers.md` no longer carries the "CLI/API default mismatch"
+  callouts; `docs/authoring_benchmarks.md`, the
+  `paraphrase_axis_triangulation.py` docstring, and tutorial 03 now
+  reference the current 1024 default rather than the historical 32
+  footgun.
+
+### Note
+
+This is a behavior change for CLI invocations that omit `--max-tokens` —
+the provider will be asked for up to 1024 tokens per sample instead of 32.
+For typical one-word verdict prompts the difference is invisible (both
+return after ~6 output tokens). For reasoning-capable models that consume
+budget on silent internal reasoning, evaluations that previously
+budget-clipped will now complete normally.
+
 ## [0.5.1] — 2026-05-20
 
 **The construct-validity infrastructure series closes.** Final piece —
