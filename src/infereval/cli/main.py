@@ -14,6 +14,7 @@ from infereval.cli.describe_cmd import describe_cmd
 from infereval.cli.evaluate_cmd import evaluate_cmd
 from infereval.cli.metrics_cmd import metrics_cmd
 from infereval.cli.model_cmd import model_cmd
+from infereval.cli.report_cmd import report_cmd
 from infereval.cli.structure_cmd import structure_cmd
 from infereval.cli.sweep_cmd import sweep_cmd
 from infereval.cli.validate_cmd import validate_cmd
@@ -40,6 +41,7 @@ cli.add_command(metrics_cmd)
 cli.add_command(structure_cmd)
 cli.add_command(model_cmd)
 cli.add_command(sweep_cmd)
+cli.add_command(report_cmd)
 
 
 if __name__ == "__main__":

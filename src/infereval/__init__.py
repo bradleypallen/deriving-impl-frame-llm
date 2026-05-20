@@ -5,7 +5,7 @@ inferential mastery against analyst-labeled benchmarks (coverage, Cohen's
 kappa, Fleiss' kappa) per the methodology of Allen (2026).
 """
 
-__version__ = "0.4.2"
+__version__ = "0.5.0"
 
 from .frame import DerivedFrame
 from .types import Bearer, Implication, Verdict
