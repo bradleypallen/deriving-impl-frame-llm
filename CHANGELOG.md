@@ -12,6 +12,53 @@ stable from 1.0 onward, regardless of the framework version.
 
 No changes yet.
 
+## [0.4.0] — 2026-05-19
+
+**Phase 2 of the construct-validity infrastructure series begins.**
+Phase 2 covers analytical extensions beyond schema metadata —
+structural coherence checks, mixed-effects model fitting, and
+sensitivity-analysis sweeps. This release ships the *philosophically
+central* piece: structural coherence checks against the derived frame
+⟨B, I_M⟩. The 0.x.y minor bump marks the Phase 1→2 transition.
+
+### Added
+
+- **Issue #38 (Phase 2.1)** — **structural coherence checks on the
+  derived frame**.
+  - New module `infereval.structure` with three checks:
+    - `containment_closure_check` — sanity-counts self-implications
+      (items with Γ ∩ Δ ≠ ∅) and confirms they're in I_M by
+      construction (clause i of Definition 3).
+    - `rsr_role_consistency_check` — for items carrying an
+      `rsr_target` and a role tag (`supporter`, `defeater`,
+      `irrelevant-addition`), compares the model's verdict against
+      the verdict the role *predicts* given the base-inference
+      verdict on the same target. Flags items whose verdict
+      contradicts the expected role-conditional verdict.
+    - `base_case_stability_check` — surfaces targets where the model
+      gives different verdicts on multiple base-inference items.
+  - New dataclasses `StructuralAnomaly`, `StructuralCheck`,
+    `StructuralReport`.
+  - Top-level `run_all_checks(evaluation, benchmark)` runs all three
+    and bundles the results.
+  - **New CLI command** `infereval structure <eta.json> --benchmark
+    <bench.json>` runs the checks and prints a human-readable report
+    with per-section anomaly lists.
+  - 16 new tests covering each check independently + the bundle + the
+    CLI (including a live integration against the bundled pulmonology
+    artifacts that correctly surfaces the a9 anomaly).
+
+  Per *Closing the Construct-Validity Gap*: this is the addition that
+  *converts the framework from agreement measurement to mastery
+  characterization in the inferentialist sense* — the structural
+  checks the Hlobil–Brandom framework explicitly motivates are now
+  first-class operations.
+
+### Backwards compatibility
+
+Pure-additive: new module, new CLI command. No schema changes, no
+behavior changes to existing commands.
+
 ## [0.3.3] — 2026-05-19
 
 **Phase 1 of the construct-validity infrastructure series closes.**
