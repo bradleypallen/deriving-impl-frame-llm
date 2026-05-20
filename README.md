@@ -14,7 +14,9 @@ Alpha (0.1.0). Methodology defaults are locked; the JSON schemas are versioned i
 - [**Authoring benchmarks**](docs/authoring_benchmarks.md) — writing your own `benchmark.json`.
 - [**Interpreting metrics**](docs/interpreting_metrics.md) — what κ_C, κ_F, and κ_F\* tell you; reading by-tag decompositions.
 - [**Providers**](docs/providers.md) — per-provider quirks (Anthropic seed handling, DeepSeek reasoning-token budgets, OpenRouter attribution).
-- **Tutorials** (executable Jupyter notebooks under [docs/tutorials/](docs/tutorials/)): the quickstart, authoring from scratch, the cross-model paraphrase-axis experiment.
+- [**Construct-validity workflow**](docs/construct_validity_workflow.md) — end-to-end practitioner's guide for producing reproducible, well-founded evidence for a claim of inferential mastery against a carving. Covers framework features + research-program responsibilities outside scope.
+- [**Closing the construct-validity gap**](docs/closing_the_construct_validity_gap.md) — the implementation-annotated companion to the workflow guide, documenting which requirements (R1–R21) each release closed.
+- **Tutorials** (executable Jupyter notebooks under [docs/tutorials/](docs/tutorials/)): the quickstart, authoring from scratch, the cross-model paraphrase-axis experiment, and the pulmonology visualization notebook.
 
 ## Findings
 
