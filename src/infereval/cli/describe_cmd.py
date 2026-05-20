@@ -154,6 +154,62 @@ def _render_references_summary(bench: Benchmark) -> None:
     click.echo("")
 
 
+def _render_factorial_design(bench: Benchmark) -> None:
+    """Print the declared factorial design and its cell coverage.
+
+    Per Issue #30 (Phase 1.1 of the construct-validity infrastructure).
+    Surfaces what ``infereval describe`` previously left invisible: which
+    design factors are declared, their levels, how the items distribute
+    across the crossed-design cells, and whether the declared
+    ``min_items_per_cell`` floor is met. Skipped when no factors are
+    declared.
+    """
+    if not bench.factors:
+        return
+
+    factor_names = sorted(bench.factors)
+    cells = bench.cells()
+    total_cells = len(cells)
+    populated = sum(1 for n in cells.values() if n > 0)
+
+    click.echo(f"factorial design ({len(factor_names)} factor{'s' if len(factor_names) != 1 else ''}):")
+
+    # Each factor: name, level count, level list (truncated if long).
+    name_w = max(len(f) for f in factor_names)
+    for f in factor_names:
+        levels = bench.factors[f]
+        lst = "[" + ", ".join(levels) + "]"
+        # Truncate the level-list display for readability.
+        if len(lst) > 60:
+            lst = "[" + ", ".join(levels[:4]) + f", … ({len(levels) - 4} more)]"
+        click.echo(f"  {f.ljust(name_w)}  {len(levels)} levels: {lst}")
+
+    # Crossed-cell summary line.
+    dims = " × ".join(str(len(bench.factors[f])) for f in factor_names)
+    click.echo(f"  total cells:        {dims} = {total_cells}")
+    click.echo(f"  populated cells:    {populated} / {total_cells}")
+
+    # min_items_per_cell, if declared — show whether the floor is met and,
+    # if not, list a few of the underpopulated cells.
+    if bench.factor_constraints is not None and bench.factor_constraints.min_items_per_cell is not None:
+        k = bench.factor_constraints.min_items_per_cell
+        meeting = sum(1 for n in cells.values() if n >= k)
+        click.echo(f"  min items per cell: {k} (declared)")
+        click.echo(f"  cells meeting min:  {meeting} / {total_cells}")
+        underpopulated = [(cell, n) for cell, n in cells.items() if n < k]
+        if underpopulated:
+            click.echo("  underpopulated cells:")
+            shown = sorted(underpopulated, key=lambda kv: (kv[1], kv[0]))[:5]
+            for cell, n in shown:
+                desc = ", ".join(
+                    f"{f}={lvl}" for f, lvl in zip(factor_names, cell, strict=True)
+                )
+                click.echo(f"    ({desc}): {n} item{'s' if n != 1 else ''}")
+            if len(underpopulated) > 5:
+                click.echo(f"    ... and {len(underpopulated) - 5} more")
+    click.echo("")
+
+
 def _render_group_cross_tab(bench: Benchmark) -> None:
     """For each tag group, show the primary-analyst verdict distribution.
 
@@ -428,6 +484,7 @@ def describe_cmd(path: Path, show_items: bool = False) -> None:
     _render_verification_prompt(bench)
     _render_bearers(bench)
     _render_references_summary(bench)
+    _render_factorial_design(bench)
     _render_group_cross_tab(bench)
 
     # Tag frequencies, if any.

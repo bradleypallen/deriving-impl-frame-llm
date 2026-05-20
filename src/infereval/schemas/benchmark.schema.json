@@ -125,6 +125,13 @@
           },
           "title": "References",
           "type": "array"
+        },
+        "factor_levels": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Factor Levels",
+          "type": "object"
         }
       },
       "required": [
@@ -178,6 +185,26 @@
         }
       },
       "title": "ContextBuilders",
+      "type": "object"
+    },
+    "FactorConstraints": {
+      "additionalProperties": false,
+      "description": "Constraints the benchmark validator should enforce on the factorial design.\n\nCurrently supports ``min_items_per_cell``: every cell of the *fully\ncrossed* design (cartesian product of all declared factor levels)\nmust contain at least this many items, where a cell is defined by\nthe per-factor level assignments in :attr:`BenchmarkItem.factor_levels`.\n\nPer *Closing the Construct-Validity Gap in infereval* (Phase 1.1)\naddressing requirement R7 (multiple items per condition) and\nsupporting R12 (per-condition decomposition).",
+      "properties": {
+        "min_items_per_cell": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Min Items Per Cell"
+        }
+      },
+      "title": "FactorConstraints",
       "type": "object"
     },
     "PluginContextBuilder": {
@@ -460,6 +487,27 @@
       },
       "title": "Items",
       "type": "array"
+    },
+    "factors": {
+      "additionalProperties": {
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      },
+      "title": "Factors",
+      "type": "object"
+    },
+    "factor_constraints": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/FactorConstraints"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
     },
     "references": {
       "items": {

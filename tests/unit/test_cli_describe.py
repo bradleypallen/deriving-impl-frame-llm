@@ -284,6 +284,101 @@ class TestDescribeNewSections:
         assert "verdict distribution by tag group" not in result.output
 
 
+class TestDescribeFactorialDesign:
+    """Issue #30 (Phase 1.1): `describe` surfaces declared design factors."""
+
+    def test_section_omitted_when_no_factors_declared(self) -> None:
+        runner = CliRunner()
+        result = runner.invoke(cli, ["describe", str(STOP_SIGN_PATH)])
+        assert "factorial design" not in result.output
+
+    def test_section_renders_factors_and_cell_summary(self, tmp_path: Path) -> None:
+        data = {
+            "schema_version": "1.0",
+            "id": "fac-cli",
+            "bearers": {"p": {"expression": "P"}, "q": {"expression": "Q"}},
+            "analysts": [{"id": "a"}],
+            "factors": {
+                "premise_type": ["base", "supporter", "defeater"],
+                "para": ["v1", "v2"],
+            },
+            "factor_constraints": {"min_items_per_cell": 1},
+            "items": [
+                {
+                    "id": f"i{i}",
+                    "premises": ["p"],
+                    "conclusions": ["q"],
+                    "analyst_verdicts": ["good"],
+                    "factor_levels": {"premise_type": pt, "para": pa},
+                }
+                for i, (pt, pa) in enumerate([
+                    ("base", "v1"), ("base", "v2"),
+                    ("supporter", "v1"), ("supporter", "v2"),
+                    ("defeater", "v1"), ("defeater", "v2"),
+                ])
+            ],
+        }
+        path = tmp_path / "fac.json"
+        path.write_text(json.dumps(data), encoding="utf-8")
+        runner = CliRunner()
+        result = runner.invoke(cli, ["describe", str(path)])
+        assert "factorial design (2 factors):" in result.output
+        # Factor lines render with level counts.
+        assert "premise_type  3 levels:" in result.output
+        assert "para          2 levels:" in result.output
+        # Total-cell line with × notation.
+        assert "total cells:" in result.output and "= 6" in result.output
+        # populated cells line.
+        assert "populated cells:    6 / 6" in result.output
+        # min items per cell line + meeting count.
+        assert "min items per cell: 1" in result.output
+        assert "cells meeting min:  6 / 6" in result.output
+
+    def test_section_flags_underpopulated_cells(
+        self, tmp_path: Path, capsys: object
+    ) -> None:
+        # Call the renderer directly with a Benchmark constructed via
+        # ``model_construct`` so we can sidestep the model_validator that
+        # would otherwise refuse to instantiate an underpopulated design.
+        # The renderer's job is to *report* what cells fall short; that
+        # path is what we're testing here, not the validator (which is
+        # covered separately in TestFactorialDesign).
+        from infereval.benchmark import (
+            AnalystModel,
+            BearerModel,
+            Benchmark,
+            BenchmarkItem,
+            FactorConstraints,
+        )
+        from infereval.cli.describe_cmd import _render_factorial_design
+
+        bench = Benchmark.model_construct(
+            id="underpop",
+            bearers={"p": BearerModel(expression="P"), "q": BearerModel(expression="Q")},
+            analysts=[AnalystModel(id="a")],
+            items=[
+                BenchmarkItem(
+                    id="i0",
+                    premises=["p"],
+                    conclusions=["q"],
+                    analyst_verdicts=["good"],
+                    factor_levels={"pt": "a"},
+                )
+            ],
+            factors={"pt": ["a", "b", "c"]},
+            factor_constraints=FactorConstraints(min_items_per_cell=2),
+        )
+        _render_factorial_design(bench)
+        out = capsys.readouterr().out  # type: ignore[attr-defined]
+        assert "underpopulated cells:" in out
+        assert "(pt=a): 1 item" in out
+        assert "(pt=b): 0 items" in out
+        assert "(pt=c): 0 items" in out
+        # The summary lines should still appear too.
+        assert "min items per cell: 2 (declared)" in out
+        assert "cells meeting min:  0 / 3" in out
+
+
 class TestDescribeItemsFlag:
     """Issue #28: ``--items`` adds an expert-readable item listing."""
 
