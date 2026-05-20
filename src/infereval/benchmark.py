@@ -110,6 +110,13 @@ class AnalystModel(BaseModel):
     id: str
     display_name: str | None = None
     notes: str | None = None
+    panel: str | None = None
+    """Optional panel identifier. Analysts sharing the same panel string
+    are members of the same panel for cross-panel agreement analysis
+    (R4: independent reference check). ``None`` (default) means the
+    benchmark is flat — every analyst is treated equivalently. Adding
+    a panel string to ANY analyst requires ALL analysts to declare one
+    (no partial-panel benchmarks)."""
 
 
 class TemplateContextBuilder(BaseModel):
@@ -345,6 +352,14 @@ class Benchmark(BaseModel):
     """Optional constraints the benchmark validator enforces on the
     factorial design. Currently supports ``min_items_per_cell``. See
     :class:`FactorConstraints`."""
+    primary_panel: str | None = None
+    """Optional name of the primary analyst panel. Determines which
+    panel ``κ_F*(β)`` reports against by default and which column feeds
+    the cross-panel agreement calculation. When unset, defaults to the
+    panel name of the first analyst declaring one (alphabetical order
+    if multiple). Validation requires that at least one analyst belongs
+    to the named panel when set. Phase 1.4 of the construct-validity
+    infrastructure (R4)."""
     references: list[Reference] = Field(default_factory=list)
     """Corpus-level provenance: the paper, dialogue, or regulatory framework
     the benchmark is derived from. The stop-sign benchmark would cite
@@ -363,6 +378,26 @@ class Benchmark(BaseModel):
         analyst_ids = [a.id for a in self.analysts]
         if len(analyst_ids) != len(set(analyst_ids)):
             raise ValueError("Analyst ids must be unique")
+
+        # Panel sanity (Issue #36, Phase 1.4):
+        # - If any analyst declares a panel, every analyst must declare one
+        #   (no partial-panel benchmarks).
+        # - If primary_panel is set, at least one analyst must belong to it.
+        panel_count = sum(1 for a in self.analysts if a.panel is not None)
+        if 0 < panel_count < len(self.analysts):
+            no_panel = [a.id for a in self.analysts if a.panel is None]
+            raise ValueError(
+                f"Partial-panel benchmark: {panel_count}/{len(self.analysts)} "
+                f"analysts declare a 'panel' but {sorted(no_panel)} do not. "
+                f"Either all analysts must declare a panel or none must."
+            )
+        if self.primary_panel is not None:
+            declared_panels = {a.panel for a in self.analysts if a.panel is not None}
+            if self.primary_panel not in declared_panels:
+                raise ValueError(
+                    f"primary_panel={self.primary_panel!r} but no analyst belongs "
+                    f"to that panel (declared panels: {sorted(declared_panels)})"
+                )
 
         # Bearer ids consistent: every premise / conclusion / rsr_target id must
         # appear in self.bearers
@@ -522,6 +557,39 @@ class Benchmark(BaseModel):
             if a.id == analyst_id:
                 return j
         raise KeyError(f"No analyst with id {analyst_id!r}")
+
+    def panel_names(self) -> list[str]:
+        """Sorted unique panel names across :attr:`analysts`.
+
+        Returns ``[]`` for an unpanelled (flat) benchmark. Phase 1.4 of
+        the construct-validity infrastructure (R4).
+        """
+        return sorted({a.panel for a in self.analysts if a.panel is not None})
+
+    def analysts_in_panel(self, name: str) -> list[AnalystModel]:
+        """Every analyst whose :attr:`AnalystModel.panel` equals ``name``."""
+        return [a for a in self.analysts if a.panel == name]
+
+    def analyst_indices_in_panel(self, name: str) -> list[int]:
+        """0-based indices into the verdict tuple for analysts in ``name``.
+
+        Returned in the same order analysts appear in :attr:`analysts`,
+        which is also the order verdicts appear in each item's
+        :attr:`BenchmarkItem.analyst_verdicts` list.
+        """
+        return [j for j, a in enumerate(self.analysts) if a.panel == name]
+
+    def resolved_primary_panel(self) -> str | None:
+        """The primary panel name to use for analyses.
+
+        Returns :attr:`primary_panel` if set; otherwise the
+        alphabetically-first declared panel name; otherwise ``None`` for
+        unpanelled benchmarks.
+        """
+        if self.primary_panel is not None:
+            return self.primary_panel
+        names = self.panel_names()
+        return names[0] if names else None
 
     @classmethod
     def load(cls, path: str | Path) -> Benchmark:

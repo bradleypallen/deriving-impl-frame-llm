@@ -34,6 +34,18 @@
           ],
           "default": null,
           "title": "Notes"
+        },
+        "panel": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Panel"
         }
       },
       "required": [
@@ -571,6 +583,18 @@
         }
       ],
       "default": null
+    },
+    "primary_panel": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Primary Panel"
     },
     "references": {
       "items": {
