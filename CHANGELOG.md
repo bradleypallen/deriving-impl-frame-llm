@@ -12,6 +12,42 @@ stable from 1.0 onward, regardless of the framework version.
 
 No changes yet.
 
+## [0.3.2] — 2026-05-19
+
+Third piece of the construct-validity infrastructure series. Adds
+per-item construction provenance for benchmark audit. Addresses partial
+coverage of **R5** (documented construction), **R8** (held-out items),
+and **R9** (training-data separation).
+
+### Added
+
+- **Issue #34 (Phase 1.3)** — **construction-provenance metadata**.
+  - New `ConstructionMetadata` model with optional fields
+    `authored_by`, `authored_on` (ISO date), `authored_blind_to_models`,
+    and `source` (free-form citation for the primary material the
+    author worked from — distinct from `references` which carries the
+    framework-level `Reference` objects justifying the verdict).
+  - `BenchmarkItem.construction_metadata: ConstructionMetadata | None`
+    — `None` by default; populate selectively for items where the
+    provenance matters.
+  - `infereval describe` adds a `construction provenance:` summary
+    section listing the annotated-item count, unique authors,
+    authored-on date range, blinded-to model count, and source-citation
+    count. Omitted when no item carries metadata.
+  - `infereval describe --items` adds a `construction:` line per
+    annotated item, rendering author + date + blinded-models + source
+    on a single wrapped line. Omitted for items without metadata.
+  - Content is the analyst's responsibility — the framework validates
+    structure (Pydantic types, `extra="forbid"`) but does not enforce
+    that `authored_on` post-dates any training cutoff. The point is
+    to make the *presence* of these declarations auditable.
+
+### Backwards compatibility
+
+`BenchmarkItem.construction_metadata` defaults to `None`. Every
+pre-0.3.2 benchmark validates unchanged. `schema_version` stays
+`"1.0"`.
+
 ## [0.3.1] — 2026-05-19
 
 Second piece of the construct-validity infrastructure series. Promotes

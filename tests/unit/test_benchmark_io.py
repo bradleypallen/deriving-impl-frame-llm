@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import copy
 import json
+from datetime import date
 from pathlib import Path
 
 import pytest
@@ -13,6 +14,7 @@ from infereval.benchmark import (
     BearerModel,
     Benchmark,
     BenchmarkItem,
+    ConstructionMetadata,
     FactorConstraints,
     Reference,
 )
@@ -572,3 +574,100 @@ class TestParaphraseVariantsHelper:
         bench = Benchmark.model_validate(data)
         # max paraphrases = 3 (on sa); variant count = 4.
         assert bench.n_paraphrase_variants == 4
+
+
+# ---- Construction provenance (Issue #34, Phase 1.3) ---------------------
+
+
+class TestConstructionMetadata:
+    """``BenchmarkItem.construction_metadata`` carries per-item provenance."""
+
+    def test_well_formed_metadata_validates(self) -> None:
+        cm = ConstructionMetadata(
+            authored_by="physician-c",
+            authored_on=date(2026, 4, 15),
+            authored_blind_to_models=["claude-opus-4-7", "gpt-5"],
+            source="Sanford Guide 2025",
+        )
+        assert cm.authored_by == "physician-c"
+        assert cm.authored_on == date(2026, 4, 15)
+        assert cm.authored_blind_to_models == ["claude-opus-4-7", "gpt-5"]
+        assert cm.source == "Sanford Guide 2025"
+
+    def test_all_fields_optional(self) -> None:
+        # Empty payload is fine — every field has a default.
+        cm = ConstructionMetadata()
+        assert cm.authored_by is None
+        assert cm.authored_on is None
+        assert cm.authored_blind_to_models == []
+        assert cm.source is None
+
+    def test_authored_on_parses_iso_string(self) -> None:
+        cm = ConstructionMetadata.model_validate({"authored_on": "2026-04-15"})
+        assert cm.authored_on == date(2026, 4, 15)
+
+    def test_rejects_unknown_fields(self) -> None:
+        with pytest.raises(ValidationError):
+            ConstructionMetadata.model_validate({"authored_by": "x", "garbage": True})
+
+    def test_item_carries_metadata_through_load(self) -> None:
+        data = {
+            "schema_version": "1.0",
+            "id": "cm-load",
+            "bearers": {"p": {"expression": "P"}, "q": {"expression": "Q"}},
+            "analysts": [{"id": "a"}],
+            "items": [
+                {
+                    "id": "i1",
+                    "premises": ["p"],
+                    "conclusions": ["q"],
+                    "analyst_verdicts": ["good"],
+                    "construction_metadata": {
+                        "authored_by": "physician-c",
+                        "authored_on": "2026-04-15",
+                        "authored_blind_to_models": ["claude-opus-4-7"],
+                        "source": "Sanford Guide 2025",
+                    },
+                }
+            ],
+        }
+        bench = Benchmark.model_validate(data)
+        cm = bench.items[0].construction_metadata
+        assert cm is not None
+        assert cm.authored_by == "physician-c"
+        assert cm.authored_on == date(2026, 4, 15)
+        assert cm.authored_blind_to_models == ["claude-opus-4-7"]
+
+    def test_default_is_none(self, stop_sign_benchmark_dict: dict) -> None:
+        bench = Benchmark.model_validate(stop_sign_benchmark_dict)
+        for item in bench.items:
+            assert item.construction_metadata is None
+
+    def test_round_trip_preserves_metadata(self) -> None:
+        data = {
+            "schema_version": "1.0",
+            "id": "cm-rt",
+            "bearers": {"p": {"expression": "P"}, "q": {"expression": "Q"}},
+            "analysts": [{"id": "a"}],
+            "items": [
+                {
+                    "id": "i1",
+                    "premises": ["p"],
+                    "conclusions": ["q"],
+                    "analyst_verdicts": ["good"],
+                    "construction_metadata": {
+                        "authored_by": "x",
+                        "authored_on": "2026-04-15",
+                    },
+                }
+            ],
+        }
+        bench = Benchmark.model_validate(data)
+        reloaded = Benchmark.loads(bench.dumps())
+        cm = reloaded.items[0].construction_metadata
+        assert cm is not None
+        assert cm.authored_by == "x"
+        assert cm.authored_on == date(2026, 4, 15)
+        # Unset fields are excluded from output (exclude_none) but parse back to None.
+        assert cm.source is None
+        assert cm.authored_blind_to_models == []

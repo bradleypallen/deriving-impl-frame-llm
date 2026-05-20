@@ -132,6 +132,17 @@
           },
           "title": "Factor Levels",
           "type": "object"
+        },
+        "construction_metadata": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ConstructionMetadata"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         }
       },
       "required": [
@@ -141,6 +152,58 @@
         "analyst_verdicts"
       ],
       "title": "BenchmarkItem",
+      "type": "object"
+    },
+    "ConstructionMetadata": {
+      "additionalProperties": false,
+      "description": "Per-item construction provenance for benchmark audit.\n\nRecords who authored an item, when, against what training-cutoff\nposture, and from what source materials. Phase 1.3 of the\nconstruct-validity infrastructure series, providing the data model\nfor requirements R5 (documented construction), R8 (held-out items),\nand R9 (training-data separation).\n\nContent is the analyst's responsibility \u2014 the framework validates\nstructure (Pydantic types, ``extra=\"forbid\"``) but does not enforce\nthat, e.g., ``authored_on`` actually post-dates a model's training\ncutoff. The point is to make the *presence* of these declarations\nauditable.",
+      "properties": {
+        "authored_by": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Authored By"
+        },
+        "authored_on": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Authored On"
+        },
+        "authored_blind_to_models": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Authored Blind To Models",
+          "type": "array"
+        },
+        "source": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source"
+        }
+      },
+      "title": "ConstructionMetadata",
       "type": "object"
     },
     "ContextBuilders": {

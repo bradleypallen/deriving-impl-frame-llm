@@ -379,6 +379,83 @@ class TestDescribeFactorialDesign:
         assert "cells meeting min:  0 / 3" in out
 
 
+class TestDescribeConstructionProvenance:
+    """Issue #34 (Phase 1.3): `describe` surfaces construction metadata."""
+
+    def _bench_with_metadata(self, tmp_path: Path) -> Path:
+        data = {
+            "schema_version": "1.0",
+            "id": "cm-describe",
+            "bearers": {"p": {"expression": "P"}, "q": {"expression": "Q"}},
+            "analysts": [{"id": "a"}],
+            "items": [
+                {
+                    "id": "i1", "premises": ["p"], "conclusions": ["q"],
+                    "analyst_verdicts": ["good"],
+                    "construction_metadata": {
+                        "authored_by": "physician-c",
+                        "authored_on": "2026-04-15",
+                        "authored_blind_to_models": ["claude-opus-4-7", "gpt-5"],
+                        "source": "Sanford Guide 2025",
+                    },
+                },
+                {
+                    "id": "i2", "premises": ["p"], "conclusions": ["q"],
+                    "analyst_verdicts": ["bad"],
+                    "construction_metadata": {
+                        "authored_by": "physician-d",
+                        "authored_on": "2026-05-10",
+                        "authored_blind_to_models": ["gpt-5"],
+                    },
+                },
+                # i3 has no construction_metadata.
+                {
+                    "id": "i3", "premises": ["p"], "conclusions": ["q"],
+                    "analyst_verdicts": ["good"],
+                },
+            ],
+        }
+        path = tmp_path / "cm.json"
+        path.write_text(json.dumps(data), encoding="utf-8")
+        return path
+
+    def test_section_omitted_when_no_item_has_metadata(self) -> None:
+        runner = CliRunner()
+        result = runner.invoke(cli, ["describe", str(STOP_SIGN_PATH)])
+        assert "construction provenance" not in result.output
+
+    def test_section_renders_when_any_item_has_metadata(
+        self, tmp_path: Path
+    ) -> None:
+        runner = CliRunner()
+        result = runner.invoke(cli, ["describe", str(self._bench_with_metadata(tmp_path))])
+        assert "construction provenance:" in result.output
+        assert "items with metadata: 2 / 3" in result.output
+        assert "authors:" in result.output and "2 unique" in result.output
+        assert "physician-c" in result.output and "physician-d" in result.output
+        assert "authored_on range:" in result.output
+        assert "2026-04-15" in result.output and "2026-05-10" in result.output
+        assert "blinded-to models:" in result.output and "2 unique" in result.output
+        assert "source citations:    1 distinct" in result.output
+
+    def test_items_flag_renders_construction_line_per_item(
+        self, tmp_path: Path
+    ) -> None:
+        runner = CliRunner()
+        result = runner.invoke(
+            cli, ["describe", "--items", str(self._bench_with_metadata(tmp_path))]
+        )
+        assert "construction: physician-c on 2026-04-15" in result.output
+        # textwrap may break the long line; assert on the substrings,
+        # not the joined form.
+        assert "blind to claude-opus-4-7," in result.output
+        assert "gpt-5" in result.output
+        assert "source: Sanford Guide 2025" in result.output
+        # The unannotated item should not produce a construction: line.
+        post_i3 = result.output.split("i3  ")[-1]
+        assert "construction:" not in post_i3.split("\n\n")[0]
+
+
 class TestDescribeParaphraseVariants:
     """Issue #32 (Phase 1.2): `describe` shows paraphrase coverage."""
 

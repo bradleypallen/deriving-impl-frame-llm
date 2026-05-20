@@ -154,6 +154,80 @@ def _render_references_summary(bench: Benchmark) -> None:
     click.echo("")
 
 
+def _render_construction_provenance(bench: Benchmark) -> None:
+    """Print a summary of per-item construction provenance.
+
+    Surfaces who authored items, when, against which models they were
+    blind, and from what source materials. Omitted when no item carries
+    construction_metadata. Phase 1.3 of the construct-validity
+    infrastructure (R5, R8, R9).
+    """
+    annotated = [it for it in bench.items if it.construction_metadata is not None]
+    if not annotated:
+        return
+
+    click.echo("construction provenance:")
+    click.echo(f"  items with metadata: {len(annotated)} / {len(bench.items)}")
+
+    # Authors
+    author_counts: Counter[str] = Counter()
+    for it in annotated:
+        cm = it.construction_metadata
+        assert cm is not None
+        if cm.authored_by:
+            author_counts[cm.authored_by] += 1
+    if author_counts:
+        top = ", ".join(f"{a}: {n}" for a, n in author_counts.most_common(5))
+        more = (
+            f", and {len(author_counts) - 5} more"
+            if len(author_counts) > 5
+            else ""
+        )
+        click.echo(f"  authors:             {len(author_counts)} unique ({top}{more})")
+
+    # Date range
+    dates = [
+        it.construction_metadata.authored_on
+        for it in annotated
+        if it.construction_metadata is not None
+        and it.construction_metadata.authored_on is not None
+    ]
+    if dates:
+        if min(dates) == max(dates):
+            click.echo(f"  authored_on:         {min(dates).isoformat()}")
+        else:
+            click.echo(
+                f"  authored_on range:   "
+                f"{min(dates).isoformat()} to {max(dates).isoformat()}"
+            )
+
+    # Blinded-to models — union across items
+    blinded_models: Counter[str] = Counter()
+    for it in annotated:
+        cm = it.construction_metadata
+        assert cm is not None
+        for m in cm.authored_blind_to_models:
+            blinded_models[m] += 1
+    if blinded_models:
+        top = ", ".join(m for m, _ in blinded_models.most_common(3))
+        more = (
+            f", and {len(blinded_models) - 3} more"
+            if len(blinded_models) > 3
+            else ""
+        )
+        click.echo(f"  blinded-to models:   {len(blinded_models)} unique ({top}{more})")
+
+    # Source citations (count of distinct)
+    sources = {
+        it.construction_metadata.source
+        for it in annotated
+        if it.construction_metadata is not None and it.construction_metadata.source
+    }
+    if sources:
+        click.echo(f"  source citations:    {len(sources)} distinct")
+    click.echo("")
+
+
 def _render_paraphrase_variants(bench: Benchmark) -> None:
     """Print a single line summarising paraphrase coverage across bearers.
 
@@ -398,6 +472,33 @@ def _render_items(bench: Benchmark) -> None:
                     )
                 )
 
+        # Construction provenance (Issue #34), if present.
+        if item.construction_metadata is not None:
+            cm = item.construction_metadata
+            parts: list[str] = []
+            if cm.authored_by and cm.authored_on:
+                parts.append(f"{cm.authored_by} on {cm.authored_on.isoformat()}")
+            elif cm.authored_by:
+                parts.append(cm.authored_by)
+            elif cm.authored_on:
+                parts.append(cm.authored_on.isoformat())
+            if cm.authored_blind_to_models:
+                parts.append("blind to " + ", ".join(cm.authored_blind_to_models))
+            if cm.source:
+                parts.append(f"source: {cm.source}")
+            if parts:
+                label = f"{body_indent}construction: "
+                cont = " " * len(label)
+                click.echo(
+                    textwrap.fill(
+                        label + "; ".join(parts),
+                        width=_WRAP,
+                        subsequent_indent=cont,
+                        break_long_words=False,
+                        break_on_hyphens=False,
+                    )
+                )
+
         # References, if any.
         if item.references:
             click.echo(f"{body_indent}references ({len(item.references)}):")
@@ -505,6 +606,7 @@ def describe_cmd(path: Path, show_items: bool = False) -> None:
     _render_references_summary(bench)
     _render_factorial_design(bench)
     _render_paraphrase_variants(bench)
+    _render_construction_provenance(bench)
     _render_group_cross_tab(bench)
 
     # Tag frequencies, if any.
