@@ -12,6 +12,49 @@ stable from 1.0 onward, regardless of the framework version.
 
 No changes yet.
 
+## [0.4.2] — 2026-05-19
+
+**Phase 2 of the construct-validity infrastructure series closes.**
+Final Phase 2 piece adds sensitivity-analysis sweeps over varied
+evaluation parameters. Addresses **R11** (sensitivity analysis on
+free parameters).
+
+### Added
+
+- **Issue #42 (Phase 2.3)** — **sensitivity-analysis sweeps**.
+  - New module `infereval.sweep` with `run_sweep(benchmark,
+    provider, parameter, values, out_dir, ...)` and `coerce_values()`
+    helpers.
+  - **New CLI command** `infereval sweep <benchmark.json> --vary
+    <param> --values <list> --provider X --model Y --out-dir <dir>`.
+    Supported sweep parameters: `n_samples`, `tie_break`,
+    `paraphrase_variant`, `temperature`. Each value produces a
+    full per-value evaluation file + JSONL log; an aggregate
+    `sweep-summary.json` carries the row table.
+  - Dataclasses `SweepRow` and `SweepResult`; `SweepResult.stability_verdict`
+    classifies the κ_C range into stable (< 0.05), moderate (< 0.10),
+    or substantive variability — with escalating language so an
+    unstable sweep tells the reader to consider tighter parameter
+    choices or a wider analyst panel.
+  - 18 new tests across value coercion, end-to-end sweep
+    orchestration, the three stability-verdict bands, and the CLI
+    integration.
+
+### Phase 2 closes
+
+All three Phase 2 features from *Closing the Construct-Validity Gap
+in infereval* are now shipped:
+- v0.4.0 — structural coherence checks (#38)
+- v0.4.1 — factor-effects model fitting (#40)
+- v0.4.2 — sensitivity-analysis sweeps (#42)
+
+Phase 3 (reporting and methodological discipline — construct-validity
+report + negative-results aggregation) is next.
+
+### Backwards compatibility
+
+Pure-additive. New module, new CLI command. No schema changes.
+
 ## [0.4.1] — 2026-05-19
 
 Second piece of Phase 2 (analytical extensions). Adds factor-effects
