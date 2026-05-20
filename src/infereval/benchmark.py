@@ -200,6 +200,28 @@ class RSRTarget(BaseModel):
         return v
 
 
+class FactorConstraints(BaseModel):
+    """Constraints the benchmark validator should enforce on the factorial design.
+
+    Currently supports ``min_items_per_cell``: every cell of the *fully
+    crossed* design (cartesian product of all declared factor levels)
+    must contain at least this many items, where a cell is defined by
+    the per-factor level assignments in :attr:`BenchmarkItem.factor_levels`.
+
+    Per *Closing the Construct-Validity Gap in infereval* (Phase 1.1)
+    addressing requirement R7 (multiple items per condition) and
+    supporting R12 (per-condition decomposition).
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    min_items_per_cell: int | None = None
+    """If set, every cell of the crossed design must have at least this
+    many items. Set to ``None`` to skip the cell-count validation
+    entirely (the per-key / per-value type checks on ``factor_levels``
+    still run)."""
+
+
 class BenchmarkItem(BaseModel):
     """A single benchmark item: an implication paired with analyst verdicts."""
 
@@ -216,6 +238,13 @@ class BenchmarkItem(BaseModel):
     regulatory document that justifies the analyst's verdict. Empty by
     default; populating these turns the benchmark into an auditable
     artifact that a domain expert can cross-check against source material."""
+    factor_levels: dict[str, str] = Field(default_factory=dict)
+    """Per-factor level assignments for this item, naming its position
+    in the benchmark's crossed design. Keys must be factor names
+    declared in :attr:`Benchmark.factors`; values must be levels from
+    the corresponding levels list. Empty by default — items without
+    factor_levels appear in no cell and are ignored by the
+    ``min_items_per_cell`` check."""
 
     @field_validator("premises", "conclusions", mode="before")
     @classmethod
@@ -260,6 +289,18 @@ class Benchmark(BaseModel):
     context_builders: ContextBuilders = Field(default_factory=ContextBuilders)
     verification_prompt: VerificationPromptOverride | None = None
     items: list[BenchmarkItem]
+    factors: dict[str, list[str]] = Field(default_factory=dict)
+    """Declared design factors and their levels for a crossed-design
+    benchmark, e.g. ``{"side_premise_type": ["none", "irrelevant",
+    "perceptual_defeater", "genuine_defeater"], "target_inference":
+    ["color", "shape", "function"]}``. Items position themselves in the
+    design via :attr:`BenchmarkItem.factor_levels`. Empty by default —
+    omit to declare a flat (unstructured) benchmark. Phase 1.1 of the
+    construct-validity infrastructure (R7, supports R12)."""
+    factor_constraints: FactorConstraints | None = None
+    """Optional constraints the benchmark validator enforces on the
+    factorial design. Currently supports ``min_items_per_cell``. See
+    :class:`FactorConstraints`."""
     references: list[Reference] = Field(default_factory=list)
     """Corpus-level provenance: the paper, dialogue, or regulatory framework
     the benchmark is derived from. The stop-sign benchmark would cite
@@ -312,7 +353,89 @@ class Benchmark(BaseModel):
                     f"but the benchmark declares {len(self.analysts)} analysts"
                 )
 
+            # Factor-level keys/values must be declared in self.factors
+            for fkey, fval in item.factor_levels.items():
+                if fkey not in self.factors:
+                    raise ValueError(
+                        f"Item {item.id!r} declares factor_levels[{fkey!r}] but "
+                        f"that factor is not declared at the benchmark level "
+                        f"(declared factors: {sorted(self.factors)})"
+                    )
+                if fval not in self.factors[fkey]:
+                    raise ValueError(
+                        f"Item {item.id!r} declares factor_levels[{fkey!r}]={fval!r} "
+                        f"but {fval!r} is not a declared level for {fkey!r} "
+                        f"(declared levels: {self.factors[fkey]})"
+                    )
+
+        # min_items_per_cell — every cell of the fully crossed design must
+        # contain ≥ k items (an item is in a cell iff its factor_levels
+        # match the cell on every factor).
+        if (
+            self.factor_constraints is not None
+            and self.factor_constraints.min_items_per_cell is not None
+            and self.factors
+        ):
+            k = self.factor_constraints.min_items_per_cell
+            counts = self.cells()
+            underpopulated = sorted(
+                [(cell, n) for cell, n in counts.items() if n < k],
+                key=lambda kv: (kv[1], kv[0]),
+            )
+            if underpopulated:
+                shown = ", ".join(
+                    f"{dict(zip(sorted(self.factors), cell, strict=True))}={n}"
+                    for cell, n in underpopulated[:5]
+                )
+                more = (
+                    f" and {len(underpopulated) - 5} more"
+                    if len(underpopulated) > 5
+                    else ""
+                )
+                raise ValueError(
+                    f"min_items_per_cell={k} not met: "
+                    f"{len(underpopulated)}/{len(counts)} cells are underpopulated "
+                    f"({shown}{more})"
+                )
+
         return self
+
+    def cells(self) -> dict[tuple[str, ...], int]:
+        """Count items per cell of the fully crossed design.
+
+        Returns a mapping from cell-tuple to item count, where the
+        cell-tuple is the per-factor level value in the order given by
+        ``sorted(self.factors)``. Every cell of the cartesian product is
+        present in the result (count 0 if no item lands there); items
+        whose ``factor_levels`` don't name every declared factor are
+        excluded entirely (they belong to no cell).
+        """
+        from itertools import product as _product
+
+        if not self.factors:
+            return {}
+        factor_names = sorted(self.factors)
+        # Initialise every cell to zero so under-populated cells appear.
+        cells: dict[tuple[str, ...], int] = {
+            tuple(combo): 0
+            for combo in _product(*(self.factors[f] for f in factor_names))
+        }
+        for item in self.items:
+            if not all(f in item.factor_levels for f in factor_names):
+                continue
+            key = tuple(item.factor_levels[f] for f in factor_names)
+            cells[key] = cells.get(key, 0) + 1
+        return cells
+
+    def is_fully_crossed_at_k(self, k: int) -> bool:
+        """True iff every cell of the crossed design contains at least ``k`` items.
+
+        Returns ``False`` when no factors are declared (an unstructured
+        benchmark trivially fails any factorial coverage check).
+        """
+        if not self.factors:
+            return False
+        return all(n >= k for n in self.cells().values())
 
     @property
     def m(self) -> int:

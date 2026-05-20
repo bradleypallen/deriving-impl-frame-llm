@@ -9,7 +9,13 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from infereval.benchmark import BearerModel, Benchmark, BenchmarkItem, Reference
+from infereval.benchmark import (
+    BearerModel,
+    Benchmark,
+    BenchmarkItem,
+    FactorConstraints,
+    Reference,
+)
 from infereval.types import Verdict
 
 # ---- Pydantic validation -------------------------------------------------
@@ -362,3 +368,175 @@ class TestReferences:
                 analyst_verdicts=["good"],
                 references=[{"citation": "ok", "made_up": True}],
             )
+
+
+# ---- Factorial design (Issue #30, Phase 1.1) ----------------------------
+
+
+def _minimal_factorial_dict(
+    factors: dict[str, list[str]] | None = None,
+    items_factor_levels: list[dict[str, str]] | None = None,
+    factor_constraints: dict | None = None,
+) -> dict:
+    """Build a minimal valid benchmark dict with the supplied factorial design.
+
+    The base benchmark has 2 bearers, 1 analyst, and one item per entry
+    in ``items_factor_levels`` (each item gets a synthetic id ``i0`` … ``iN``).
+    """
+    items_factor_levels = items_factor_levels or []
+    factors = factors or {}
+    d: dict = {
+        "schema_version": "1.0",
+        "id": "factorial-test",
+        "bearers": {"p": {"expression": "P"}, "q": {"expression": "Q"}},
+        "analysts": [{"id": "a"}],
+        "items": [
+            {
+                "id": f"i{i}",
+                "premises": ["p"],
+                "conclusions": ["q"],
+                "analyst_verdicts": ["good"],
+                "factor_levels": fl,
+            }
+            for i, fl in enumerate(items_factor_levels)
+        ],
+    }
+    if factors:
+        d["factors"] = factors
+    if factor_constraints is not None:
+        d["factor_constraints"] = factor_constraints
+    return d
+
+
+class TestFactorialDesign:
+    """``factors`` / ``factor_levels`` / ``factor_constraints`` (Phase 1.1)."""
+
+    def test_existing_benchmark_loads_without_factors(self, stop_sign_benchmark_dict: dict) -> None:
+        # Backwards-compat regression: an unannotated benchmark validates
+        # cleanly with empty factors and empty factor_levels everywhere.
+        bench = Benchmark.model_validate(stop_sign_benchmark_dict)
+        assert bench.factors == {}
+        assert bench.factor_constraints is None
+        for item in bench.items:
+            assert item.factor_levels == {}
+
+    def test_well_formed_factorial_design_validates(self) -> None:
+        d = _minimal_factorial_dict(
+            factors={"premise_type": ["base", "supporter"], "para": ["v1", "v2"]},
+            items_factor_levels=[
+                {"premise_type": "base", "para": "v1"},
+                {"premise_type": "base", "para": "v2"},
+                {"premise_type": "supporter", "para": "v1"},
+                {"premise_type": "supporter", "para": "v2"},
+            ],
+        )
+        bench = Benchmark.model_validate(d)
+        assert bench.factors == {"premise_type": ["base", "supporter"], "para": ["v1", "v2"]}
+        assert len(bench.items[0].factor_levels) == 2
+
+    def test_rejects_unknown_factor_key(self) -> None:
+        d = _minimal_factorial_dict(
+            factors={"premise_type": ["base", "supporter"]},
+            items_factor_levels=[{"premise_type": "base"}, {"bogus_factor": "x"}],
+        )
+        with pytest.raises(ValidationError, match="not declared at the benchmark level"):
+            Benchmark.model_validate(d)
+
+    def test_rejects_unknown_level_value(self) -> None:
+        d = _minimal_factorial_dict(
+            factors={"premise_type": ["base", "supporter"]},
+            items_factor_levels=[
+                {"premise_type": "base"},
+                {"premise_type": "ghost-level"},
+            ],
+        )
+        with pytest.raises(ValidationError, match="not a declared level for"):
+            Benchmark.model_validate(d)
+
+    def test_cells_counts_items_per_crossed_cell(self) -> None:
+        d = _minimal_factorial_dict(
+            factors={"pt": ["a", "b"], "para": ["v1", "v2"]},
+            items_factor_levels=[
+                {"pt": "a", "para": "v1"},
+                {"pt": "a", "para": "v1"},  # 2 items in (a, v1)
+                {"pt": "a", "para": "v2"},
+                {"pt": "b", "para": "v1"},
+                # cell (b, v2) is empty on purpose
+            ],
+        )
+        bench = Benchmark.model_validate(d)
+        cells = bench.cells()
+        # Cell-keys ordered by sorted factor names: (para, pt)
+        assert cells[("v1", "a")] == 2
+        assert cells[("v2", "a")] == 1
+        assert cells[("v1", "b")] == 1
+        assert cells[("v2", "b")] == 0
+        assert sum(cells.values()) == 4
+
+    def test_is_fully_crossed_at_k(self) -> None:
+        d = _minimal_factorial_dict(
+            factors={"pt": ["a", "b"]},
+            items_factor_levels=[{"pt": "a"}, {"pt": "a"}, {"pt": "b"}, {"pt": "b"}],
+        )
+        bench = Benchmark.model_validate(d)
+        assert bench.is_fully_crossed_at_k(1)
+        assert bench.is_fully_crossed_at_k(2)
+        assert not bench.is_fully_crossed_at_k(3)
+
+    def test_is_fully_crossed_returns_false_when_no_factors(
+        self, stop_sign_benchmark_dict: dict
+    ) -> None:
+        bench = Benchmark.model_validate(stop_sign_benchmark_dict)
+        # No factors declared -> trivially fails any factorial check.
+        assert not bench.is_fully_crossed_at_k(1)
+
+    def test_min_items_per_cell_accepts_well_populated_design(self) -> None:
+        d = _minimal_factorial_dict(
+            factors={"pt": ["a", "b"]},
+            items_factor_levels=[
+                {"pt": "a"}, {"pt": "a"}, {"pt": "b"}, {"pt": "b"},
+            ],
+            factor_constraints={"min_items_per_cell": 2},
+        )
+        bench = Benchmark.model_validate(d)
+        assert bench.factor_constraints is not None
+        assert bench.factor_constraints.min_items_per_cell == 2
+
+    def test_min_items_per_cell_rejects_underpopulation(self) -> None:
+        d = _minimal_factorial_dict(
+            factors={"pt": ["a", "b"]},
+            items_factor_levels=[{"pt": "a"}, {"pt": "b"}],  # 1 item per cell
+            factor_constraints={"min_items_per_cell": 3},
+        )
+        with pytest.raises(ValidationError, match="min_items_per_cell=3 not met"):
+            Benchmark.model_validate(d)
+
+    def test_min_items_per_cell_with_none_skips_the_floor_check(self) -> None:
+        # FactorConstraints(min_items_per_cell=None) should not raise even
+        # if cells are empty — author explicitly opted out of the floor.
+        d = _minimal_factorial_dict(
+            factors={"pt": ["a", "b"]},
+            items_factor_levels=[{"pt": "a"}],  # cell (b,) is empty
+            factor_constraints={"min_items_per_cell": None},
+        )
+        bench = Benchmark.model_validate(d)
+        assert bench.cells()[("a",)] == 1
+        assert bench.cells()[("b",)] == 0
+
+    def test_factor_constraints_rejects_unknown_field(self) -> None:
+        with pytest.raises(ValidationError):
+            FactorConstraints.model_validate({"min_items_per_cell": 1, "garbage": True})
+
+    def test_items_without_factor_levels_dont_contaminate_cells(self) -> None:
+        # An item that doesn't carry factor_levels for every declared
+        # factor belongs to no cell and is excluded from cells() counts.
+        d = _minimal_factorial_dict(
+            factors={"pt": ["a", "b"]},
+            items_factor_levels=[{"pt": "a"}, {}],  # second item has no factor_levels
+        )
+        bench = Benchmark.model_validate(d)
+        cells = bench.cells()
+        assert cells[("a",)] == 1
+        assert cells[("b",)] == 0
+        # Total counted = 1 (the item with no factor_levels is excluded)
+        assert sum(cells.values()) == 1

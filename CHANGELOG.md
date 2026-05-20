@@ -12,6 +12,52 @@ stable from 1.0 onward, regardless of the framework version.
 
 No changes yet.
 
+## [0.3.0] — 2026-05-19
+
+**Construct-validity infrastructure series begins.** First piece of the
+multi-release programme set out in *Closing the Construct-Validity Gap
+in infereval*, which extends the framework from "agreement
+measurement" into the construct-validity-supporting role the
+inferentialist methodology actually needs. Subsequent Phase-1 features
+will be 0.3.x patch releases.
+
+The 0.x.y minor bump marks the methodological shift in what `infereval`
+sets out to be, not a breaking schema change — all 0.2.x benchmarks
+validate unchanged.
+
+### Added
+
+- **Issue #30 (Phase 1.1)** — **factorial-design metadata**. New
+  schema fields:
+  - `Benchmark.factors: dict[str, list[str]]` — declared design factors
+    and their levels for crossed-design benchmarks.
+  - `Benchmark.factor_constraints: FactorConstraints | None` — currently
+    supports `min_items_per_cell` (enforced by the model validator).
+  - `BenchmarkItem.factor_levels: dict[str, str]` — per-item position
+    in the design space.
+  - New helpers `Benchmark.cells()` (count items per cell of the fully
+    crossed design) and `Benchmark.is_fully_crossed_at_k(k)` (boolean).
+  - Validation: every key in any item's `factor_levels` must be a
+    declared factor; every value must be in the declared levels list;
+    if `min_items_per_cell` is set, every cell must contain at least
+    that many items.
+  - **`infereval describe`** gains a `factorial design:` section
+    summarising the factors, the crossed-cell count, the populated
+    cell count, and (when declared) the `min_items_per_cell` floor
+    with explicit underpopulated-cell list. Omitted when no factors
+    declared.
+
+  Addresses R7 (multiple items per condition) and supports R12
+  (per-condition decomposition). 12 new unit tests on the schema
+  validators + helpers, 3 new on the CLI rendering.
+
+### Backwards compatibility
+
+`factors`, `factor_constraints`, and `factor_levels` all default to
+empty / `None`. Every pre-0.3.0 benchmark validates unchanged.
+`schema_version` stays `"1.0"` — additive-with-defaults; existing
+schema-version-1.0 consumers continue to work.
+
 ## [0.2.6] — 2026-05-19
 
 CLI improvement release. Adds an expert-readable per-implication
