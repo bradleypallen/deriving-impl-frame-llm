@@ -584,6 +584,17 @@
       ],
       "default": null
     },
+    "factor_kinds": {
+      "additionalProperties": {
+        "enum": [
+          "substantive",
+          "experimentally_controlled"
+        ],
+        "type": "string"
+      },
+      "title": "Factor Kinds",
+      "type": "object"
+    },
     "primary_panel": {
       "anyOf": [
         {

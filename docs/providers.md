@@ -24,7 +24,7 @@ infereval evaluate bench.json \
     --output eta.json --n-samples 5 --log run.jsonl
 ```
 
-Model id conventions (as of 2026-05): `claude-haiku-4-5-20251001`, `claude-sonnet-4-5-20250929`, `claude-opus-4-5-20251101`, plus dated variants. The shorter aliases (`claude-haiku-4-5`, `claude-sonnet-4-5`, etc.) also work and point at the latest version of each model line.
+Model id conventions (as of 2026-05): `claude-haiku-4-5-20251001`, `claude-sonnet-4-5-20250929`, `claude-opus-4-7-20260201`, plus dated variants. The shorter aliases (`claude-haiku-4-5`, `claude-sonnet-4-5`, `claude-opus-4-7`, etc.) also work and point at the latest version of each model line. Opus 4.7+ engages extended thinking and benefits from a larger `--max-tokens` cap (the framework default of 1024 handles it; bump to 2048-4096 if you observe `parse_status: budget_clipped`). The recorded fixture filenames in `experiments/results/cross-family/` use the human shorthand `claude-opus-4.7-…` (with a dot) — that's a filename convention, not an Anthropic model id; the actual id sent to the API is always the dashed form.
 
 ### Quirks
 

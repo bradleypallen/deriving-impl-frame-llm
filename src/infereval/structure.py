@@ -36,11 +36,14 @@ a derived rate. :func:`run_all_checks` returns a
 
 from __future__ import annotations
 
+import logging
 from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 from .types import Verdict
+
+log = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from .benchmark import Benchmark, BenchmarkItem
@@ -224,7 +227,24 @@ def rsr_role_consistency_check(
         # If multiple base items exist, use their majority verdict (or
         # skip when they disagree — the base_case_stability_check
         # surfaces the divergence separately).
-        base_verdicts = [eval_by_id[b.id].model_verdict for b in base_items]
+        # Partial-evaluation guard: a benchmark item carrying an
+        # rsr_target may not appear in this evaluation (e.g. when the
+        # eval was produced from a paraphrase-cycle variant or a tag
+        # filter). Skip those items rather than raise; the metrics
+        # contract elsewhere in the package is "missing data is
+        # surfaced via warnings + None, not exceptions".
+        present_base_items = [b for b in base_items if b.id in eval_by_id]
+        if len(present_base_items) < len(base_items):
+            missing = [b.id for b in base_items if b.id not in eval_by_id]
+            log.warning(
+                "rsr_role_consistency_check: skipping base items absent from "
+                "evaluation %r: %s",
+                evaluation.id,
+                missing,
+            )
+        if not present_base_items:
+            continue
+        base_verdicts = [eval_by_id[b.id].model_verdict for b in present_base_items]
         if len(set(base_verdicts)) > 1:
             continue  # base is unstable; can't predict roles
         base_verdict = base_verdicts[0]
@@ -233,6 +253,14 @@ def rsr_role_consistency_check(
             continue
 
         for it in checked_items:
+            if it.id not in eval_by_id:
+                log.warning(
+                    "rsr_role_consistency_check: skipping role-tagged item "
+                    "%r absent from evaluation %r",
+                    it.id,
+                    evaluation.id,
+                )
+                continue
             eval_item = eval_by_id[it.id]
             actual = eval_item.model_verdict
             if actual == Verdict.ABSTAIN:
@@ -318,28 +346,39 @@ def base_case_stability_check(
     items_checked = 0
     items_satisfying = 0
     for key, bases in base_by_target.items():
-        if len(bases) < 2:
-            continue  # nothing to check
-        verdicts = [eval_by_id[b.id].model_verdict for b in bases]
+        # Partial-evaluation guard: same as in rsr_role_consistency_check.
+        present_bases = [b for b in bases if b.id in eval_by_id]
+        if len(present_bases) < len(bases):
+            missing = [b.id for b in bases if b.id not in eval_by_id]
+            log.warning(
+                "base_case_stability_check: skipping base items absent from "
+                "evaluation %r: %s",
+                evaluation.id,
+                missing,
+            )
+        if len(present_bases) < 2:
+            continue  # nothing to check (need ≥ 2 present bases per target)
+        verdicts = [eval_by_id[b.id].model_verdict for b in present_bases]
         unique = set(verdicts)
-        items_checked += len(bases)
+        items_checked += len(present_bases)
         if len(unique) == 1:
-            items_satisfying += len(bases)
+            items_satisfying += len(present_bases)
         else:
             target_str = (
                 f"⟨{{{','.join(key[0])}}}, {{{','.join(key[1])}}}⟩"
             )
-            # Flag every base item in the divergent set as an anomaly.
-            for b, v in zip(bases, verdicts, strict=True):
+            # Flag every present base item in the divergent set as an anomaly.
+            for b, v in zip(present_bases, verdicts, strict=True):
                 anomalies.append(
                     StructuralAnomaly(
                         item_id=b.id,
                         expected=f"a single shared verdict across base-inferences on {target_str}",
                         actual=f"{v} (other base items on this target: {unique - {v}})",
                         explanation=(
-                            f"target {target_str} has {len(bases)} base-inference items "
-                            f"with verdicts {[str(v) for v in verdicts]} — "
-                            f"the base case is structurally unstable"
+                            f"target {target_str} has {len(present_bases)} base-inference "
+                            f"items present in the evaluation with verdicts "
+                            f"{[str(v) for v in verdicts]} — the base case is "
+                            f"structurally unstable"
                         ),
                     )
                 )

@@ -187,6 +187,24 @@ class TestMarkdownRendering:
         )
         return bench, eta
 
+    def _multi_analyst_bench_and_eta(self) -> tuple[Benchmark, object]:  # type: ignore[type-arg]
+        """A 2-analyst variant of the stop-sign benchmark so the m<2
+        audit cap (added in v0.5.3) doesn't trigger. Useful when a
+        test wants to assert a clean defensible verdict at
+        items_in_benchmark scope.
+        """
+        data = json.loads(STOP_SIGN_PATH.read_text())
+        # Add a second analyst column duplicating the first.
+        data["analysts"].append({"id": "second", "display_name": "second analyst"})
+        for it in data["items"]:
+            it["analyst_verdicts"].append(it["analyst_verdicts"][0])
+        bench = Benchmark.model_validate(data)
+        provider = ScriptedProvider(responses=["GOOD"] * 12)
+        eta = evaluate(
+            bench, provider, config=EndorsementConfig(n_samples=1)
+        )
+        return bench, eta
+
     def test_report_contains_all_sections(self) -> None:
         bench, eta = self._bench_and_eta()
         md = render_markdown(
@@ -237,8 +255,8 @@ class TestMarkdownRendering:
         assert "Factor-effects model fit** (R7, R12): NOT SUPPLIED" in md
 
     def test_summary_verdict_renders_with_badge(self) -> None:
-        bench, eta = self._bench_and_eta()
-        # All required checks run → defensible badge.
+        bench, eta = self._multi_analyst_bench_and_eta()
+        # All required checks run + m=2 (passes panel-size audit) → defensible.
         md = render_markdown(
             evaluation=eta,  # type: ignore[arg-type]
             benchmark=bench,
@@ -249,6 +267,62 @@ class TestMarkdownRendering:
         )
         assert "✅" in md
         assert "defensible" in md.lower()
+
+    def test_panel_size_one_caps_verdict_at_partially(self) -> None:
+        """Regression for review issue #1(c): a single-analyst benchmark
+        with all required checks marked True must not earn a defensible
+        verdict. The reviewer's concern: agreement with one person
+        cannot inherit the convergent-validity guarantee that the green
+        badge implies. The v0.5.3 audit cap downgrades to partially.
+        """
+        bench, eta = self._bench_and_eta()  # m=1 stop-sign
+        md = render_markdown(
+            evaluation=eta,  # type: ignore[arg-type]
+            benchmark=bench,
+            claims=_minimal_claims(
+                structural_check_run=True,
+                sensitivity_sweep_run=True,
+            ),
+        )
+        verdict_section = md.split("## 6. Summary verdict")[1]
+        assert "⚠️" in verdict_section
+        assert "m=1" in verdict_section
+
+    def test_structural_anomaly_caps_verdict_at_partially(self) -> None:
+        """Regression for review issue #1(a): a structural anomaly in
+        the supplied artifact must downgrade the verdict even when
+        structural_check_run=True. Pre-v0.5.3: clean ✅ on a failed
+        structural check.
+        """
+        bench, eta = self._multi_analyst_bench_and_eta()
+        structure_report = {
+            "total_anomalies": 1,
+            "checks": [
+                {
+                    "name": "rsr_role_consistency",
+                    "anomalies": [
+                        {
+                            "item_id": "row-2",
+                            "expected": "GOOD",
+                            "actual": "BAD",
+                            "explanation": "irrelevant-addition flipped under a defeater",
+                        },
+                    ],
+                },
+            ],
+        }
+        md = render_markdown(
+            evaluation=eta,  # type: ignore[arg-type]
+            benchmark=bench,
+            claims=_minimal_claims(
+                structural_check_run=True,
+                sensitivity_sweep_run=True,
+            ),
+            structure_report=structure_report,
+        )
+        verdict_section = md.split("## 6. Summary verdict")[1]
+        assert "⚠️" in verdict_section
+        assert "1 anomaly" in verdict_section
 
 
 # ---- CLI ------------------------------------------------------------------
@@ -400,12 +474,160 @@ class TestCollectNegativeFindings:
         findings = collect_negative_findings(model_fit=mf)
         assert findings == []
 
+    def test_factor_kinds_label_substantive_null_as_weakening(self) -> None:
+        """v0.5.3: factor_kinds={"role": "substantive"} should label a
+        null result on the substantive factor as a weakening of the claim.
+        """
+        from infereval.report import collect_negative_findings
+        mf = {"factor_wald": {"role": 0.42}}
+        findings = collect_negative_findings(
+            model_fit=mf, factor_kinds={"role": "substantive"},
+        )
+        assert len(findings) == 1
+        assert "weakens the mastery claim" in findings[0].summary
+
+    def test_factor_kinds_label_controlled_null_as_strengthening(self) -> None:
+        """v0.5.3: factor_kinds={"paraphrase": "experimentally_controlled"}
+        should label a null result as a *strengthening* of the claim
+        (content-not-form behavior is the wanted outcome on a controlled
+        factor).
+        """
+        from infereval.report import collect_negative_findings
+        mf = {"factor_wald": {"paraphrase": 0.42}}
+        findings = collect_negative_findings(
+            model_fit=mf,
+            factor_kinds={"paraphrase": "experimentally_controlled"},
+        )
+        assert len(findings) == 1
+        assert "strengthens the mastery claim" in findings[0].summary
+
+    def test_factor_kinds_omitted_keeps_neutral_summary(self) -> None:
+        """v0.5.3 backwards compat: factors without a factor_kind entry
+        get the historical neutral summary.
+        """
+        from infereval.report import collect_negative_findings
+        mf = {"factor_wald": {"role": 0.42}}
+        findings = collect_negative_findings(model_fit=mf, factor_kinds={})
+        assert len(findings) == 1
+        assert "weakens the mastery claim" not in findings[0].summary
+        assert "strengthens the mastery claim" not in findings[0].summary
+
+
+# ---- compute_verdict audit caps (v0.5.3 review fix #1) -------------------
+
+
+class TestComputeVerdictAuditCaps:
+    """Direct unit tests for the audit caps wired into compute_verdict
+    in v0.5.3 (addressing review issue #1). The cap activates when the
+    relevant artifact is supplied; without artifacts the function falls
+    back to the claims-only verdict with an unaudited rationale line.
+    """
+
+    def test_no_artifacts_adds_unaudited_rationale(self) -> None:
+        claims = _minimal_claims(
+            scope="items_in_benchmark",
+            structural_check_run=True,
+            sensitivity_sweep_run=True,
+        )
+        v = compute_verdict(claims)  # no artifacts
+        assert v.label == "defensible"
+        assert any("unaudited" in r.lower() for r in v.rationale)
+
+    def test_structural_anomaly_caps_at_partially(self) -> None:
+        claims = _minimal_claims(
+            scope="items_in_benchmark",
+            structural_check_run=True,
+            sensitivity_sweep_run=True,
+        )
+        sr = {
+            "checks": [
+                {"name": "rsr_role_consistency", "anomalies": [
+                    {"item_id": "a9", "explanation": "x"},
+                ]},
+            ],
+        }
+        v = compute_verdict(claims, structure_report=sr)
+        assert v.label == "partially_defensible"
+        assert any("anomaly" in r or "anomalies" in r for r in v.rationale)
+
+    def test_structural_clean_does_not_cap(self) -> None:
+        claims = _minimal_claims(
+            scope="items_in_benchmark",
+            structural_check_run=True,
+            sensitivity_sweep_run=True,
+        )
+        sr = {"checks": [{"name": "rsr_role_consistency", "anomalies": []}]}
+        # No benchmark supplied → m<2 cap doesn't activate either.
+        v = compute_verdict(claims, structure_report=sr)
+        assert v.label == "defensible"
+
+    def test_single_analyst_benchmark_caps_at_partially(self) -> None:
+        claims = _minimal_claims(
+            scope="items_in_benchmark",
+            structural_check_run=True,
+            sensitivity_sweep_run=True,
+        )
+        bench = Benchmark.load(STOP_SIGN_PATH)  # m=1
+        v = compute_verdict(claims, benchmark=bench)
+        assert v.label == "partially_defensible"
+        assert any("m=1" in r for r in v.rationale)
+
+    def test_two_analyst_benchmark_passes_panel_audit(self) -> None:
+        claims = _minimal_claims(
+            scope="items_in_benchmark",
+            structural_check_run=True,
+            sensitivity_sweep_run=True,
+        )
+        data = json.loads(STOP_SIGN_PATH.read_text())
+        data["analysts"].append({"id": "second", "display_name": "s"})
+        for it in data["items"]:
+            it["analyst_verdicts"].append(it["analyst_verdicts"][0])
+        bench = Benchmark.model_validate(data)
+        v = compute_verdict(claims, benchmark=bench)
+        assert v.label == "defensible"
+        assert "m=2" in v.one_liner
+
+    def test_panel_cap_does_not_apply_to_broader_scopes(self) -> None:
+        """The panel-size cap only fires at items_in_benchmark scope.
+        At broader scopes, other competing-explanation checks
+        (cross_panel_check_run, etc.) already need to be marked True
+        to reach defensible, so the panel-size signal is redundant.
+        """
+        claims = ConstructValidityClaims(
+            mastery_sense={"sense": "standing", "description": "x"},
+            scope={"scope": "domain_D_as_sampled", "justification": "x"},
+            constitution={"position": "evidence_of_mastery", "justification": "x"},
+            carving={"acknowledges_carving_indexed": True, "notes": "x"},
+            competing_explanations=CompetingExplanationChecks(
+                structural_check_run=True,
+                sensitivity_sweep_run=True,
+                paraphrase_sweep_run=True,
+                cross_panel_check_run=True,
+                held_out_items_used=True,
+            ),
+        )
+        bench = Benchmark.load(STOP_SIGN_PATH)  # m=1
+        v = compute_verdict(claims, benchmark=bench)
+        # No cap (m<2 only matters at items_in_benchmark); defensible.
+        assert v.label == "defensible"
+
 
 class TestNegativeFindingsRendering:
     """Section 4b rendering, including the --suppress-negatives behavior."""
 
     def _bench_and_eta(self) -> tuple[Benchmark, object]:
         bench = Benchmark.load(STOP_SIGN_PATH)
+        provider = ScriptedProvider(responses=["GOOD"] * 12)
+        eta = evaluate(bench, provider, config=EndorsementConfig(n_samples=1))
+        return bench, eta
+
+    def _multi_analyst_bench_and_eta(self) -> tuple[Benchmark, object]:
+        """2-analyst variant so the v0.5.3 m<2 cap doesn't compound."""
+        data = json.loads(STOP_SIGN_PATH.read_text())
+        data["analysts"].append({"id": "second", "display_name": "second"})
+        for it in data["items"]:
+            it["analyst_verdicts"].append(it["analyst_verdicts"][0])
+        bench = Benchmark.model_validate(data)
         provider = ScriptedProvider(responses=["GOOD"] * 12)
         eta = evaluate(bench, provider, config=EndorsementConfig(n_samples=1))
         return bench, eta
@@ -475,7 +697,9 @@ class TestNegativeFindingsRendering:
         assert "Negative-findings suppression: ENABLED" in md
 
     def test_suppress_negatives_downgrades_verdict_one_tier(self) -> None:
-        bench, eta = self._bench_and_eta()
+        # Use a 2-analyst benchmark so the v0.5.3 m<2 cap doesn't
+        # compound — we want to isolate the suppression downgrade.
+        bench, eta = self._multi_analyst_bench_and_eta()
         # All checks run -> would be defensible -> downgraded to partially.
         md = render_markdown(
             evaluation=eta, benchmark=bench,

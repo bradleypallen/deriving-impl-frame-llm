@@ -736,3 +736,66 @@ class TestReferencePanels:
         assert bench.panel_names() == []
         assert bench.primary_panel is None
         assert bench.resolved_primary_panel() is None
+
+
+# ---- factor_kinds (v0.5.3, review fix #4) -------------------------------
+
+
+class TestFactorKinds:
+    """``factor_kinds`` valence labels on declared factors."""
+
+    def test_well_formed_factor_kinds_validate(self) -> None:
+        d = _minimal_factorial_dict(
+            factors={"role": ["base", "supporter"], "para": ["v1", "v2"]},
+            items_factor_levels=[
+                {"role": "base", "para": "v1"},
+                {"role": "supporter", "para": "v2"},
+            ],
+        )
+        d["factor_kinds"] = {"role": "substantive", "para": "experimentally_controlled"}
+        bench = Benchmark.model_validate(d)
+        assert bench.factor_kinds == {
+            "role": "substantive",
+            "para": "experimentally_controlled",
+        }
+
+    def test_default_is_empty_dict(self) -> None:
+        d = _minimal_factorial_dict(
+            factors={"role": ["base", "supporter"]},
+            items_factor_levels=[{"role": "base"}, {"role": "supporter"}],
+        )
+        bench = Benchmark.model_validate(d)
+        assert bench.factor_kinds == {}
+
+    def test_unknown_factor_in_factor_kinds_rejected(self) -> None:
+        d = _minimal_factorial_dict(
+            factors={"role": ["base", "supporter"]},
+            items_factor_levels=[{"role": "base"}, {"role": "supporter"}],
+        )
+        d["factor_kinds"] = {"phantom": "substantive"}
+        with pytest.raises(ValidationError, match="references unknown factor"):
+            Benchmark.model_validate(d)
+
+    def test_invalid_kind_value_rejected_by_literal(self) -> None:
+        d = _minimal_factorial_dict(
+            factors={"role": ["base", "supporter"]},
+            items_factor_levels=[{"role": "base"}, {"role": "supporter"}],
+        )
+        d["factor_kinds"] = {"role": "ambiguous"}  # not in the Literal
+        with pytest.raises(ValidationError):
+            Benchmark.model_validate(d)
+
+    def test_partial_factor_kinds_coverage_is_allowed(self) -> None:
+        """Not every declared factor needs a valence label; unlabelled
+        factors get the historical neutral negative-finding summary.
+        """
+        d = _minimal_factorial_dict(
+            factors={"role": ["base", "supporter"], "para": ["v1", "v2"]},
+            items_factor_levels=[
+                {"role": "base", "para": "v1"},
+                {"role": "supporter", "para": "v2"},
+            ],
+        )
+        d["factor_kinds"] = {"role": "substantive"}  # para omitted
+        bench = Benchmark.model_validate(d)
+        assert bench.factor_kinds == {"role": "substantive"}

@@ -12,6 +12,68 @@ stable from 1.0 onward, regardless of the framework version.
 
 No changes yet.
 
+## [0.5.3] — 2026-05-20
+
+External-review release. An independent code review identified one
+design-level issue in the construct-validity layer plus one real crash
+bug; this release addresses both, plus a doc/data drift on Anthropic
+model naming and a feature suggestion that lets factor-level negative
+findings be labelled by valence.
+
+### Fixed
+
+- **Issue #1 (design, construct-validity)** — `compute_verdict` now
+  consults the structure report and benchmark passed by
+  `render_markdown`, not just the claims file. Two new audit caps:
+  1. If `structural_check_run=True` *and* the supplied structure
+     report contains any anomaly, the structural check is treated as
+     failing (the check *ran* but didn't *pass*). The verdict is
+     capped at `partially_defensible` with a rationale line naming the
+     anomaly count.
+  2. If the benchmark has `m < 2` analysts *and* the claim's scope is
+     `items_in_benchmark`, the verdict is capped at
+     `partially_defensible` and the panel size is surfaced in the
+     one-liner (κ_F\* is undefined and there is no independent reference
+     column; agreement with one analyst cannot inherit the
+     convergent-validity guarantee a green badge implies).
+  Backwards-compatible: callers that don't pass the new optional
+  arguments get the v0.5.2 behaviour plus a "verdict computed
+  unaudited" rationale line. The rendered report always passes them.
+- **Issue #2 (crash bug)** — `infereval.structure.rsr_role_consistency_check`
+  and `base_case_stability_check` no longer raise `KeyError` when the
+  evaluation is missing an item that the benchmark carries an
+  `rsr_target` for. Partial evaluations (the natural output of
+  `--paraphrase-cycle` per-variant runs, tag-filtered re-runs) now
+  match the rest of the package's contract: missing items are skipped
+  with a logged warning, not raised. `run_all_checks` against a partial
+  evaluation completes cleanly.
+- **Issue #3 (docs)** — `docs/providers.md` now lists `claude-opus-4-7`
+  as the current Opus id (with a dated example, `claude-opus-4-7-20260201`)
+  matching the artifact fixtures in `experiments/results/cross-family/`,
+  and explains the `4.7` / `4-7` filename-vs-id convention.
+
+### Added
+
+- **Issue #4 (feature)** — new optional `Benchmark.factor_kinds: dict[str, "substantive" | "experimentally_controlled"]`.
+  When set, `collect_negative_findings` labels each null Wald-test
+  finding's valence: substantive nulls **weaken** the mastery claim
+  (the model failed to differentiate where it should), controlled
+  nulls **strengthen** it (content-not-form behavior on a paraphrase
+  axis is the wanted outcome). Factors omitted from the map keep the
+  historical neutral summary. Schema-additive (R7 / R12).
+- Six new tests for the partial-evaluation guard; six new tests for
+  the verdict audit caps; five new tests for `factor_kinds`. Suite is
+  now 612 unit tests.
+
+### Note
+
+This release is **conservative on existing data**. A previously-shipped
+report whose claims were `structural_check_run=True` and benchmark was
+m=1 will now render `⚠️ partially defensible` instead of `✅ defensible`
+— the verdict the framework should have rendered all along. If you've
+made public claims off the prior verdict, re-render with v0.5.3 and
+acknowledge the change in your write-up.
+
 ## [0.5.2] — 2026-05-20
 
 Tiny but consequential default-alignment release. The CLI's `--max-tokens`
