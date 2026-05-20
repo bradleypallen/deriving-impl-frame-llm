@@ -12,6 +12,58 @@ stable from 1.0 onward, regardless of the framework version.
 
 No changes yet.
 
+## [0.5.0] — 2026-05-20
+
+**Phase 3 of the construct-validity infrastructure series begins.**
+This release ships the *most opinionated* extension in the
+programme per the source document: the construct-validity report
+with structured claim slots. Closes coverage of **R16** (mastery
+sense), **R17** (claim scope), **R18** (constitution vs. evidence),
+**R19** (carving-indexed framing), and **R20** (disclosure of
+analyst-supplied choices). The 0.x.y minor bump marks the
+Phase-2-to-Phase-3 transition (analytical extensions →
+reporting + methodological discipline).
+
+### Added
+
+- **Issue #44 (Phase 3.1)** — **construct-validity report**.
+  - New module `infereval.report` with a `ConstructValidityClaims`
+    Pydantic model (R16-R20) and a deterministic verdict computation:
+    "defensible", "partially_defensible", or "not_defensible". The
+    label is derived from the claimed scope + the
+    competing-explanation-checks declared as run. The carving claim
+    (R19) is required when scope reaches beyond `items_in_benchmark`.
+  - **New CLI command** `infereval report`:
+    - `--init-claims <path>` emits a stub claims JSON for the analyst
+      to fill in.
+    - With `--evaluation`, `--benchmark`, and `--claims`, plus
+      optional `--structure`, `--sweep`, `--model-fit`, renders the
+      report as Markdown to stdout or `--output <path>`.
+  - The report has six sections: Identity, Summary metrics,
+    Construct-validity claims (R16-R20), Evidence, Unaddressed
+    competing explanations, Summary verdict. The Summary verdict
+    renders one of three badges: ✅ defensible, ⚠️ partially
+    defensible, ❌ not defensible. The framework refuses to render
+    the ✅ badge without the corresponding competing-explanation
+    checks marked as run.
+  - 19 new tests across claims-schema validation, deterministic
+    verdict computation (per scope tier), Markdown rendering (all
+    six sections present, evidence integration, "NOT SUPPLIED"
+    fallback), and CLI integration (`--init-claims`, full report,
+    mismatched-id rejection).
+
+  This is the most opinionated extension in the construct-validity
+  programme per the source document — *embeds a methodological
+  position about what claims should be made on top of what evidence*.
+  The asymmetry: cheap to write up correctly (each slot has a clear
+  format), expensive to write up incorrectly (the verdict
+  deterministically downgrades when checks are missing or carving
+  is unacknowledged at the wrong scope).
+
+### Backwards compatibility
+
+Pure-additive. New module, new CLI command. No schema changes.
+
 ## [0.4.2] — 2026-05-19
 
 **Phase 2 of the construct-validity infrastructure series closes.**
