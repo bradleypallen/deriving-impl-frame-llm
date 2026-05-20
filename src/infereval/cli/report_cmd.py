@@ -79,6 +79,16 @@ log = logging.getLogger(__name__)
     default=None,
     help="Output path for the Markdown report. Defaults to stdout.",
 )
+@click.option(
+    "--suppress-negatives",
+    "suppress_negatives",
+    is_flag=True,
+    default=False,
+    help="Suppress the Negative findings section. The fact of suppression "
+    "is documented in the report header and the Summary verdict is "
+    "downgraded one tier. The framework's normal posture is to surface "
+    "negative findings by default.",
+)
 def report_cmd(
     init_claims: Path | None,
     evaluation_path: Path | None,
@@ -88,6 +98,7 @@ def report_cmd(
     sweep_path: Path | None,
     model_fit_path: Path | None,
     output: Path | None,
+    suppress_negatives: bool = False,
 ) -> None:
     """Run the report builder; either emit a stub claims file or render the report."""
     if init_claims is not None:
@@ -142,6 +153,7 @@ def report_cmd(
         structure_report=_load_optional_json(structure_path),
         sweep_summary=_load_optional_json(sweep_path),
         model_fit=_load_optional_json(model_fit_path),
+        suppress_negatives=suppress_negatives,
     )
 
     if output is None:
