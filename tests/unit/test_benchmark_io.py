@@ -799,3 +799,200 @@ class TestFactorKinds:
         d["factor_kinds"] = {"role": "substantive"}  # para omitted
         bench = Benchmark.model_validate(d)
         assert bench.factor_kinds == {"role": "substantive"}
+
+
+# ---- Analyst rationales (v0.5.4, AR1–AR12) -------------------------------
+
+
+def _rationale_bench_dict(
+    *,
+    analysts: list[dict] | None = None,
+    items: list[dict] | None = None,
+) -> dict:
+    """Minimal valid benchmark for the rationale tests."""
+    return {
+        "schema_version": "1.0",
+        "id": "rationale-test",
+        "bearers": {"p": {"expression": "P"}, "q": {"expression": "Q"}},
+        "analysts": analysts or [{"id": "a"}, {"id": "b"}],
+        "items": items or [],
+    }
+
+
+class TestAnalystRationales:
+    """AR1–AR12: per-analyst, per-item rationale field."""
+
+    # AR3 — backward compatibility: rationale-free benchmarks load unchanged.
+    def test_absent_field_loads_as_none(self) -> None:
+        d = _rationale_bench_dict(
+            items=[
+                {"id": "i1", "premises": ["p"], "conclusions": ["q"],
+                 "analyst_verdicts": ["good", "good"]},
+            ],
+        )
+        bench = Benchmark.model_validate(d)
+        assert bench.items[0].analyst_rationales is None
+
+    def test_stop_sign_loads_with_no_rationales(self, stop_sign_benchmark_dict: dict) -> None:
+        """The committed stop-sign benchmark must validate unchanged
+        (it carries no analyst_rationales field at all)."""
+        bench = Benchmark.model_validate(stop_sign_benchmark_dict)
+        for item in bench.items:
+            assert item.analyst_rationales is None
+
+    # AR2 — additive: verdicts are still bare enum values.
+    def test_verdicts_stay_bare_enum_values(self) -> None:
+        d = _rationale_bench_dict(
+            items=[
+                {"id": "i1", "premises": ["p"], "conclusions": ["q"],
+                 "analyst_verdicts": ["good", "bad"],
+                 "analyst_rationales": ["because P", "because not P"]},
+            ],
+        )
+        bench = Benchmark.model_validate(d)
+        # Verdicts remain Verdict enum members, untouched by rationales.
+        from infereval.types import Verdict as V
+        assert bench.items[0].analyst_verdicts == [V.GOOD, V.BAD]
+        assert bench.items[0].analyst_rationales == ["because P", "because not P"]
+
+    # AR4 — empty-string vs. None distinction.
+    def test_empty_string_entry_distinct_from_none(self) -> None:
+        d = _rationale_bench_dict(
+            items=[
+                {"id": "i1", "premises": ["p"], "conclusions": ["q"],
+                 "analyst_verdicts": ["good", "bad"],
+                 "analyst_rationales": ["explained", ""]},
+            ],
+        )
+        bench = Benchmark.model_validate(d)
+        # Field is present (a list), one entry is the empty string.
+        assert bench.items[0].analyst_rationales == ["explained", ""]
+        # And None on a sibling item means something else entirely.
+        d2 = _rationale_bench_dict(
+            items=[
+                {"id": "i1", "premises": ["p"], "conclusions": ["q"],
+                 "analyst_verdicts": ["good", "bad"]},
+            ],
+        )
+        bench2 = Benchmark.model_validate(d2)
+        assert bench2.items[0].analyst_rationales is None
+
+    # AR5 — length consistency.
+    def test_too_few_rationales_rejected(self) -> None:
+        d = _rationale_bench_dict(
+            items=[
+                {"id": "i1", "premises": ["p"], "conclusions": ["q"],
+                 "analyst_verdicts": ["good", "bad"],
+                 "analyst_rationales": ["only one"]},
+            ],
+        )
+        with pytest.raises(ValidationError, match=r"i1.*1 analyst rationales.*2 analysts"):
+            Benchmark.model_validate(d)
+
+    def test_too_many_rationales_rejected(self) -> None:
+        d = _rationale_bench_dict(
+            items=[
+                {"id": "i1", "premises": ["p"], "conclusions": ["q"],
+                 "analyst_verdicts": ["good", "bad"],
+                 "analyst_rationales": ["a", "b", "c"]},
+            ],
+        )
+        with pytest.raises(ValidationError, match=r"i1.*3 analyst rationales.*2 analysts"):
+            Benchmark.model_validate(d)
+
+    def test_correct_length_passes(self) -> None:
+        d = _rationale_bench_dict(
+            items=[
+                {"id": "i1", "premises": ["p"], "conclusions": ["q"],
+                 "analyst_verdicts": ["good", "bad"],
+                 "analyst_rationales": ["x", "y"]},
+            ],
+        )
+        bench = Benchmark.model_validate(d)
+        assert len(bench.items[0].analyst_rationales) == 2
+
+    # AR6 — no content enforcement (empty + whitespace + None entries allowed).
+    def test_content_not_enforced(self) -> None:
+        """The framework validates structure and length only. Empty
+        strings and whitespace are fine — content quality is the
+        analyst's responsibility, not a schema-enforceable one."""
+        d = _rationale_bench_dict(
+            items=[
+                {"id": "i1", "premises": ["p"], "conclusions": ["q"],
+                 "analyst_verdicts": ["good", "bad"],
+                 "analyst_rationales": ["", "   "]},
+            ],
+        )
+        bench = Benchmark.model_validate(d)
+        assert bench.items[0].analyst_rationales == ["", "   "]
+
+    # AR7 — extra="forbid" compatibility: it's a declared field, not a
+    # smuggling slot. Misspellings get rejected.
+    def test_misspelled_field_rejected(self) -> None:
+        d = _rationale_bench_dict(
+            items=[
+                {"id": "i1", "premises": ["p"], "conclusions": ["q"],
+                 "analyst_verdicts": ["good", "bad"],
+                 "analyst_rational": ["x", "y"]},  # typo
+            ],
+        )
+        with pytest.raises(ValidationError, match="Extra inputs"):
+            Benchmark.model_validate(d)
+
+    # AR12 — round-trip preservation through dump/load.
+    def test_round_trip_preserves_present_list(self) -> None:
+        d_in = _rationale_bench_dict(
+            items=[
+                {"id": "i1", "premises": ["p"], "conclusions": ["q"],
+                 "analyst_verdicts": ["good", "bad"],
+                 "analyst_rationales": ["because P", ""]},
+            ],
+        )
+        bench = Benchmark.model_validate(d_in)
+        d_out = bench.model_dump(mode="json", exclude_none=True)
+        bench2 = Benchmark.model_validate(d_out)
+        assert bench2.items[0].analyst_rationales == ["because P", ""]
+
+    def test_round_trip_preserves_none(self) -> None:
+        d_in = _rationale_bench_dict(
+            items=[
+                {"id": "i1", "premises": ["p"], "conclusions": ["q"],
+                 "analyst_verdicts": ["good", "bad"]},
+            ],
+        )
+        bench = Benchmark.model_validate(d_in)
+        # exclude_none drops the field on dump — that's correct.
+        d_out = bench.model_dump(mode="json", exclude_none=True)
+        assert "analyst_rationales" not in d_out["items"][0]
+        bench2 = Benchmark.model_validate(d_out)
+        assert bench2.items[0].analyst_rationales is None
+
+    def test_round_trip_preserves_empty_strings_distinct_from_none(self) -> None:
+        """The contrast that matters: a list of empty strings is *not*
+        the same as a missing field."""
+        d_with = _rationale_bench_dict(
+            items=[
+                {"id": "i1", "premises": ["p"], "conclusions": ["q"],
+                 "analyst_verdicts": ["good", "bad"],
+                 "analyst_rationales": ["", ""]},
+            ],
+        )
+        d_without = _rationale_bench_dict(
+            items=[
+                {"id": "i1", "premises": ["p"], "conclusions": ["q"],
+                 "analyst_verdicts": ["good", "bad"]},
+            ],
+        )
+        b_with = Benchmark.model_validate(d_with)
+        b_without = Benchmark.model_validate(d_without)
+        assert b_with.items[0].analyst_rationales == ["", ""]
+        assert b_without.items[0].analyst_rationales is None
+        # And after round-trip the distinction is preserved.
+        b_with_round = Benchmark.model_validate(
+            b_with.model_dump(mode="json", exclude_none=True)
+        )
+        b_without_round = Benchmark.model_validate(
+            b_without.model_dump(mode="json", exclude_none=True)
+        )
+        assert b_with_round.items[0].analyst_rationales == ["", ""]
+        assert b_without_round.items[0].analyst_rationales is None

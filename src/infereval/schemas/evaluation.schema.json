@@ -71,6 +71,22 @@
           "title": "Analyst Verdicts",
           "type": "array"
         },
+        "analyst_rationales": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Optional per-analyst rationales propagated from the source benchmark item's analyst_rationales at evaluation build time. Positionally aligned to analyst_verdicts. null (or absent) when the source benchmark carried no rationale discipline; a present list (possibly containing empty strings) when it did. Covered by Evaluation.benchmark_hash.",
+          "title": "Analyst Rationales"
+        },
         "model_verdict": {
           "$ref": "#/$defs/Verdict"
         },
@@ -460,7 +476,7 @@
       "$ref": "#/$defs/EndorsementConfig"
     },
     "framework_version": {
-      "default": "0.5.3",
+      "default": "0.5.4",
       "title": "Framework Version",
       "type": "string"
     },
