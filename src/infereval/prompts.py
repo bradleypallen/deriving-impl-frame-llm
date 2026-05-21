@@ -124,7 +124,7 @@ def parse_verdict(
     """Extract a :class:`Verdict` from a raw model response.
 
     Returns ``(Verdict.ABSTAIN, "unparseable")`` if no token matches; per
-    revised.tex Definition 2 ("Unparseable responses are mapped to abstain").
+    the paper's Definition 2 ("Unparseable responses are mapped to abstain").
     """
     if pattern is None:
         pattern = DEFAULT_VERIFICATION_PROMPT.compile_parser()

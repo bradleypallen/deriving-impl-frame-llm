@@ -38,7 +38,7 @@ class TestStripTexMath:
         assert strip_tex_math("$x$") == "x"
 
     def test_stop_sign_all_paper_bearers(self) -> None:
-        # The five bearers from Example 1 of revised.tex
+        # The five bearers from Example 1 of the paper
         cases = [
             ("$a$ is a stop sign", "a is a stop sign"),
             ("$a$ is red", "a is red"),

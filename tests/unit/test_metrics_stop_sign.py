@@ -2,7 +2,7 @@
 
 The stop-sign benchmark has m=1 analyst, n=4 items, with the analyst row
 ``[good, good, good, bad]``. We verify each scenario against numbers
-worked out longhand from revised.tex's Definitions 6-10.
+worked out longhand from the paper's Definitions 6-10.
 """
 
 from __future__ import annotations

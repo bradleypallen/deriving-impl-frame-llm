@@ -1,6 +1,6 @@
 """Core data types for the infereval framework.
 
-Tracks the notation in revised.tex (Allen 2026):
+Tracks the notation in the paper (Allen 2026):
 
 - :class:`Verdict` -- the codomain of :math:`E_M`: ``good`` / ``bad`` / ``abstain``.
 - :class:`Bearer` -- an element of the bearer set :math:`B`. Carries its id, the

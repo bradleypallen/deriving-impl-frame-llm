@@ -1,6 +1,6 @@
 """Shared fixtures.
 
-The ``stop_sign_*`` fixtures encode Example 1 of revised.tex
+The ``stop_sign_*`` fixtures encode Example 1 of the paper
 (Simonelli's stop-sign dialogue) as both runtime types and as a
 :class:`infereval.benchmark.Benchmark` instance, so multiple test modules
 can share one source of truth.
