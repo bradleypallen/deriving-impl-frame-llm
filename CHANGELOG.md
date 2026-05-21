@@ -12,6 +12,79 @@ stable from 1.0 onward, regardless of the framework version.
 
 No changes yet.
 
+## [0.5.4] — 2026-05-20
+
+Analyst-side rationale support. New optional, additive schema field
+that captures the natural-language reason each analyst gave for their
+verdict, with positional alignment to ``analyst_verdicts``. Model-side
+rationale elicitation is deferred to a later stage.
+
+### Added
+
+- **`BenchmarkItem.analyst_rationales: list[str] | None`** —
+  per-analyst, per-item rationale text. Positionally aligned to
+  ``analyst_verdicts``: index ``j`` is analyst ``j``'s rationale.
+  ``None`` (the default and back-compat case) means "this benchmark
+  carries no rationale discipline." A present list with an empty-string
+  entry means "this analyst gave a verdict but recorded no reason on
+  this item" — semantically distinct from ``None``. When the field is
+  present, the length must equal ``len(benchmark.analysts)`` (enforced
+  in ``Benchmark._check_consistency``). The framework validates
+  structure and length only; rationale content is the analyst's
+  responsibility (consistent with the framework's posture on
+  ``construction_metadata`` and verdicts themselves).
+- **`EvaluationItem.analyst_rationales: list[str] | None`** — propagated
+  from the source benchmark item at evaluation-build time. Falls under
+  the existing ``Evaluation.benchmark_hash`` integrity mechanism: a
+  rationale cannot be silently altered between evaluation and report
+  without changing the hash.
+- **`infereval describe --items` rendering** — when rationales are
+  present, the per-item block now lists each analyst's rationale text;
+  an empty-string entry renders as ``(no reason recorded)`` so it's
+  visually distinct from the absent-field case. Items where analysts
+  disagree in verdict *and* carry rationales are flagged with
+  ``⚠ disagreement+rationales`` on the header line — those are the
+  noise-vs-signal triage targets for downstream disagreement diagnosis.
+- **JSON schemas** — both ``benchmark.schema.json`` and
+  ``evaluation.schema.json`` gain the optional ``analyst_rationales``
+  array (``items: string``), with a description that states the
+  positional-alignment contract and the ``null``-vs-empty-string
+  distinction so external tooling and hand-authors get it right.
+- 23 new tests across ``test_benchmark_io.py::TestAnalystRationales``
+  and a new ``test_analyst_rationales_propagation.py`` covering all
+  12 acceptance requirements (AR1–AR12): length mismatch rejection
+  with the right error, backward compatibility against the existing
+  stop-sign benchmark, the ``None``-vs-empty-string round-trip
+  distinction, carry-through into the evaluation artifact, hash
+  coverage, regression assertions that ``coverage`` / ``κ_C`` / ``κ_F``
+  / ``κ_F*`` / structure-check outputs are byte-identical with and
+  without rationales (proving the metric path is untouched), describe
+  rendering, the divergence flag firing on disagreement+rationales,
+  and the divergence flag staying silent on disagreement-only.
+
+### Backwards compatibility
+
+- **Additive only.** Every pre-0.5.4 benchmark and evaluation continues
+  to validate unchanged. The new field defaults to ``None`` and is
+  dropped from JSON output via ``exclude_none=True``, so existing
+  fixtures and round-trip equality are preserved.
+- **Metric and structural-check outputs are byte-identical** with and
+  without rationales present (regression tested in
+  ``TestMetricsRegressionAR2``).
+- **Hash unchanged for rationale-free benchmarks.** ``canonical_benchmark_hash``
+  uses ``exclude_none=True``, so a ``None``-valued ``analyst_rationales``
+  field is omitted from the hash input — pre-0.5.4 benchmarks hash to
+  the same value they did under 0.5.3.
+
+### Out of scope
+
+Model-side rationale elicitation (verification-prompt changes, per-sample
+rationale logging, the prompt-sensitivity control for whether eliciting
+reasons perturbs verdicts) is deferred. The disagreement-diagnosis
+tooling that consumes analyst rationales (cohort-finding, noise-vs-signal
+triage) is also deferred — this release delivers the data substrate it
+will read, not the diagnosis itself.
+
 ## [0.5.3] — 2026-05-20
 
 External-review release. An independent code review identified one

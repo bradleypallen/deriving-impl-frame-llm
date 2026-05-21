@@ -155,6 +155,26 @@ class EvaluationItem(BaseModel):
     premises: list[str]
     conclusions: list[str]
     analyst_verdicts: list[Verdict]
+    analyst_rationales: list[str] | None = Field(
+        default=None,
+        description=(
+            "Optional per-analyst rationales propagated from the "
+            "source benchmark item's analyst_rationales at evaluation "
+            "build time. Positionally aligned to analyst_verdicts. "
+            "null (or absent) when the source benchmark carried no "
+            "rationale discipline; a present list (possibly containing "
+            "empty strings) when it did. Covered by Evaluation.benchmark_hash."
+        ),
+    )
+    """Optional per-analyst rationales propagated from
+    :attr:`infereval.benchmark.BenchmarkItem.analyst_rationales` at
+    evaluation-build time. Positionally aligned to
+    :attr:`analyst_verdicts`. ``None`` (or absent) when the source
+    benchmark carried no rationale discipline; a present list (possibly
+    containing empty strings) when it did. Covered by the existing
+    :attr:`Evaluation.benchmark_hash` integrity mechanism, so a
+    rationale cannot be silently altered between evaluation and report
+    without changing the hash. Added in v0.5.4 (AR8, AR9)."""
     model_verdict: Verdict
     samples: list[SampleRecord] = Field(default_factory=list)
     majority_vote: MajorityVote | None = None
@@ -388,6 +408,11 @@ def evaluate(
                     premises=sorted(bench_item.premises),
                     conclusions=sorted(bench_item.conclusions),
                     analyst_verdicts=list(bench_item.analyst_verdicts),
+                    analyst_rationales=(
+                        list(bench_item.analyst_rationales)
+                        if bench_item.analyst_rationales is not None
+                        else None
+                    ),
                     model_verdict=record.verdict,
                     samples=record.samples,
                     majority_vote=record.to_majority_vote(),

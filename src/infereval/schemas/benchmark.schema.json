@@ -113,6 +113,22 @@
           "title": "Analyst Verdicts",
           "type": "array"
         },
+        "analyst_rationales": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Optional per-analyst, per-item rationales: the natural-language reason each analyst gave for their verdict on this item. Positionally aligned to analyst_verdicts \u2014 index j is analyst j's rationale, matching the benchmark's analysts declaration order. null (or absent) means 'this benchmark carries no rationale discipline.' A present-but-empty entry ('') means 'this analyst gave a verdict but recorded no reason on this item' \u2014 semantically distinct from null. When present, the length must equal len(benchmark.analysts).",
+          "title": "Analyst Rationales"
+        },
         "tags": {
           "items": {
             "type": "string"

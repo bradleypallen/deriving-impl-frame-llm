@@ -275,6 +275,33 @@ class BenchmarkItem(BaseModel):
     premises: list[str]
     conclusions: list[str]
     analyst_verdicts: list[Verdict]
+    analyst_rationales: list[str] | None = Field(
+        default=None,
+        description=(
+            "Optional per-analyst, per-item rationales: the "
+            "natural-language reason each analyst gave for their "
+            "verdict on this item. Positionally aligned to "
+            "analyst_verdicts — index j is analyst j's rationale, "
+            "matching the benchmark's analysts declaration order. "
+            "null (or absent) means 'this benchmark carries no "
+            "rationale discipline.' A present-but-empty entry ('') "
+            "means 'this analyst gave a verdict but recorded no "
+            "reason on this item' — semantically distinct from null. "
+            "When present, the length must equal len(benchmark.analysts)."
+        ),
+    )
+    """Optional per-analyst, per-item rationales: the natural-language
+    reason each analyst gave for their verdict on this item.
+    Positionally aligned to :attr:`analyst_verdicts` — index ``j`` is
+    analyst ``j``'s rationale, matching :attr:`Benchmark.analysts`
+    declaration order. ``None`` (or absent) means "this benchmark
+    carries no rationale discipline." A present-but-empty entry
+    (``""``) means "this analyst gave a verdict but recorded no reason
+    on this item" — semantically distinct from ``None``. When present,
+    the length must equal ``len(benchmark.analysts)`` (enforced in
+    :meth:`Benchmark._check_consistency`). The framework validates
+    structure and length only; content is the analyst's responsibility.
+    Added in v0.5.4 (AR1–AR12)."""
     tags: list[str] = Field(default_factory=list)
     rsr_target: RSRTarget | None = None
     references: list[Reference] = Field(default_factory=list)
@@ -446,6 +473,18 @@ class Benchmark(BaseModel):
                 raise ValueError(
                     f"Item {item.id!r} has {len(item.analyst_verdicts)} analyst verdicts "
                     f"but the benchmark declares {len(self.analysts)} analysts"
+                )
+
+            # Analyst-rationale tuple length must equal m when supplied (AR5).
+            # When None (absent), no constraint applies (AR3).
+            if (
+                item.analyst_rationales is not None
+                and len(item.analyst_rationales) != len(self.analysts)
+            ):
+                raise ValueError(
+                    f"Item {item.id!r} has {len(item.analyst_rationales)} analyst "
+                    f"rationales but the benchmark declares {len(self.analysts)} "
+                    f"analysts"
                 )
 
             # Factor-level keys/values must be declared in self.factors

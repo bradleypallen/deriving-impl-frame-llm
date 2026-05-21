@@ -119,7 +119,7 @@ These are framework defaults, overridable per evaluation:
 - **Schema versioning:** independent of framework (`schema_version: "1.0"`). Schema stability promised from 1.0 onward, not 0.x. **The 0.3.x–0.5.x construct-validity series added optional fields only** — every pre-0.3.0 benchmark continues to validate against the current schema, and that additive-only invariant must be preserved for further benchmark-schema changes within the 1.0 line.
 - **`DerivedFrame` materialization:** lazy (membership via Def. 3 iff). Full $I_M$ over $\wp(B)\times\wp(B)$ is unbounded.
 
-## Construct-validity infrastructure (v0.3.0–v0.5.3)
+## Construct-validity infrastructure (v0.3.0–v0.5.4)
 
 The nine-feature programme shipped over eleven patch/minor releases addresses the R1–R21 requirements catalogued in [`docs/closing_the_construct_validity_gap.md`](docs/closing_the_construct_validity_gap.md). Practitioner walk-through is in [`docs/construct_validity_workflow.md`](docs/construct_validity_workflow.md). Quick map for future work:
 
@@ -132,6 +132,7 @@ The nine-feature programme shipped over eleven patch/minor releases addresses th
 | `construction_metadata` per item (`authored_by`, `authored_on`, `authored_blind_to_models`, `source`) | 0.3.2 | Item-level provenance for held-out / training-data-separation arguments. |
 | `analyst.panel` + `benchmark.primary_panel` | 0.3.3 | Reference-panel declaration for cross-panel convergent-validity checks; validator enforces all-or-none on the `panel` field. |
 | `factor_kinds` (benchmark-level) | 0.5.3 | Per-factor valence label (`"substantive"` vs `"experimentally_controlled"`). Used by `collect_negative_findings` to render null Wald-test findings with the correct valence — substantive nulls weaken the claim, controlled nulls strengthen it. |
+| `analyst_rationales` (per item) | 0.5.4 | Optional `list[str] \| None` of natural-language rationales positionally aligned to `analyst_verdicts`. Propagated through `EvaluationItem` (and therefore covered by `benchmark_hash`). `None` ≠ empty-string entry. The substrate for the deferred disagreement-diagnosis workstream. Metric / structural-check outputs are byte-identical with and without rationales (AR2 regression test). |
 
 **New analytical CLI commands (all consume `eta.json` + `benchmark.json` and feed `infereval report`):**
 
@@ -155,6 +156,6 @@ The nine-feature programme shipped over eleven patch/minor releases addresses th
 - The methodology defaults above are locked in conversation. Don't drift from them without checking with the user first.
 - Per user-global instruction: **always include structured logging for post-experimental run analysis and reporting.** Every model call, every sample, every majority-vote outcome should be auditable from the JSONL log.
 - **Schemas are generated, not hand-edited.** After any change to the Pydantic models in `benchmark.py` or `evaluation.py`, regenerate the committed Draft 2020-12 schemas with `python -c "from infereval.schemas import emit_static_schemas; emit_static_schemas()"`. A drift test keeps these in sync; CI will flag a hand-edit. Version bumps also flow into `evaluation.schema.json:framework_version.default` via the same regeneration step.
-- **Release flow** (matches v0.3.0–v0.5.3): bump `src/infereval/__init__.py:__version__`, update `CHANGELOG.md` (Keep-a-Changelog format), regenerate schemas, open + rebase-merge a PR, then tag (`git tag -a vX.Y.Z <merge-sha> -m "..."` and `git push origin vX.Y.Z`), then `python -m build` and `gh release create vX.Y.Z dist/*.whl dist/*.tar.gz --title "..." --notes "..."`. PyPI upload is a manual `twine upload` step — there is no GitHub Actions workflow.
+- **Release flow** (matches v0.3.0–v0.5.4): bump `src/infereval/__init__.py:__version__`, update `CHANGELOG.md` (Keep-a-Changelog format), regenerate schemas, open + rebase-merge a PR, then tag (`git tag -a vX.Y.Z <merge-sha> -m "..."` and `git push origin vX.Y.Z`), then `python -m build` and `gh release create vX.Y.Z dist/*.whl dist/*.tar.gz --title "..." --notes "..."`. PyPI upload is a manual `twine upload` step — there is no GitHub Actions workflow.
 - **PR merge style**: rebase-merge via `gh api -X PUT repos/<owner>/<repo>/pulls/<num>/merge -f merge_method=rebase`. Worktree-safe (doesn't require switching the local HEAD).
 - **macOS UF_HIDDEN gotcha**: if an editable install seems to disappear from `.venv`, run `chflags -R nohidden .venv` before pytest. Documented in the user's `MEMORY.md`.

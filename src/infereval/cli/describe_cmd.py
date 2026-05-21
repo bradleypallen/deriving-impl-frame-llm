@@ -480,7 +480,24 @@ def _render_items(bench: Benchmark) -> None:
             verdict_str = "→  " + ", ".join(item.analyst_verdicts)
         tag_annot = f"   [{', '.join(item.tags)}]" if item.tags else ""
 
-        click.echo(f"{indent}{item.id}  {pre_ids} ⊢? {con_ids}  {verdict_str}{tag_annot}")
+        # AR11: divergence-with-rationales flag. When the analyst column
+        # disagrees AND rationales are present on this item, this is a
+        # noise-vs-signal triage target — the rationale text is what
+        # disambiguates a genuine carving disagreement from a labelling
+        # slip. Flag it on the header line so a reader scanning the
+        # benchmark sees it without diving into the body.
+        verdicts_diverge = len(set(item.analyst_verdicts)) > 1
+        rationales_present = item.analyst_rationales is not None
+        divergence_flag = (
+            "  ⚠ disagreement+rationales"
+            if verdicts_diverge and rationales_present
+            else ""
+        )
+
+        click.echo(
+            f"{indent}{item.id}  {pre_ids} ⊢? {con_ids}  {verdict_str}"
+            f"{tag_annot}{divergence_flag}"
+        )
 
         # Γ premises in English. Wrap each long expression under the
         # value column for readability on narrow terminals.
@@ -513,6 +530,31 @@ def _render_items(bench: Benchmark) -> None:
                         f"{lead}{expr}",
                         width=_WRAP,
                         subsequent_indent=delta_cont,
+                        break_long_words=False,
+                        break_on_hyphens=False,
+                    )
+                )
+
+        # Per-analyst rationales (AR11), if present. The field-is-None
+        # case skips this block entirely (no rationale discipline).
+        # When the field is a list, render one line per analyst with
+        # their id and their rationale text; an empty-string entry
+        # renders as "(no reason recorded)" so the bare-verdict-with-
+        # no-reason case is visually distinct from the absent-field
+        # case (which renders nothing at all).
+        if item.analyst_rationales is not None:
+            click.echo(f"{body_indent}rationales:")
+            rationale_indent = body_indent + "  "
+            for j, analyst in enumerate(bench.analysts):
+                text = item.analyst_rationales[j].strip()
+                rendered = text if text else "(no reason recorded)"
+                lead = f"{rationale_indent}{analyst.id}: "
+                cont = " " * len(lead)
+                click.echo(
+                    textwrap.fill(
+                        f"{lead}{rendered}",
+                        width=_WRAP,
+                        subsequent_indent=cont,
                         break_long_words=False,
                         break_on_hyphens=False,
                     )
