@@ -48,7 +48,7 @@ class ProviderSampleError(ProviderError):
     """Raised when sampling fails after the retry policy is exhausted.
 
     The endorser treats this as a single failed sample and maps the verdict
-    to ``abstain`` (revised.tex Definition 2, "Unparseable responses are
+    to ``abstain`` (the paper's Definition 2, "Unparseable responses are
     mapped to abstain").
     """
 

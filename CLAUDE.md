@@ -4,17 +4,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository contents
 
-Two coupled artifacts:
+This repository is the **`infereval`** Python package (`src/infereval/`) — an executable implementation of the methodology specified in *Note on Simonelli's Stop Sign Dialogue: An Implication-Space Methodology for the Empirical Evaluation of LLM Inferential Mastery* (Bradley P. Allen, University of Amsterdam). Distributed on PyPI as `infereval`.
 
-1. **`revised.tex`** — the source LaTeX paper: *Note on Simonelli's Stop Sign Dialogue: An Implication-Space Methodology for the Empirical Evaluation of LLM Inferential Mastery* (Bradley P. Allen, University of Amsterdam).
-2. **`src/infereval/`** — Python package implementing the methodology specified in the paper. Distributed on PyPI as `infereval`. The paper is the spec; the package is the executable companion.
-
-The repository was seeded from an Overleaf import. The Python package was added later.
+The paper is the normative spec; this package is its executable companion. **The paper source is maintained separately** — it was extracted (with full history) into its own repository. This repo began as a combined paper+package repository seeded from an Overleaf import; the package outgrew the paper and was split off under the package's own name. Definition / Section / Remark references throughout the code and docs cite that paper symbolically (no in-repo file).
 
 **Documentation map** (`docs/`):
 
 - `docs/README.md` — table of contents.
-- `docs/concepts.md` — methodology mental model (pedagogical complement to `revised.tex` §3–4).
+- `docs/concepts.md` — methodology mental model (pedagogical complement to the paper, §3–4).
 - `docs/authoring_benchmarks.md` — writing a `benchmark.json` for a new domain.
 - `docs/interpreting_metrics.md` — reading κ_C / κ_F / κ_F\* output, by-tag and factor-effects decompositions, sensitivity-sweep verdicts.
 - `docs/providers.md` — per-provider quirks (Anthropic seed ignore, DeepSeek silent reasoning tokens, etc.).
@@ -24,15 +21,7 @@ The repository was seeded from an Overleaf import. The Python package was added 
 
 ## Build & run
 
-### Paper
-
-```
-latexmk -pdf revised.tex
-# or
-pdflatex revised.tex && pdflatex revised.tex
-```
-
-Two passes when references change. Bibliography is inline (`thebibliography`); no `bibtex`/`biber`.
+The paper lives in a separate repository (see "Repository contents"); this repo builds and tests the Python package only.
 
 ### Package
 
@@ -66,11 +55,11 @@ infereval --version
 
 Live-provider tests (opt-in) require `RUN_LIVE_PROVIDER_TESTS=1` and the relevant API key in env.
 
-## Paper structure and conventions
+## Paper conventions (the paper is maintained separately)
 
-- **Document class:** `article`, 11pt, 1in margins. Loaded packages: `amsmath`, `amssymb`, `amsthm`, `mathtools`, `booktabs`, `array`, `tabularx`, `url`. There is no `hyperref` — URLs via `\url{}`. Do not add `hyperref` casually; ask first if links are needed.
-- **Theorem environments:** `definition`, `remark`, `example`. Don't introduce `theorem`/`lemma`/`proposition` without a reason — the earlier "classical core" proposition has been demoted to a commented-out remark.
-- **Citations:** Hlobil & Brandom (2025) `\cite{hlobil2025}` is central; Simonelli (2026) `\cite{simonelli2026}` is the dialogue being formalized. Other cites: `allen2025nesy`, `allen2026bbl`, `bang2025`, `wei2024`, `el-yaniv2010`. The paper relies on Hlobil–Brandom machinery (implication frames, Containment, RSR, NMMS, ≈, implicational roles, conceptual content, Corollary 77) and cites it *without restating definitions*. Don't inline Hlobil–Brandom definitions unless asked.
+The paper source lives in its own repository now; its LaTeX-authoring conventions (document class, theorem environments, commented-out material, `\cite` keys) travel with it and are not reproduced here. What remains below is the **code/paper contract** — the notation, core claim, and methodological trajectory the package must keep faithful to the spec. Treat these as invariants when editing the package.
+
+- **Methodological lineage:** the paper builds on Hlobil & Brandom (2025) machinery (implication frames, Containment, RSR, NMMS, ≈, implicational roles, conceptual content, Corollary 77) and formalizes Simonelli's (2026) stop-sign dialogue. The code tracks these without restating their definitions.
 - **Notation invariants — keep stable across paper and code:**
   - $B$ — bearer set; $V$ vocabulary, $L = V^*$ token sequences
   - $\langle B, I \rangle$ / $\langle B, I_M \rangle$ — implication frame / derived from $M$
@@ -82,9 +71,8 @@ Live-provider tests (opt-in) require `RUN_LIVE_PROVIDER_TESTS=1` and the relevan
   - $\kappa_C$ — Cohen's kappa; $\kappa_F$ — Fleiss' kappa with $M$ as $(m+1)$th annotator; $\kappa_F^*$ — inter-analyst Fleiss baseline
   - $\mathrm{RSR}$ — range of subjunctive robustness
   - **analyst** = human labeler; **annotator** = human-plus-$M$ ensemble. Load-bearing in the Fleiss definition — preserve it in code and prose.
-- **Core claim:** $\langle B, I_M \rangle$ obeys Containment by construction via clause (i) of Definition 3. Stated as a remark, not a proposition. Edits to Definition 3 must preserve clause (i).
-- **Commented-out material:** several remarks are present but commented out (deflationary "operational character", longer "structural character", classical-core invoking Corollary 77 + NMMS). Held back, not deleted. Do not uncomment without asking, and preserve the commented blocks when editing surrounding prose.
-- **Trajectory:** formalization of Simonelli's stop-sign dialogue → general inferentialist evaluation methodology (binary classification with abstention, scored by coverage + Cohen's/Fleiss' kappa) → Discussion surfacing carving-relativity of content-attribution, evaluative vs. generative behavior, two axes of variation, and the carving-indexed form of in-principle claims. Preserve this arc when restructuring.
+- **Core claim:** $\langle B, I_M \rangle$ obeys Containment by construction via clause (i) of the paper's Definition 3 — implemented as the lazy membership rule in `frame.py`. Changes to the derived-frame membership logic must preserve clause (i).
+- **Trajectory:** formalization of Simonelli's stop-sign dialogue → general inferentialist evaluation methodology (binary classification with abstention, scored by coverage + Cohen's/Fleiss' kappa) → carving-relativity of content-attribution, evaluative vs. generative behavior, two axes of variation, and the carving-indexed form of in-principle claims. This arc is the package's reason for existing; preserve it when restructuring.
 
 ## Python package conventions
 
@@ -151,8 +139,8 @@ The nine-feature programme shipped over eleven patch/minor releases addresses th
 
 ## Working style for this repo
 
-- Paper edits go to `revised.tex` via `Edit` (not `Write`) unless rewriting wholesale. After non-trivial paper changes, run `latexmk -pdf revised.tex` to confirm it compiles.
-- Code edits go in `src/infereval/`. Run `pytest` after changes; type-check with `mypy src/infereval/`. The full test suite is ~592 tests and finishes in under 5 seconds.
+- The paper is in a separate repository; this repo is package-only. If a change touches the methodology spec, coordinate with the paper repo — don't try to edit the paper here.
+- Code edits go in `src/infereval/`. Run `pytest` after changes; type-check with `mypy src/infereval/`. The full test suite is ~637 tests and finishes in under 5 seconds.
 - The methodology defaults above are locked in conversation. Don't drift from them without checking with the user first.
 - Per user-global instruction: **always include structured logging for post-experimental run analysis and reporting.** Every model call, every sample, every majority-vote outcome should be auditable from the JSONL log.
 - **Schemas are generated, not hand-edited.** After any change to the Pydantic models in `benchmark.py` or `evaluation.py`, regenerate the committed Draft 2020-12 schemas with `python -c "from infereval.schemas import emit_static_schemas; emit_static_schemas()"`. A drift test keeps these in sync; CI will flag a hand-edit. Version bumps also flow into `evaluation.schema.json:framework_version.default` via the same regeneration step.

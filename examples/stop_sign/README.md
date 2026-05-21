@@ -1,6 +1,6 @@
 # Stop-sign benchmark
 
-Formalization of Simonelli's GPT-4.1 stop-sign dialogue (Example 1 of `revised.tex`) as a single-analyst RSR-targeted benchmark.
+Formalization of Simonelli's GPT-4.1 stop-sign dialogue (Example 1 of the paper) as a single-analyst RSR-targeted benchmark.
 
 ## Target inference
 

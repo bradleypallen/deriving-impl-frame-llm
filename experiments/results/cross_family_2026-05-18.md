@@ -1,6 +1,6 @@
 # Cross-family paraphrase-axis sweep (2026-05-18)
 
-A 13-model evaluation of carving-relativity for the predicate `is red` ascribed to stop signs, using the methodology of revised.tex §5 and the script at [`experiments/paraphrase_axis_triangulation.py`](../paraphrase_axis_triangulation.py).
+A 13-model evaluation of carving-relativity for the predicate `is red` ascribed to stop signs, using the methodology of the paper, §5 and the script at [`experiments/paraphrase_axis_triangulation.py`](../paraphrase_axis_triangulation.py).
 
 ## Setup
 

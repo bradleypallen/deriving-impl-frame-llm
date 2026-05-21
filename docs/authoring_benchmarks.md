@@ -378,4 +378,4 @@ infereval metrics medical-eta.json --benchmark path/to/your-benchmark.json \
 - Run a real evaluation: [`providers.md`](providers.md).
 - Read the output: [`interpreting_metrics.md`](interpreting_metrics.md).
 - Use the full construct-validity toolchain (structure / model / sweep / report) to produce a defensible mastery claim: [`construct_validity_workflow.md`](construct_validity_workflow.md).
-- See the conceptual framework that makes all this coherent: [`concepts.md`](concepts.md) and `revised.tex`.
+- See the conceptual framework that makes all this coherent: [`concepts.md`](concepts.md) and the paper.

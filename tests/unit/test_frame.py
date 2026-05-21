@@ -1,6 +1,6 @@
 """Tests for ``infereval.frame.DerivedFrame``.
 
-The truth-table here is Example 1 of revised.tex: rows 0-2 are endorsed
+The truth-table here is Example 1 of the paper: rows 0-2 are endorsed
 (``E_M = good``) and row 3 is rejected (``E_M = bad``). The derived frame
 :math:`I_M` should contain rows 0-2 (via clause (ii)) but not row 3.
 Containment (clause (i)) is checked via implications with non-empty intersection.

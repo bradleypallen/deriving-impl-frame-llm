@@ -8,7 +8,7 @@ Tie-break policy (the paper underdetermines this; we lock conservative
 defaults):
 
 - If :class:`Verdict.ABSTAIN` is among the tied verdicts, abstain wins
-  (matches revised.tex's treatment of abstain as the safe fallback).
+  (matches the paper's treatment of abstain as the safe fallback).
 - Otherwise, a pure GOOD/BAD tie is decided by the configured
   ``tie_break`` policy (``"abstain"`` by default, also ``"good"``,
   ``"bad"``, ``"first"``).

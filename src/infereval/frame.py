@@ -1,6 +1,6 @@
 """Derived implication frame :math:`\\langle B, I_M \\rangle`.
 
-Definition 3 of revised.tex (Allen 2026):
+Definition 3 of the paper (Allen 2026):
 
 .. math::
    \\langle \\Gamma, \\Delta \\rangle \\in I_M \\iff

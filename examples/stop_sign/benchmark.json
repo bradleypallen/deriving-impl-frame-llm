@@ -3,7 +3,7 @@
   "id": "stop-sign-example-1",
   "title": "Stop-sign RSR (Example 1 of Allen 2026)",
   "domain": "everyday-physical-objects",
-  "description": "Formalization of Simonelli's GPT-4.1 stop-sign dialogue (revised.tex Example 1). A single-analyst RSR-targeted benchmark for the target inference <{sa}, {ra}> (a is a stop sign implies a is red), with three accepted side extensions (n, nr, n+nr) and one defeater (ba).",
+  "description": "Formalization of Simonelli's GPT-4.1 stop-sign dialogue (Example 1 of the paper). A single-analyst RSR-targeted benchmark for the target inference <{sa}, {ra}> (a is a stop sign implies a is red), with three accepted side extensions (n, nr, n+nr) and one defeater (ba).",
   "bearers": {
     "sa": {
       "expression": "$a$ is a stop sign",
@@ -30,7 +30,7 @@
     {
       "id": "paper-author",
       "display_name": "Allen (Example 1 row)",
-      "notes": "Verdicts recorded in the analyst column of Example 1, Table 1 of revised.tex."
+      "notes": "Verdicts recorded in the analyst column of Example 1, Table 1 of the paper."
     }
   ],
   "context_builders": {

@@ -1,6 +1,6 @@
 """Benchmark :math:`\\beta` model and JSON I/O.
 
-A benchmark is, per Definition 4 of revised.tex, a finite set
+A benchmark is, per Definition 4 of the paper, a finite set
 :math:`\\{(I_1, V_1), \\ldots, (I_n, V_n)\\}` where each :math:`I_i` is an
 implication and each :math:`V_i = (v_{i,1}, \\ldots, v_{i,m})` is a tuple of
 analyst verdicts. This module defines the Pydantic-validated JSON shape and
@@ -192,7 +192,7 @@ class VerificationPromptOverride(BaseModel):
 class RSRTarget(BaseModel):
     """Target inference :math:`\\langle X, A \\rangle` for an RSR-targeted item.
 
-    See revised.tex Remark on "RSR-targeted benchmarks".
+    See the paper's Remark on "RSR-targeted benchmarks".
     """
 
     model_config = ConfigDict(extra="forbid")
@@ -352,7 +352,7 @@ class BenchmarkItem(BaseModel):
 class Benchmark(BaseModel):
     """A benchmark :math:`\\beta` over a bearer set, analyst panel, and items.
 
-    See revised.tex Definition 4.
+    See the paper, Definition 4.
     """
 
     model_config = ConfigDict(extra="forbid")

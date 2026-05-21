@@ -1,6 +1,6 @@
 """Paraphrase-axis experiment across LLM families.
 
-A worked example of the methodology in revised.tex §5: vary the expression
+A worked example of the methodology in the paper, §5: vary the expression
 function δ(ra) across three readings of "is red" (original, intrinsic,
 perceptual) and measure each model's κ_C against Simonelli's analyst row.
 
@@ -150,7 +150,7 @@ _OPENROUTER_EXTRAS: dict[str, object] = {
 
 
 MODELS: list[ModelSpec] = [
-    # OpenAI baseline (the model Simonelli used in revised.tex).
+    # OpenAI baseline (the model Simonelli used in the paper).
     ModelSpec("gpt-4.1",          "openai",     "gpt-4.1",                       "OPENAI_API_KEY",     {}),
     # OpenAI current-generation pair (5.4).
     ModelSpec("gpt-5.4",          "openai",     "gpt-5.4",                       "OPENAI_API_KEY",     {}),

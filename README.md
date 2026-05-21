@@ -2,7 +2,7 @@
 
 Inferentialist evaluation of LLMs: derive an implication frame from a language model's endorsement verdicts, then measure inferential mastery against an analyst-labeled benchmark via coverage and Cohen's / Fleiss' kappa.
 
-`infereval` is the executable companion to *Note on Simonelli's Stop Sign Dialogue: An Implication-Space Methodology for the Empirical Evaluation of LLM Inferential Mastery* (Allen, 2026 — `revised.tex` in this repo). The framework formalizes the procedure β → η → (cov, κ_C, κ_F, κ_F\*) for any analyst-supplied benchmark.
+`infereval` is the executable companion to *Note on Simonelli's Stop Sign Dialogue: An Implication-Space Methodology for the Empirical Evaluation of LLM Inferential Mastery* (Allen, 2026), which is maintained as a separate paper. The framework formalizes the procedure β → η → (cov, κ_C, κ_F, κ_F\*) for any analyst-supplied benchmark.
 
 ## Status
 
@@ -89,7 +89,7 @@ The JSONL run log under `/tmp/run.jsonl` records one event per provider call (pr
 
 Each metric can be decomposed by tag or by RSR target.
 
-**This is not:** a factuality benchmark, a leaderboard, or an answer to whether LLMs are sapient. The methodology is *carving-relative*: results depend on the analyst-supplied bearer carving, context construction, and benchmark. The framework provides the machinery; the analyst supplies the practice the machinery is comparing against. See the Discussion of `revised.tex` for what carving-relativity buys and costs.
+**This is not:** a factuality benchmark, a leaderboard, or an answer to whether LLMs are sapient. The methodology is *carving-relative*: results depend on the analyst-supplied bearer carving, context construction, and benchmark. The framework provides the machinery; the analyst supplies the practice the machinery is comparing against. See the Discussion in the paper for what carving-relativity buys and costs.
 
 ## API surface
 

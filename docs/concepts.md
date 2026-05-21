@@ -1,6 +1,6 @@
 # Concepts
 
-A pedagogical walk through what `infereval` does. The rigorous specification is the paper (`revised.tex`); this guide is the gentle complement.
+A pedagogical walk through what `infereval` does. The rigorous specification is the paper (maintained separately); this guide is the gentle complement.
 
 ## The question
 
