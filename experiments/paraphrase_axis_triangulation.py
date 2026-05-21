@@ -144,7 +144,7 @@ class ModelSpec(NamedTuple):
 
 
 _OPENROUTER_EXTRAS: dict[str, object] = {
-    "http_referer": "https://github.com/bradleypallen/deriving-impl-frame-llm",
+    "http_referer": "https://github.com/bradleypallen/infereval",
     "x_title": "infereval-paraphrase-axis-experiment",
 }
 

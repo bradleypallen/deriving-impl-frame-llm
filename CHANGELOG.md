@@ -976,5 +976,5 @@ Evaluation of LLM Inferential Mastery* (Allen, 2026).
 
 - Bradley P. Allen, University of Amsterdam.
 
-[0.2.0]: https://github.com/bradleypallen/deriving-impl-frame-llm/releases/tag/v0.2.0
-[0.1.0]: https://github.com/bradleypallen/deriving-impl-frame-llm/releases/tag/v0.1.0
+[0.2.0]: https://github.com/bradleypallen/infereval/releases/tag/v0.2.0
+[0.1.0]: https://github.com/bradleypallen/infereval/releases/tag/v0.1.0

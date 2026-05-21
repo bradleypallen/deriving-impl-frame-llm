@@ -124,10 +124,10 @@ The methodology's central mechanism — vary δ, watch κ_C move — works on ev
 
 Two patches were applied to the framework's provider classes during this experiment; both are 0.2.0 work that's now landed early:
 
-1. **OpenAI GPT-5.x and o-series require `max_completion_tokens`, not `max_tokens`** ([#4](https://github.com/bradleypallen/deriving-impl-frame-llm/issues/4) family). The `OpenAIProvider` now detects the model id and routes to the correct parameter.
+1. **OpenAI GPT-5.x and o-series require `max_completion_tokens`, not `max_tokens`** ([#4](https://github.com/bradleypallen/infereval/issues/4) family). The `OpenAIProvider` now detects the model id and routes to the correct parameter.
 2. **Claude Opus 4.7 rejects the `temperature` parameter** as a 400 error. The `AnthropicProvider` now skips it for Opus 4.7+.
 
-Without the patches, GPT-5.4, GPT-5.4-mini, and Claude Opus 4.7 silently failed every sample (`parse_status: sample_failed`), and the all-abstain results were indistinguishable from "the model declined to commit." Issue [#5](https://github.com/bradleypallen/deriving-impl-frame-llm/issues/5) (surface `finish_reason` on `SampleRecord`) would have made the failures self-diagnostic; we now have a real argument for closing it.
+Without the patches, GPT-5.4, GPT-5.4-mini, and Claude Opus 4.7 silently failed every sample (`parse_status: sample_failed`), and the all-abstain results were indistinguishable from "the model declined to commit." Issue [#5](https://github.com/bradleypallen/infereval/issues/5) (surface `finish_reason` on `SampleRecord`) would have made the failures self-diagnostic; we now have a real argument for closing it.
 
 ## Reproducing this sweep
 
