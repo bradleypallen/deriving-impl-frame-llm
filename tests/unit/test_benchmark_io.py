@@ -851,8 +851,7 @@ class TestAnalystRationales:
         )
         bench = Benchmark.model_validate(d)
         # Verdicts remain Verdict enum members, untouched by rationales.
-        from infereval.types import Verdict as V
-        assert bench.items[0].analyst_verdicts == [V.GOOD, V.BAD]
+        assert bench.items[0].analyst_verdicts == [Verdict.GOOD, Verdict.BAD]
         assert bench.items[0].analyst_rationales == ["because P", "because not P"]
 
     # AR4 — empty-string vs. None distinction.

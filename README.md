@@ -1,5 +1,11 @@
 # infereval
 
+[![CI](https://github.com/bradleypallen/infereval/actions/workflows/ci.yml/badge.svg)](https://github.com/bradleypallen/infereval/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/bradleypallen/infereval)](https://github.com/bradleypallen/infereval/releases)
+[![PyPI](https://img.shields.io/pypi/v/infereval)](https://pypi.org/project/infereval/)
+[![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+
 Inferentialist evaluation of LLMs: derive an implication frame from a language model's endorsement verdicts, then measure the model's agreement with an analyst-labeled benchmark via coverage and Cohen's / Fleiss' kappa. The agreement is **evidence bearing on** an inferential-mastery attribution — not a measurement of mastery itself (per the paper's Remark 8).
 
 `infereval` is the executable companion to *Note on Simonelli's Stop Sign Dialogue: An Implication-Space Instrument for Probing LLM Endorsement of Material Inferential Rules* (Allen, 2026), which is maintained as a separate paper. The framework formalizes the procedure β → η → (cov, κ_C, κ_F, κ_F\*) for any analyst-supplied benchmark.
