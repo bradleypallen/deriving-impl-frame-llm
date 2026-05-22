@@ -6,7 +6,7 @@ Inferentialist evaluation of LLMs: derive an implication frame from a language m
 
 ## Status
 
-Alpha (0.1.0). Methodology defaults are locked; the JSON schemas are versioned independently (`schema_version: "1.0"`) and promised stable from 1.0 onward.
+Beta (0.x, pre-1.0). The public Python API and CLI surface may shift between minor releases until 1.0. Methodology defaults are locked, and the JSON schemas are versioned independently (`schema_version: "1.0"`) and promised stable from 1.0 onward regardless of the framework version. See the [CHANGELOG](CHANGELOG.md) for the current release.
 
 ## Documentation
 
