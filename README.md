@@ -1,6 +1,6 @@
 # infereval
 
-Inferentialist evaluation of LLMs: derive an implication frame from a language model's endorsement verdicts, then measure inferential mastery against an analyst-labeled benchmark via coverage and Cohen's / Fleiss' kappa.
+Inferentialist evaluation of LLMs: derive an implication frame from a language model's endorsement verdicts, then measure the model's agreement with an analyst-labeled benchmark via coverage and Cohen's / Fleiss' kappa. The agreement is **evidence bearing on** an inferential-mastery attribution — not a measurement of mastery itself (per the paper's Remark 8).
 
 `infereval` is the executable companion to *Note on Simonelli's Stop Sign Dialogue: An Implication-Space Instrument for Probing LLM Endorsement of Material Inferential Rules* (Allen, 2026), which is maintained as a separate paper. The framework formalizes the procedure β → η → (cov, κ_C, κ_F, κ_F\*) for any analyst-supplied benchmark.
 
