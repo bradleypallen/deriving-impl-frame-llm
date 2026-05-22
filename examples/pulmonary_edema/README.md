@@ -59,6 +59,6 @@ The committed evaluation files were generated against framework versions 0.2.1 (
 
 ## Caveats
 
-1. **m = 1.** Single-analyst panel; inter-analyst Fleiss `κ_F*` is undefined per the paper's Remark 5. A second pulmonologist labeling the same items would convert this from a demonstration into a research-grade dataset.
+1. **m = 1.** Single-analyst panel; inter-analyst Fleiss `κ_F*` is undefined per the paper's Remark 4. A second pulmonologist labeling the same items would convert this from a demonstration into a research-grade dataset.
 2. **Placeholder labels.** See the `analysts[0].notes` field in `benchmark.json`. The cross-family κ numbers in `pulmonology_2026-05-19.md` are about the framework producing coherent values, not about the models matching a real pulmonologist's practice.
 3. **Reference annotations** are best-effort by a non-clinician. Treat them as starting points for the real respondent to adjust.

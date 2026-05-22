@@ -24,7 +24,7 @@ The requirements addressed in this document derive from the question: *what woul
 
 - **R2. Computed and reported inter-analyst baseline.** The methodology must compute κ_F*(β) and report it alongside any agreement statistic involving M, with the baseline meeting the conditions for being defined (m ≥ 2 analysts, non-unanimous benchmark items). *(Fleiss 1971; Allen 2026 Remark 4 and Def. 10)*
 
-  > **Implementation status: full.** `infereval.metrics.inter_analyst_fleiss` computes κ_F* over the analyst panel, surfaced by `infereval describe` (top-level baseline line) and `infereval metrics` (per-decomposition). Returns `None` with a logged warning in the conditions Remark 5 calls out (m < 2 or unanimous analysts). Extended in v0.3.3 (Issue #36) with `inter_analyst_fleiss_per_panel` returning the κ_F* per declared panel when the benchmark uses the panel structure (R4).
+  > **Implementation status: full.** `infereval.metrics.inter_analyst_fleiss` computes κ_F* over the analyst panel, surfaced by `infereval describe` (top-level baseline line) and `infereval metrics` (per-decomposition). Returns `None` with a logged warning in the conditions Remark 4 calls out (m < 2 or unanimous analysts). Extended in v0.3.3 (Issue #36) with `inter_analyst_fleiss_per_panel` returning the κ_F* per declared panel when the benchmark uses the panel structure (R4).
 
 - **R3. Interpretive framing relative to the baseline.** The methodology must frame agreement claims in explicit relation to κ_F*(β) — neither in isolation nor against an unstated absolute threshold — so that "strong agreement" is operationalized as a specific relationship to the analyst-internal ceiling rather than as an arbitrary kappa value. *(Landis & Koch 1977; Allen 2026 Remark 4)*
 
@@ -46,7 +46,7 @@ The requirements addressed in this document derive from the question: *what woul
 
 **Requirements on stimulus design**
 
-- **R10. Paraphrase variation under fixed inferential content.** The methodology must include, for each item or each condition, multiple meaning-preserving paraphrases of δ, ctx_Γ, and ctx_Δ, so that agreement attributable to inferential content can be separated from agreement attributable to surface form. *(Allen 2026 Remark 8; Ribeiro et al. 2020; McCoy, Pavlick & Linzen 2019)*
+- **R10. Paraphrase variation under fixed inferential content.** The methodology must include, for each item or each condition, multiple meaning-preserving paraphrases of δ, ctx_Γ, and ctx_Δ, so that agreement attributable to inferential content can be separated from agreement attributable to surface form. *(Allen 2026 Remark 9; Ribeiro et al. 2020; McCoy, Pavlick & Linzen 2019)*
 
   > **Implementation status: full.** Shipped in v0.3.1 (Issue #32). Promoted the existing `BearerModel.paraphrases` field from documentation-only to runtime-active. New `--paraphrase-variant K` and `--paraphrase-cycle` flags on `infereval evaluate` orchestrate the per-variant runs; outputs auto-suffix with `-vN`. The single most-cited concern in this document's reviewer reactions about content-vs-form sensitivity is now a one-flag operation.
 
@@ -62,7 +62,7 @@ The requirements addressed in this document derive from the question: *what woul
 
   > **Implementation status: full.** Shipped in v0.5.0 (Issue #44) as `ConstructValidityClaims.mastery_sense`, a required claims-file field with a `Literal["evaluative", "generative", "standing", "combination"]` discriminator + required free-text description. The `infereval report` command refuses to render without this field populated.
 
-- **R17. Explicit specification of the scope of the claim.** The methodology must state whether the mastery claim is about (a) the items in β, (b) the domain D as sampled by β, or (c) inferential mastery as a general capacity, and must provide arguments appropriate to the scope claimed. *(Messick 1989; Allen 2026 Remark 9)*
+- **R17. Explicit specification of the scope of the claim.** The methodology must state whether the mastery claim is about (a) the items in β, (b) the domain D as sampled by β, or (c) inferential mastery as a general capacity, and must provide arguments appropriate to the scope claimed. *(Messick 1989; Allen 2026 Remark 10)*
 
   > **Implementation status: full.** Shipped in v0.5.0 (Issue #44) as `ConstructValidityClaims.scope`, with a `Literal["items_in_benchmark", "domain_D_as_sampled", "general_capacity"]` discriminator and a tiered set of required competing-explanation checks per scope. Broader scopes require strictly more checks; the verdict downgrades automatically when checks are missing.
 
@@ -128,7 +128,7 @@ The requirements addressed in this document derive from the question: *what woul
 
 **Requirements on the form of mastery claims**
 
-- **R19. Carving-indexed framing of in-principle claims.** The methodology must frame any in-principle claims about mastery in the carving-indexed form Remark 9 specifies, rather than as unrestricted claims about concept possession, so that the relativity to analyst-supplied carving is preserved in what gets concluded from the measurement. *(Allen 2026 Remark 9; Simonelli 2026; Hlobil & Brandom 2025)*
+- **R19. Carving-indexed framing of in-principle claims.** The methodology must frame any in-principle claims about mastery in the carving-indexed form Remark 10 specifies, rather than as unrestricted claims about concept possession, so that the relativity to analyst-supplied carving is preserved in what gets concluded from the measurement. *(Allen 2026 Remark 10; Simonelli 2026; Hlobil & Brandom 2025)*
 
   > **Implementation status: full at the report level.** Shipped in v0.5.0 (Issue #44) as `ConstructValidityClaims.carving`, with `acknowledges_carving_indexed: bool` + `notes: str`. The verdict computation requires both `acknowledges_carving_indexed=True` AND non-empty `notes` when the claim's scope reaches beyond `items_in_benchmark` (i.e. when in-principle claims are being made). Failing either condition automatically downgrades the verdict to NOT defensible. The framework can't enforce carving-indexed framing in third-party write-ups but can refuse to render a defensible verdict for write-ups that ignore it.
 
@@ -165,7 +165,7 @@ Six requirements are workflow discipline that the framework can support but not 
 
 > **Implementation note.** As of v0.5.0 the framework *requires* explicit statements via the claims file. It cannot supply the substance but it can refuse to render strong verdicts without them.
 
-**Carving-indexed framing of in-principle claims.** The framing comes from the analyst's understanding of the paper's Remark 9; the framework can carry the framing forward in its documentation but cannot enforce its use in third-party write-ups.
+**Carving-indexed framing of in-principle claims.** The framing comes from the analyst's understanding of the paper's Remark 10; the framework can carry the framing forward in its documentation but cannot enforce its use in third-party write-ups.
 
 > **Implementation note.** As of v0.5.0 the framework can at least refuse to render a `defensible` verdict for claims that reach beyond `items_in_benchmark` without an acknowledged + documented carving. The mechanic protects the framework's own output; what downstream readers do with the rendered report is still up to them.
 
@@ -385,7 +385,7 @@ The framework that exists at the end of this programme is recognizably continuou
 
 ## References
 
-Allen, B. P. (2026). Note on Simonelli's Stop Sign Dialogue: An Implication-Space Methodology for the Empirical Evaluation of LLM Inferential Mastery.
+Allen, B. P. (2026). Note on Simonelli's Stop Sign Dialogue: An Implication-Space Instrument for Probing LLM Endorsement of Material Inferential Rules.
 
 Baayen, R. H., Davidson, D. J., & Bates, D. M. (2008). Mixed-effects modeling with crossed random effects for subjects and items. *Journal of Memory and Language*, 59(4), 390–412.
 

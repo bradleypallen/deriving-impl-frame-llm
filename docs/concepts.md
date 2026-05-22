@@ -119,7 +119,7 @@ From `η`, three load-bearing metrics:
 
 **Cohen's kappa** `κ_C(η, r)`. Agreement between `M` and a reference verdict function `r`, corrected for chance, restricted to items where both are substantive. The reference is most commonly the **analyst consensus** `c_i` (majority of analysts; abstain on tie), but can also be any single analyst's column.
 
-**Fleiss' kappa** `κ_F(η)`. Agreement across all annotators when `M` is treated as the `(m+1)`th annotator. Same chance correction. **Inter-analyst Fleiss** `κ_F*(β)` is the analog over analyst verdicts alone — the **baseline** `M`'s `κ_F` should be compared against, per the paper's Remark 5.
+**Fleiss' kappa** `κ_F(η)`. Agreement across all annotators when `M` is treated as the `(m+1)`th annotator. Same chance correction. **Inter-analyst Fleiss** `κ_F*(β)` is the analog over analyst verdicts alone — the **baseline** `M`'s `κ_F` should be compared against, per the paper's Remark 4.
 
 Decompositions: each metric can be computed over a subset of items filtered by **tag** or by **RSR target**. The `by-tag` filter is invaluable for localizing disagreement (see [`interpreting_metrics.md`](interpreting_metrics.md)).
 

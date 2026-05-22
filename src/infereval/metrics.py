@@ -11,7 +11,7 @@ Implements Section 4 of the paper ("Evaluation methodology"):
 - Fleiss' kappa :math:`\\kappa_F(\\eta)` with :math:`M` as the
   :math:`(m+1)`-th annotator.
 - Inter-analyst baseline :math:`\\kappa_F^*(\\beta)` over analyst verdicts
-  alone (the comparison point of Remark 5).
+  alone (the comparison point of Remark 4).
 
 Edge cases the paper flags are returned as :data:`None` (with a logged
 warning) rather than raised: :math:`\\kappa_F^*` needs :math:`m \\geq 2`
@@ -93,7 +93,7 @@ def coverage_per_analyst(eta: Evaluation) -> list[float]:
 def consensus_verdict(verdicts: Sequence[Verdict]) -> Verdict:
     """Return the analyst consensus :math:`c_i` for one item's verdicts.
 
-    From the paper, Definition 7: ``good`` if strict majority of analysts
+    From the paper, Definition 8: ``good`` if strict majority of analysts
     say ``good`` (vs. ``bad``); ``bad`` if strict majority say ``bad``;
     otherwise ``abstain``. Abstain votes do not count toward the majority
     of either substantive class but contribute to a tie.
@@ -184,7 +184,8 @@ def _fleiss_over_tuples(verdict_tuples: Sequence[Sequence[Verdict]]) -> float | 
     """Fleiss' kappa over a list of equal-length annotator tuples.
 
     Items with any non-substantive verdict are dropped (matching the
-    ``S_F`` / ``S`` filtering in the paper's Definition 9 and Remark 5).
+    ``S_F`` filtering of the paper's Definition 10, and the substantive-index
+    restriction of Definition 7).
     """
     if not verdict_tuples:
         log.warning("Fleiss kappa undefined: no items")
@@ -244,7 +245,7 @@ def fleiss_kappa(eta: Evaluation) -> float | None:
     The annotators on each item are the analyst verdicts followed by
     ``model_verdict``. Items where any annotator (analyst or model) is
     non-substantive are excluded from :math:`S_F` per the paper's
-    Definition 9.
+    Definition 10.
     """
     tuples = [
         [*item.analyst_verdicts, item.model_verdict] for item in eta.items
@@ -258,7 +259,7 @@ def inter_analyst_fleiss(source: Evaluation | Benchmark) -> float | None:
     Accepts either an :class:`~infereval.evaluation.Evaluation` or a
     :class:`~infereval.benchmark.Benchmark`. Returns :data:`None` (with
     a logged warning) when :math:`m < 2` or when the analysts are
-    unanimous on every item -- the two conditions Remark 5 calls out as
+    unanimous on every item -- the two conditions Remark 4 calls out as
     making the baseline unavailable.
 
     For panelled benchmarks (Issue #36, Phase 1.4), this returns the

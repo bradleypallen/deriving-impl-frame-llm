@@ -462,7 +462,7 @@ Both are defensible; pick the one your write-up will argue for. The report rende
 
 If your scope is `items_in_benchmark`, leave `acknowledges_carving_indexed=false` and `notes` empty — no in-principle claims are being made, so no carving-indexed framing is needed.
 
-If your scope is broader (`domain_D_as_sampled` or `general_capacity`), you **must** set `acknowledges_carving_indexed=true` AND write non-empty `notes` explaining the carving used. The notes might say: *"The carving used is B = {20 bearers for pulmonary edema differential diagnosis} with δ as supplied in benchmark.json's bearer dictionary. Per Allen (2026) Remark 9, all in-principle claims in §6 are framed in carving-indexed form: 'mastery of pulmonary-edema reasoning under the B/δ carving' rather than unrestricted 'mastery of pulmonary medicine.'"*
+If your scope is broader (`domain_D_as_sampled` or `general_capacity`), you **must** set `acknowledges_carving_indexed=true` AND write non-empty `notes` explaining the carving used. The notes might say: *"The carving used is B = {20 bearers for pulmonary edema differential diagnosis} with δ as supplied in benchmark.json's bearer dictionary. Per Allen (2026) Remark 10, all in-principle claims in §6 are framed in carving-indexed form: 'mastery of pulmonary-edema reasoning under the B/δ carving' rather than unrestricted 'mastery of pulmonary medicine.'"*
 
 If you skip this at scope ≥ `domain_D_as_sampled`, the verdict auto-downgrades to NOT defensible regardless of how many other checks you ran.
 

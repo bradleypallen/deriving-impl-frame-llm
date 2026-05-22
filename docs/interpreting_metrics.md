@@ -71,7 +71,7 @@ Reading `κ_F`: same scale as `κ_C`. What you compare it to is the next metric.
 
 This is **the most important reference number** when `m ≥ 2`. It's Fleiss' kappa computed over the analysts alone (no `M`).
 
-The paper's Remark 5 makes the point: `κ_F*(β)` tells you how well the analysts agree with each other before `M` is in the picture. It's the ceiling above which `M` is doing something the analysts don't do. It's also the floor: if `κ_F*(β) = 0.6`, then `M` reaching `κ_F = 0.5` is participating in the practice at a level not far from the analysts' own internal agreement — which is a strong result.
+The paper's Remark 4 makes the point: `κ_F*(β)` tells you how well the analysts agree with each other before `M` is in the picture. It's the ceiling above which `M` is doing something the analysts don't do. It's also the floor: if `κ_F*(β) = 0.6`, then `M` reaching `κ_F = 0.5` is participating in the practice at a level not far from the analysts' own internal agreement — which is a strong result.
 
 | Comparison | What it tells you |
 |---|---|
