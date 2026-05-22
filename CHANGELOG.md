@@ -12,6 +12,45 @@ stable from 1.0 onward, regardless of the framework version.
 
 No changes yet.
 
+## [0.5.5] — 2026-05-21
+
+Documentation-conformance release. Brings all cross-references into line
+with the **revised** stop-sign note (21 May 2026), which changed its
+title and renumbered both Definitions and Remarks. No behavior, API, or
+schema changes — the formal content (Definitions 1–10, the RSR /
+Containment machinery, and the kappa math) was already implemented
+exactly as specified; only the citations and framing needed updating.
+
+### Changed
+
+- **Paper title** updated throughout (README prose + BibTeX, CLAUDE.md,
+  the references list in `closing_the_construct_validity_gap.md`, and the
+  citation string in `examples/pulmonary_edema/benchmark.json`):
+  *"…An Implication-Space Methodology for the Empirical Evaluation of LLM
+  Inferential Mastery"* → *"…An Implication-Space Instrument for Probing
+  LLM Endorsement of Material Inferential Rules"*.
+- **Definition citations** corrected for the revised numbering
+  (6 Coverage, **7 Substantive index**, 8 Consensus, 9 Cohen, 10 Fleiss):
+  `consensus_verdict` now cites Definition 8 (was 7); the Fleiss `S_F`
+  filtering cites Definition 10 (was 9), with the substantive-index
+  restriction `S` attributed to Definition 7.
+- **Remark citations** corrected for the revised numbering: the κ_F\*
+  baseline / `m<2` / non-unanimous conditions now cite Remark 4 (was 5);
+  the paraphrase axis cites Remark 9 (was 8/6); carving-indexed
+  in-principle claims cite Remark 10 (was 9). RSR-targeted citations
+  (Remark 5) are unchanged — still correct.
+- **README framing** aligned with the paper's Remark 8: the tagline now
+  describes the framework as measuring the model's *agreement* with the
+  benchmark, with that agreement framed as **evidence bearing on** an
+  inferential-mastery attribution rather than a measurement of mastery.
+
+### Note
+
+The revised paper instantiates single-bearer succedents
+(`⟨Γ, {ψ}⟩`); `infereval` continues to permit multi-element
+`conclusions` lists (the multisuccedent generalization the paper
+defers). This is a pre-existing, intentional superset, unchanged here.
+
 ## [0.5.4] — 2026-05-20
 
 Analyst-side rationale support. New optional, additive schema field
