@@ -2,7 +2,7 @@
 
 Inferentialist evaluation of LLMs: derive an implication frame from a language model's endorsement verdicts, then measure inferential mastery against an analyst-labeled benchmark via coverage and Cohen's / Fleiss' kappa.
 
-`infereval` is the executable companion to *Note on Simonelli's Stop Sign Dialogue: An Implication-Space Methodology for the Empirical Evaluation of LLM Inferential Mastery* (Allen, 2026), which is maintained as a separate paper. The framework formalizes the procedure β → η → (cov, κ_C, κ_F, κ_F\*) for any analyst-supplied benchmark.
+`infereval` is the executable companion to *Note on Simonelli's Stop Sign Dialogue: An Implication-Space Instrument for Probing LLM Endorsement of Material Inferential Rules* (Allen, 2026), which is maintained as a separate paper. The framework formalizes the procedure β → η → (cov, κ_C, κ_F, κ_F\*) for any analyst-supplied benchmark.
 
 ## Status
 
@@ -85,7 +85,7 @@ The JSONL run log under `/tmp/run.jsonl` records one event per provider call (pr
 
 - **Coverage** — how often the model takes a substantive position (`cov(η)`).
 - **Cohen's kappa** — agreement against a chosen reference (analyst consensus `c_i` or a single analyst `v_{:,j}`).
-- **Fleiss' kappa** — agreement with the model treated as the `(m+1)`th annotator, alongside the inter-analyst baseline `κ_F*(β)` (Remark 5 of the paper).
+- **Fleiss' kappa** — agreement with the model treated as the `(m+1)`th annotator, alongside the inter-analyst baseline `κ_F*(β)` (Remark 4 of the paper).
 
 Each metric can be decomposed by tag or by RSR target.
 
@@ -145,7 +145,7 @@ Live provider tests require `RUN_LIVE_PROVIDER_TESTS=1` and the relevant API key
 ```bibtex
 @unpublished{allen2026inferential,
   author = {Allen, Bradley P.},
-  title  = {Note on {S}imonelli's Stop Sign Dialogue: An Implication-Space Methodology for the Empirical Evaluation of {LLM} Inferential Mastery},
+  title  = {Note on {S}imonelli's Stop Sign Dialogue: An Implication-Space Instrument for Probing {LLM} Endorsement of Material Inferential Rules},
   year   = {2026},
   note   = {University of Amsterdam}
 }

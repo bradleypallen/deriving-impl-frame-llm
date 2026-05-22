@@ -87,7 +87,7 @@ class CarvingClaim(BaseModel):
 
     acknowledges_carving_indexed: bool
     """``True`` iff any in-principle claims are framed in the
-    carving-indexed form Remark 9 specifies."""
+    carving-indexed form Remark 10 specifies."""
     notes: str = ""
     """Required when ``acknowledges_carving_indexed`` is ``True``;
     document the carving used or pointers to the discussion."""

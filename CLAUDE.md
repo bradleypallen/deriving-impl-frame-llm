@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository contents
 
-This repository is the **`infereval`** Python package (`src/infereval/`) — an executable implementation of the methodology specified in *Note on Simonelli's Stop Sign Dialogue: An Implication-Space Methodology for the Empirical Evaluation of LLM Inferential Mastery* (Bradley P. Allen, University of Amsterdam). Distributed on PyPI as `infereval`.
+This repository is the **`infereval`** Python package (`src/infereval/`) — an executable implementation of the methodology specified in *Note on Simonelli's Stop Sign Dialogue: An Implication-Space Instrument for Probing LLM Endorsement of Material Inferential Rules* (Bradley P. Allen, University of Amsterdam). Distributed on PyPI as `infereval`.
 
 The paper is the normative spec; this package is its executable companion. **The paper source is maintained separately** — it was extracted (with full history) into its own repository. This repo began as a combined paper+package repository seeded from an Overleaf import; the package outgrew the paper and was split off under the package's own name. Definition / Section / Remark references throughout the code and docs cite that paper symbolically (no in-repo file).
 
@@ -103,7 +103,7 @@ These are framework defaults, overridable per evaluation:
 - **Logging:** stdlib `logging` + JSONL formatter (zero-dep, grep/jq friendly).
 - **OpenAI SDK surface:** Chat Completions (max OpenRouter coverage).
 - **OpenRouter:** thin subclass of `OpenAIProvider` overriding `base_url`.
-- **$\kappa_F^*$ in CLI output:** always shown ("undefined" per paper's Remark 5 when $m<2$ or unanimous).
+- **$\kappa_F^*$ in CLI output:** always shown ("undefined" per paper's Remark 4 when $m<2$ or unanimous).
 - **Schema versioning:** independent of framework (`schema_version: "1.0"`). Schema stability promised from 1.0 onward, not 0.x. **The 0.3.x–0.5.x construct-validity series added optional fields only** — every pre-0.3.0 benchmark continues to validate against the current schema, and that additive-only invariant must be preserved for further benchmark-schema changes within the 1.0 line.
 - **`DerivedFrame` materialization:** lazy (membership via Def. 3 iff). Full $I_M$ over $\wp(B)\times\wp(B)$ is unbounded.
 

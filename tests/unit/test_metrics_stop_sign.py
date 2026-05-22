@@ -68,7 +68,7 @@ class TestModelMatchesAnalyst:
         assert fleiss_kappa(eta) == pytest.approx(1.0)
 
     def test_inter_analyst_fleiss_undefined(self, eta, stop_sign: Benchmark) -> None:
-        # m=1 -> undefined; the comparison with kappa_C and kappa_F is unavailable per Remark 5
+        # m=1 -> undefined; the comparison with kappa_C and kappa_F is unavailable per Remark 4
         assert inter_analyst_fleiss(eta) is None
         assert inter_analyst_fleiss(stop_sign) is None
 
