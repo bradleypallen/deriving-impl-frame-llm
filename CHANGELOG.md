@@ -12,6 +12,49 @@ stable from 1.0 onward, regardless of the framework version.
 
 No changes yet.
 
+## [0.5.10] — 2026-05-23
+
+**First publication to real PyPI.** Earlier 0.5.x releases were tagged
+and rehearsed against TestPyPI; this is the version that lands on
+<https://pypi.org/project/infereval/>. Source-wise the package is
+byte-identical to v0.5.9 — the substantive change is publication
+infrastructure.
+
+### Added
+
+- **`.github/workflows/publish.yml`** — build + publish workflow using
+  [PyPI Trusted Publishing](https://docs.pypi.org/trusted-publishers/)
+  (OIDC, no API tokens in GitHub secrets). Two triggers:
+  - `release: published` → automatic publish to real PyPI on
+    `gh release create vX.Y.Z`. Gated by a required-reviewer
+    deployment-environment rule (`pypi`), so every PyPI push pauses for
+    one-click human approval in the Actions UI before twine uploads.
+  - `workflow_dispatch` with `target: testpypi|pypi` → manual
+    rehearsals against TestPyPI (or a manual real-PyPI push if the
+    auto-trigger needs to be bypassed). TestPyPI step sets
+    `skip-existing: true` so re-dispatches against an already-published
+    version don't error out.
+- **GitHub deployment environments** `pypi` (with required reviewer)
+  and `testpypi` (open). Registered as trusted publishers on both
+  indices.
+
+### Changed
+
+- **`CLAUDE.md`** — CI section now documents three workflows
+  (`ci.yml`, `docs.yml`, `publish.yml`). Release-flow section describes
+  both the automated `gh release create` path and the manual
+  `twine upload` fallback, plus the one-time trusted-publisher
+  registration steps.
+
+### Note
+
+`framework_version` default in `evaluation.schema.json` bumped to
+`0.5.10`. `src/infereval/` source is unchanged from v0.5.7 onward
+apart from the `__version__` string — the 0.5.7 → 0.5.10 sequence was
+all release-hygiene and publication-infrastructure work, preserved as
+separate releases so the CHANGELOG records the iteration that produced
+a clean inaugural PyPI publication.
+
 ## [0.5.9] — 2026-05-23
 
 Docs-only patch. Converts the four remaining relative links in the
