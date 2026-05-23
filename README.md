@@ -19,13 +19,9 @@ Beta (0.x, pre-1.0). The public Python API and CLI surface may shift between min
 
 ## Documentation
 
-- [**Concepts**](docs/concepts.md) — the methodology's mental model, pedagogically.
-- [**Authoring benchmarks**](docs/authoring_benchmarks.md) — writing your own `benchmark.json`.
-- [**Interpreting metrics**](docs/interpreting_metrics.md) — what κ_C, κ_F, and κ_F\* tell you; reading by-tag decompositions.
-- [**Providers**](docs/providers.md) — per-provider quirks (Anthropic seed handling, DeepSeek reasoning-token budgets, OpenRouter attribution).
-- [**Construct-validity workflow**](docs/construct_validity_workflow.md) — end-to-end practitioner's guide for producing reproducible, well-founded evidence for a claim of inferential mastery against a carving. Covers framework features + research-program responsibilities outside scope.
-- [**Closing the construct-validity gap**](docs/closing_the_construct_validity_gap.md) — the implementation-annotated companion to the workflow guide, documenting which requirements (R1–R21) each release closed.
-- **Tutorials** (executable Jupyter notebooks under [docs/tutorials/](docs/tutorials/)): the quickstart, authoring from scratch, the cross-model paraphrase-axis experiment, and the pulmonology visualization notebook.
+Full docs site: **<https://www.bradleypallen.org/infereval/>**.
+
+What's there: a [Concepts](https://www.bradleypallen.org/infereval/concepts/) page (methodology mental model), [Authoring benchmarks](https://www.bradleypallen.org/infereval/authoring_benchmarks/), [Interpreting metrics](https://www.bradleypallen.org/infereval/interpreting_metrics/) (κ_C / κ_F / κ_F\*, decompositions, sensitivity sweeps), [Providers](https://www.bradleypallen.org/infereval/providers/) (Anthropic seed handling, DeepSeek reasoning-token budgets, OpenRouter attribution), the [Construct-validity workflow](https://www.bradleypallen.org/infereval/construct_validity_workflow/) end-to-end practitioner's guide, and the [Closing the construct-validity gap](https://www.bradleypallen.org/infereval/closing_the_construct_validity_gap/) R1–R21 record. Four executable tutorial notebooks (quickstart, authoring, paraphrase-axis triangulation, pulmonology visualization). Plus an auto-generated [API reference](https://www.bradleypallen.org/infereval/api/), an [Architecture](https://www.bradleypallen.org/infereval/architecture/) dataflow diagram, a [Glossary](https://www.bradleypallen.org/infereval/glossary/) of paper symbols, and a [JSON-schema](https://www.bradleypallen.org/infereval/schemas/) reference.
 
 ## Findings
 
