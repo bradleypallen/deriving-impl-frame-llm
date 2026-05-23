@@ -480,6 +480,8 @@ Mark `true` only for checks you actually ran. Lying here makes the entire report
 - `cross_domain_comparison_run`: M was evaluated on a comparison-domain benchmark.
 - `replication_attempted`: a fresh benchmark following the same construction procedure was built and evaluated.
 
+> **Caveat on `held_out_items_used` and `training_data_separation_verified` (leakage-audit gap).** These two booleans are currently self-report: the framework does *not* cross-check them against the per-item `construction_metadata` that should substantiate them. You can assert `held_out_items_used=true` on a benchmark where no item's `authored_blind_to_models` names the evaluated model, and the report will still treat the check as run. The same goes for `training_data_separation_verified` against per-item `authored_on` — and the framework has no model-training-cutoff field to compare against in any case. Closing this in-framework (an audit cap in `compute_verdict` analogous to the v0.5.3 structural-anomaly and `m<2` caps) is a deferred strengthening tracked in [`closing_the_construct_validity_gap.md`](closing_the_construct_validity_gap.md) under R8 / R9. Until that lands, **your honesty in setting these booleans is the audit** — assert them only when the per-item metadata actually substantiates the claim, and re-render your report after any benchmark edit that touches `construction_metadata`.
+
 ---
 
 ## Phase 6: Render the report

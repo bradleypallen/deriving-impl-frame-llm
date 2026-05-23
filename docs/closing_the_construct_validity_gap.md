@@ -85,10 +85,14 @@ The requirements addressed in this document derive from the question: *what woul
 - **R8. Held-out items constructed independently of M.** The methodology must include items constructed without reference to M's outputs or behavior, ideally by analysts who haven't observed M, to prevent the benchmark from being implicitly tailored to the model under evaluation. *(Sainz et al. 2023; Pineau et al. 2021)*
 
   > **Implementation status: partial.** The `construction_metadata.authored_blind_to_models` field (v0.3.2, Issue #34) lets each item declare which models the author had not observed at authoring time. The construct-validity report's competing-explanation checks include `held_out_items_used` as a tracked declaration. **The institutional separation between benchmark authors and model evaluators remains a research-program responsibility.**
+  >
+  > **Known gap (deferred):** the framework records the per-item declaration *and* the boolean claim but does **not** cross-check them. A benchmark with zero items declaring `authored_blind_to_models` against the evaluated model can still earn a `defensible` verdict so long as `held_out_items_used=true` is asserted in the claims file — the same "ran but didn't pass" failure shape the v0.5.3 audit caps closed for structural anomalies and `m<2`. The natural in-framework closure is a parallel audit cap in `compute_verdict`: if `held_out_items_used=true` is claimed but the benchmark's per-item metadata fails to substantiate it, cap the verdict at `partially_defensible`. Tracked as deferred work.
 
 - **R9. Training-data separation.** The methodology must include checks or controls — temporal (β constructed after training cutoff), structural (no verbatim or near-duplicate matches against training data), or both — sufficient to rule out memorization as an alternative explanation for agreement. *(Sainz et al. 2023)*
 
   > **Implementation status: partial.** The `construction_metadata.authored_on` field (v0.3.2) records the authoring date so temporal separation can be argued. The construct-validity report tracks `training_data_separation_verified` as a declared check. **Verifying actual training-data overlap requires model-provider cooperation or external tooling outside infereval's scope.**
+  >
+  > **Known gap (deferred):** same audit-cap shape as R8 above. `training_data_separation_verified=true` is not cross-checked against the per-item `authored_on` values, and the framework currently has no model-training-cutoff field to compare them against in any case. A future strengthening could add an optional `model_training_cutoff` declaration (on `ModelInfo` or as a claim) plus a deterministic temporal-order check — flagging items whose `authored_on` precedes the declared cutoff, and capping the verdict when the claim isn't substantiated by the recorded metadata. Same v0.5.3 audit-cap pattern. Tracked as deferred work.
 
 **Requirements on stimulus design**
 
