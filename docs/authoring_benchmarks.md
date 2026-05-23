@@ -255,7 +255,7 @@ infereval validate path/to/your-benchmark.json
 
 The validator runs the full Pydantic checks: every bearer id referenced in `premises` / `conclusions` / `rsr_target` exists in `bearers`; every item has exactly `m` analyst verdicts; analyst and item ids are unique; verdict values are in `{good, bad, abstain}`; etc. The error messages name the offending field and value.
 
-For non-Python downstream consumers, the same checks (modulo cross-field ones) live in the committed JSON Schema at [`src/infereval/schemas/benchmark.schema.json`](../src/infereval/schemas/benchmark.schema.json).
+For non-Python downstream consumers, the same checks (modulo cross-field ones) live in the committed JSON Schema — see [`schemas.md`](schemas.md) for the rendered field reference, or the raw [`benchmark.schema.json`](https://github.com/bradleypallen/infereval/blob/main/src/infereval/schemas/benchmark.schema.json) on GitHub.
 
 ## Step 7b: Add references (optional but strongly recommended for regulated domains)
 

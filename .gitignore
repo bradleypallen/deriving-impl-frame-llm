@@ -81,3 +81,5 @@ paper.pdf
 # Local env
 .env
 .env.local
+site/
+.cache/

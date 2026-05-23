@@ -1,0 +1,141 @@
+site_name: infereval
+site_description: >-
+  Inferentialist evaluation of LLMs — derive an implication frame from a model's
+  endorsement verdicts and measure model–analyst agreement on labeled inference
+  benchmarks. Evidence bearing on inferential-mastery attribution.
+site_url: https://bradleypallen.github.io/infereval/
+site_author: Bradley P. Allen
+repo_url: https://github.com/bradleypallen/infereval
+repo_name: bradleypallen/infereval
+edit_uri: edit/main/docs/
+copyright: Copyright &copy; 2026 Bradley P. Allen — MIT License
+
+docs_dir: docs
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme)"
+      toggle:
+        icon: material/brightness-auto
+        name: Switch to light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to system preference
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - navigation.footer
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.code.annotate
+    - content.action.edit
+    - toc.follow
+  icon:
+    repo: fontawesome/brands/github
+    edit: material/pencil
+
+nav:
+  - Home: README.md
+  - Concepts: concepts.md
+  - Authoring benchmarks: authoring_benchmarks.md
+  - Interpreting metrics: interpreting_metrics.md
+  - Providers: providers.md
+  - Construct-validity:
+      - Workflow: construct_validity_workflow.md
+      - Closing the gap: closing_the_construct_validity_gap.md
+  - Tutorials:
+      - Quickstart: tutorials/01_quickstart.ipynb
+      - Authoring a benchmark: tutorials/02_authoring_a_benchmark.ipynb
+      - Paraphrase-axis experiment: tutorials/03_paraphrase_axis_experiment.ipynb
+      - Pulmonology visualization: tutorials/04_pulmonology_visualization.ipynb
+  - Reference:
+      - Architecture: architecture.md
+      - Glossary: glossary.md
+      - JSON schemas: schemas.md
+      - API: api.md
+
+plugins:
+  - search
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          paths: [src]
+          options:
+            docstring_style: sphinx
+            show_source: true
+            show_root_heading: true
+            show_root_toc_entry: false
+            show_signature_annotations: true
+            separate_signature: true
+            merge_init_into_class: true
+            show_if_no_docstring: false
+            members_order: source
+            heading_level: 2
+  - mkdocs-jupyter:
+      include_source: true
+      execute: false
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.betterem
+  - pymdownx.caret
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.snippets
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
+
+extra_javascript:
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/bradleypallen/infereval
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/infereval/
+  generator: false

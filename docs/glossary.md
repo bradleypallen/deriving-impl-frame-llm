@@ -1,0 +1,97 @@
+# Glossary
+
+Every paper symbol the codebase tracks, with its in-code counterpart and a
+one-liner meaning. The same notation is used throughout the docs and the
+docstrings; this page collects it in one place so you can cross-reference
+quickly.
+
+The authoritative source is the paper. This page summarises the
+**code/paper contract** the package maintains.
+
+## Core symbols (paper Definitions 1–10)
+
+| Symbol | Name | In code | Meaning |
+|---|---|---|---|
+| `V` | Vocabulary | (conceptual) | Finite set of tokens. |
+| `L = V*` | Token sequences | (conceptual) | Finite sequences over `V` — natural-language statements live here. |
+| `B` | Bearer set | `Benchmark.bearers` (keys); [`Bearer`](api.md#infereval.types.Bearer) at runtime | Non-empty set of bearers — the items that play implicational roles. |
+| `δ : B → L` | Expression function | `BearerModel.expression` (+ `paraphrases`) | Maps each bearer to its natural-language expression. Analyst-supplied. |
+| `ctx_Γ : ℘(B) → L` | Premise-set context builder | [`ContextBuilders.premise`](api.md#infereval.benchmark.ContextBuilders) | Packages a premise set as natural-language context. Default: conjunction by "and". |
+| `ctx_Δ : ℘(B) → L` | Conclusion-set context builder | [`ContextBuilders.conclusion`](api.md#infereval.benchmark.ContextBuilders) | Packages a (single-bearer) conclusion set as natural-language context. |
+| `⟨B, I⟩` | Implication frame | (Hlobil–Brandom) | A bearer set plus an implication relation `I ⊆ ℘(B) × ℘(B)`. |
+| `⟨B, I_M⟩` | Derived implication frame | [`DerivedFrame`](api.md#infereval.frame.DerivedFrame) | The frame derived from `M`'s endorsement verdicts (paper's Definition 3). Containment-closed by construction (clause i). |
+| `E_M` | Endorsement function | [`endorse()`](api.md#infereval.endorsement.endorse) | `E_M(⟨Γ, {ψ}⟩) ∈ {good, bad, abstain}`. Computed by majority vote over `n_samples` provider calls. |
+| `RSR` | Range of subjunctive robustness | (analytical) | For a target inference `⟨X, {ψ}⟩`, the side-premise extensions `Y` that preserve endorsement of `ψ` from `X`. |
+| `β` | Benchmark | [`Benchmark`](api.md#infereval.benchmark.Benchmark) | `{(I_1, V_1), …, (I_n, V_n)}`. Items + analyst verdicts. Paper's Definition 4. |
+| `η` | Evaluation | [`Evaluation`](api.md#infereval.evaluation.Evaluation) | `{(I_i, V_i, E_M(I_i))}`. Paper's Definition 5. |
+| `V_i = (v_{i,1}, …, v_{i,m})` | Analyst verdict tuple | `BenchmarkItem.analyst_verdicts` | Verdicts of each of the `m` analysts on item `i`. |
+| `m` | Number of analysts | `Benchmark.m` | `len(benchmark.analysts)`. |
+| `n` | Number of items | `Benchmark.n` | `len(benchmark.items)`. |
+| `c_i` | Analyst consensus | [`consensus_verdict()`](api.md#infereval.metrics.consensus_verdict) | Strict majority of `(v_{i,1}, …, v_{i,m})`; abstain on tie. Paper's Definition 8. |
+
+## Agreement measures (paper Definitions 6–10)
+
+| Symbol | Name | In code | Meaning |
+|---|---|---|---|
+| `cov(η)` | Coverage | [`coverage()`](api.md#infereval.metrics.coverage) | Fraction of items where `M` produced a substantive verdict. |
+| `cov_j(η)` | Per-analyst coverage | [`coverage()`](api.md#infereval.metrics.coverage) per column | Analog for each human analyst. |
+| `S(η, r)` | Substantive index | (internal filter) | Items where both `M` and reference `r` are substantive. Paper's Definition 7. |
+| `S_F` | Fleiss substantive index | (internal filter) | Items where **every** annotator is substantive. Paper's Definition 10. |
+| `κ_C(η, r)` | Cohen's kappa | [`cohens_kappa()`](api.md#infereval.metrics.cohens_kappa) | `M`'s agreement with reference `r` (consensus or a single analyst). Chance-corrected against `{good, bad}` marginals. Paper's Definition 9. |
+| `κ_F(η)` | Fleiss' kappa | [`fleiss_kappa()`](api.md#infereval.metrics.fleiss_kappa) | Agreement across all `m + 1` annotators (analysts + `M`). Paper's Definition 10. |
+| `κ_F^*(β)` | Inter-analyst Fleiss baseline | [`inter_analyst_fleiss()`](api.md#infereval.metrics.inter_analyst_fleiss) | Fleiss' kappa over analyst verdicts alone. The baseline against which `κ_C` and `κ_F` are interpreted (paper's Remark 4). Undefined when `m < 2` or analysts unanimous. |
+
+## analyst vs annotator — **load-bearing**
+
+Treat as a hard distinction in code and prose:
+
+| Term | What it means | Count |
+|---|---|---|
+| **Analyst** | A human labeler whose verdicts appear in `V_i`. | `m` |
+| **Annotator** | A human-plus-`M` ensemble member. The `(m+1)`th annotator in `κ_F` is `M`. | `m + 1` |
+
+`fleiss_kappa(η)` operates on `m + 1` annotators (analysts plus `M`).
+`inter_analyst_fleiss(β)` operates on `m` analysts (no `M`). This is the
+load-bearing distinction in the Fleiss definition (paper's Definition 10).
+
+## Construct-validity terminology
+
+Introduced in the v0.3.0–v0.5.x series. See
+[Construct-validity workflow](construct_validity_workflow.md) and
+[Closing the gap](closing_the_construct_validity_gap.md) for the
+end-to-end story.
+
+| Term | In code | Meaning |
+|---|---|---|
+| **Carving** | (analyst-chosen) | The way the discursive practice is partitioned into bearers + `δ` + context builders. Content-attribution is relative to it (paper's Remark 6). |
+| **Mastery sense** | `MasterySenseClaim.sense` | One of `evaluative` / `generative` / `standing` / `combination`. Declares which sense of mastery the claim concerns (paper's Remark 7). |
+| **Scope** | `ScopeClaim.scope` | One of `items_in_benchmark` / `domain_D_as_sampled` / `general_capacity`. The breadth of the claim. Broader scopes require strictly more competing-explanation checks. |
+| **Constitution** | `ConstitutionClaim.position` | One of `evidence_of_mastery` / `constitutive_of_mastery`. The philosophical position the analyst is taking. |
+| **Carving-indexed claim** | `CarvingClaim.acknowledges_carving_indexed` | Required `True` at non-`items_in_benchmark` scopes — in-principle claims must take the carving-indexed form (paper's Remark 10). |
+| **`κ_F^*`-stability** | `SweepResult.stability_verdict` | The sensitivity-sweep verdict: `stable` / `moderately sensitive` / `substantively variable`. |
+
+## Role tags (RSR-targeted benchmarks)
+
+When an item declares an `rsr_target` and a role tag, the structural check
+[`infereval structure`](api.md#infereval.structure.run_all_checks)
+compares `M`'s verdict to the role-predicted verdict.
+
+| Tag | Predicted verdict | Meaning |
+|---|---|---|
+| `base-inference` | (anchors the target) | Items establishing the unconditional inference `⟨X, {ψ}⟩`. |
+| `irrelevant-addition` | Same as base | A side premise that should preserve the inference under RSR. |
+| `supporter` | `good` when base is `good` | A side premise that strengthens the inference. |
+| `defeater` | `bad` when base is `good` | A side premise that defeats the inference. |
+
+## Construction-metadata fields
+
+Per-item provenance for the construct-validity audit (paper-aligned with
+R5 / R8 / R9 in [Closing the gap](closing_the_construct_validity_gap.md)).
+
+| Field | Type | Meaning |
+|---|---|---|
+| `authored_by` | `str \| None` | Identifier of the author of this item (R5). |
+| `authored_on` | `date \| None` | ISO date the item was authored — substrate for temporal training-data separation arguments (R9). |
+| `authored_blind_to_models` | `list[str]` | Models the author had not observed on a draft of this item — the held-out declaration (R8). |
+| `source` | `str \| None` | Free-form citation for the primary material the author worked from. |
+| `analyst_rationales` | `list[str] \| None` | Optional per-analyst, per-item natural-language rationale, positionally aligned to `analyst_verdicts`. `None` (or absent) means "no rationale discipline"; an empty string means "verdict given, no reason recorded" — semantically distinct (paper-aligned with the AR1–AR12 spec). |
