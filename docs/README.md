@@ -28,7 +28,7 @@ Each tutorial runs end-to-end without any API key by using the bundled `ReplayPr
 
 - **API reference**: the docstrings in `src/infereval/*.py` are kept comprehensive and paper-cross-referenced. `help(infereval.evaluation.evaluate)` is reliable.
 - **CLI commands** (each has `--help`): `validate`, `describe`, `evaluate`, `metrics`, **`structure`** (v0.4.0), **`model`** (v0.4.1), **`sweep`** (v0.4.2), **`report`** (v0.5.0).
-- **JSON Schemas** (Draft 2020-12): committed at [`src/infereval/schemas/benchmark.schema.json`](../src/infereval/schemas/benchmark.schema.json) and [`evaluation.schema.json`](../src/infereval/schemas/evaluation.schema.json). They are generated from the Pydantic models; a drift test keeps them in sync.
+- **JSON Schemas** (Draft 2020-12): see [`schemas.md`](schemas.md) for the rendered field reference; the raw files are committed at [`benchmark.schema.json`](https://github.com/bradleypallen/infereval/blob/main/src/infereval/schemas/benchmark.schema.json) and [`evaluation.schema.json`](https://github.com/bradleypallen/infereval/blob/main/src/infereval/schemas/evaluation.schema.json). They are generated from the Pydantic models; a drift test keeps them in sync.
 - **Paper**: the methodology's normative specification, *Note on Simonelli's Stop Sign Dialogue* (Allen 2026), is maintained as a separate paper. These docs are the gentle introduction.
 
 ## Stability
@@ -37,4 +37,4 @@ Each tutorial runs end-to-end without any API key by using the bundled `ReplayPr
 - **JSON schemas** (`schema_version: "1.0"`): versioned independently from the framework. **Stability from 1.0 onward is promised** regardless of framework version. The construct-validity infrastructure series (v0.3.0 → v0.5.1) added optional fields only — every pre-0.3.0 benchmark continues to validate against the current schema.
 - **CLI surface**: subcommand and flag names track the framework version. Stable from 1.0.
 
-See [`CHANGELOG.md`](../CHANGELOG.md) at the repo root for per-release notes.
+See [`CHANGELOG.md`](https://github.com/bradleypallen/infereval/blob/main/CHANGELOG.md) at the repo root for per-release notes.
