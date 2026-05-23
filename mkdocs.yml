@@ -3,7 +3,7 @@ site_description: >-
   Inferentialist evaluation of LLMs — derive an implication frame from a model's
   endorsement verdicts and measure model–analyst agreement on labeled inference
   benchmarks. Evidence bearing on inferential-mastery attribution.
-site_url: https://bradleypallen.github.io/infereval/
+site_url: https://www.bradleypallen.org/infereval/
 site_author: Bradley P. Allen
 repo_url: https://github.com/bradleypallen/infereval
 repo_name: bradleypallen/infereval
