@@ -1,11 +1,13 @@
 """infereval: inferentialist evaluation of LLMs.
 
 Derive implication frames from an LLM's endorsement verdicts and measure
-inferential mastery against analyst-labeled benchmarks (coverage, Cohen's
-kappa, Fleiss' kappa) per the methodology of Allen (2026).
+model–analyst agreement on analyst-labeled inference benchmarks (coverage,
+Cohen's kappa, Fleiss' kappa). The agreement is evidence bearing on an
+inferential-mastery attribution — not a measurement of mastery itself
+(see Remark 8 of Allen, 2026).
 """
 
-__version__ = "0.5.6"
+__version__ = "0.5.7"
 
 from .frame import DerivedFrame
 from .types import Bearer, Implication, Verdict
