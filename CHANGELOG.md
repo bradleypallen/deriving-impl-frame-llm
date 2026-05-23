@@ -12,6 +12,48 @@ stable from 1.0 onward, regardless of the framework version.
 
 No changes yet.
 
+## [0.5.6] — 2026-05-22
+
+Release-hygiene patch. Bundles the README, CI, and documentation changes
+that landed after the `v0.5.5` tag so the first PyPI publication
+launches with the current state of the repository, not a snapshot that
+predates the post-tag fixups.
+
+### Changed
+
+- **README Status line** — replaced the never-bumped `"Alpha (0.1.0)"`
+  placeholder (verbatim from the 0.1.0 commit) with `"Beta (0.x,
+  pre-1.0)"`, de-pinned so it can't drift again; points readers to the
+  CHANGELOG for the current release.
+- **README badges** — added CI status, GitHub release version, PyPI
+  version, Python 3.10+, and MIT license badges to the header.
+
+### Added
+
+- **`.github/workflows/ci.yml`** — first GitHub Actions workflow. Runs
+  `ruff check src tests`, `mypy src/infereval`, and `pytest -q` on
+  every push to `main` and every PR (Python 3.12). Test/lint only —
+  no build, no publish; PyPI upload remains a manual `twine` step.
+- **Documentation of the leakage-audit gap** — `closing_the_construct_validity_gap.md`
+  R8 and R9 each carry a "Known gap (deferred)" subnote describing
+  the missing cross-check between the `held_out_items_used` /
+  `training_data_separation_verified` boolean claims and the per-item
+  `construction_metadata` that should substantiate them. The Phase 5
+  checklist in `construct_validity_workflow.md` carries a matching
+  caveat: until the v0.5.3-style audit cap lands for these claims,
+  "your honesty in setting these booleans is the audit."
+
+### Fixed
+
+- **Latent `ruff N817` in the AR2 rationale test** (`Verdict` aliased
+  to `V`) — switched to the already-imported `Verdict` so the new CI
+  workflow starts green on day one.
+
+### Note
+
+No behavior, API, or schema-content change. `framework_version`
+default in `evaluation.schema.json` bumped to `0.5.6`.
+
 ## [0.5.5] — 2026-05-21
 
 Documentation-conformance release. Brings all cross-references into line
