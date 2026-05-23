@@ -12,6 +12,40 @@ stable from 1.0 onward, regardless of the framework version.
 
 No changes yet.
 
+## [0.5.8] — 2026-05-23
+
+Docs-only patch. Rolls the post-`v0.5.7` documentation work into a
+shippable release so the PyPI project page renders correctly: the
+prior README pointed at relative `docs/*.md` paths that resolve on
+GitHub but break on PyPI. This release replaces those with absolute
+URLs to the live MkDocs Material docs site, and bundles the docs-site
+infrastructure that the new links point at.
+
+### Changed
+
+- **`README.md`** — added a "Docs" CI badge and a prominent
+  documentation-site pointer at the top. Replaced the bullet list of
+  relative `docs/concepts.md`-style links (which 404 on PyPI) with a
+  paragraph of absolute `https://www.bradleypallen.org/infereval/…`
+  links. This is what fixes the PyPI project-page rendering.
+
+### Added
+
+- **MkDocs Material docs site** (`mkdocs.yml`, `.github/workflows/docs.yml`)
+  — live at <https://www.bradleypallen.org/infereval/>, deployed from
+  `main` on push.
+- **New docs pages** (`docs/api.md`, `docs/architecture.md`,
+  `docs/glossary.md`, `docs/schemas.md`) — auto-rendered API reference
+  (mkdocstrings), Mermaid dataflow diagram, paper-symbol glossary, and
+  schema field reference. Existing pages refreshed for the site.
+
+### Note
+
+No code, API, or schema-content change. `framework_version` default in
+`evaluation.schema.json` bumped to `0.5.8`. The `src/infereval/`
+package is byte-identical to v0.5.7 apart from the `__version__`
+string.
+
 ## [0.5.7] — 2026-05-22
 
 Catches three pieces of PyPI-surfaced metadata that still carried the
