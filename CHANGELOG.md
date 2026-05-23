@@ -12,6 +12,34 @@ stable from 1.0 onward, regardless of the framework version.
 
 No changes yet.
 
+## [0.5.7] — 2026-05-22
+
+Catches three pieces of PyPI-surfaced metadata that still carried the
+pre-Remark-8 "measure mastery" framing and the pre-`PR #60` Alpha
+maturity descriptor. Cut as a follow-up to 0.5.6 because these are
+baked into the wheel METADATA (and so into the PyPI project page)
+rather than just the rendered README.
+
+### Changed
+
+- **`pyproject.toml` description (PyPI Summary)** — *"…derive
+  implication frames and measure mastery against analyst-labeled
+  benchmarks"* → *"…measure model–analyst agreement on labeled
+  inference benchmarks. Evidence bearing on inferential-mastery
+  attribution."* This line renders directly under the project name
+  on PyPI.
+- **`pyproject.toml` trove classifier** — `"Development Status ::
+  3 - Alpha"` → `"4 - Beta"`, matching the README Status line
+  corrected in 0.5.6.
+- **`src/infereval/__init__.py` module docstring** — same
+  measurement-vs-evidence framing fix, with an explicit pointer to
+  Remark 8 of the paper. Shown by `help(infereval)`.
+
+### Note
+
+No behavior, API, or schema-content change. `framework_version`
+default in `evaluation.schema.json` bumped to `0.5.7`.
+
 ## [0.5.6] — 2026-05-22
 
 Release-hygiene patch. Bundles the README, CI, and documentation changes
