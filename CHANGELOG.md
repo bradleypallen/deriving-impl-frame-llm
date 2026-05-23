@@ -42,6 +42,15 @@ default in `evaluation.schema.json` bumped to `0.5.7`.
 
 ## [0.5.6] — 2026-05-22
 
+> **Superseded by 0.5.7 before publication.** The `v0.5.6` tag was created and
+> wheels were built locally, but a follow-up pass caught three
+> wheel-METADATA strings (the PyPI Summary, the `Development Status` trove
+> classifier, and the module docstring) that still carried the pre-Remark-8
+> "measure mastery" framing. Rather than force-move the just-cut tag, those
+> fixes were rolled into 0.5.7 and that's the version that shipped. The
+> `v0.5.6` tag has been retired; the entry is preserved here as the historical
+> record of what 0.5.6 was going to be, since 0.5.7's notes reference it.
+
 Release-hygiene patch. Bundles the README, CI, and documentation changes
 that landed after the `v0.5.5` tag so the first PyPI publication
 launches with the current state of the repository, not a snapshot that
