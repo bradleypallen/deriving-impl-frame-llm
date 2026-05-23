@@ -12,6 +12,39 @@ stable from 1.0 onward, regardless of the framework version.
 
 No changes yet.
 
+## [0.5.9] — 2026-05-23
+
+Docs-only patch. Converts the four remaining relative links in the
+README to absolute GitHub URLs so they resolve on the PyPI project
+page. Caught while inspecting the v0.5.8 TestPyPI publication: PyPI
+does not rewrite relative `LICENSE` / `CHANGELOG.md` / `experiments/...`
+paths the way GitHub does, so the badge and inline links rendered as
+404s. v0.5.8 had already converted the `docs/*.md` bullet list to
+absolute URLs; this release closes the loop on the rest.
+
+### Changed
+
+- **`README.md`** — four link href fixes, all to
+  `https://github.com/bradleypallen/infereval/blob/main/...`:
+  - **License badge** href (was the broken one the user spotted on the
+    v0.5.8 TestPyPI page).
+  - **`[CHANGELOG](CHANGELOG.md)`** in the Status section.
+  - **`[experiments/results/cross_family_2026-05-18.md]`** in the
+    Findings section.
+  - **`[LICENSE](LICENSE)`** in the bottom License section.
+- **`CLAUDE.md`** — refreshed the release-flow note: `~/.pypirc`
+  actually has both `[testpypi]` and `[pypi]` index-servers wired to
+  `__token__` (twine picks them up non-interactively); added the
+  absolute-URLs-only requirement to the release-hygiene check, with
+  the 0.5.7 → 0.5.8 → 0.5.9 sequence as the worked example for why it
+  matters.
+
+### Note
+
+No code, API, or schema-content change. `framework_version` default
+in `evaluation.schema.json` bumped to `0.5.9`. `src/infereval/` is
+byte-identical to v0.5.7/v0.5.8 apart from the `__version__` string.
+
 ## [0.5.8] — 2026-05-23
 
 Docs-only patch. Rolls the post-`v0.5.7` documentation work into a

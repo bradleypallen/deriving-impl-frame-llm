@@ -5,7 +5,7 @@
 [![Release](https://img.shields.io/github/v/release/bradleypallen/infereval)](https://github.com/bradleypallen/infereval/releases)
 [![PyPI](https://img.shields.io/pypi/v/infereval)](https://pypi.org/project/infereval/)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
-[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](https://github.com/bradleypallen/infereval/blob/main/LICENSE)
 
 📖 **Documentation**: <https://www.bradleypallen.org/infereval/>
 
@@ -15,7 +15,7 @@ Inferentialist evaluation of LLMs: derive an implication frame from a language m
 
 ## Status
 
-Beta (0.x, pre-1.0). The public Python API and CLI surface may shift between minor releases until 1.0. Methodology defaults are locked, and the JSON schemas are versioned independently (`schema_version: "1.0"`) and promised stable from 1.0 onward regardless of the framework version. See the [CHANGELOG](CHANGELOG.md) for the current release.
+Beta (0.x, pre-1.0). The public Python API and CLI surface may shift between minor releases until 1.0. Methodology defaults are locked, and the JSON schemas are versioned independently (`schema_version: "1.0"`) and promised stable from 1.0 onward regardless of the framework version. See the [CHANGELOG](https://github.com/bradleypallen/infereval/blob/main/CHANGELOG.md) for the current release.
 
 ## Documentation
 
@@ -25,7 +25,7 @@ What's there: a [Concepts](https://www.bradleypallen.org/infereval/concepts/) pa
 
 ## Findings
 
-A 13-model cross-family sweep (2026-05-18) of the paraphrase-axis experiment is committed at [`experiments/results/cross_family_2026-05-18.md`](experiments/results/cross_family_2026-05-18.md). Headline: 11 of 13 frontier LLMs across six families reproduce Simonelli's analyst row exactly under the original δ(ra) (κ_C = +1.00) — an eleven-model independent replication of the paper's empirical anchor ten months after publication. The two outliers (Claude Haiku 4.5, Mistral Large) default to a *perceptual* reading of `is red` rather than the analyst's *intrinsic* reading, and the framework localizes this to specific (item, δ-variant) cells in the result tables.
+A 13-model cross-family sweep (2026-05-18) of the paraphrase-axis experiment is committed at [`experiments/results/cross_family_2026-05-18.md`](https://github.com/bradleypallen/infereval/blob/main/experiments/results/cross_family_2026-05-18.md). Headline: 11 of 13 frontier LLMs across six families reproduce Simonelli's analyst row exactly under the original δ(ra) (κ_C = +1.00) — an eleven-model independent replication of the paper's empirical anchor ten months after publication. The two outliers (Claude Haiku 4.5, Mistral Large) default to a *perceptual* reading of `is red` rather than the analyst's *intrinsic* reading, and the framework localizes this to specific (item, δ-variant) cells in the result tables.
 
 ## Install
 
@@ -158,4 +158,4 @@ Live provider tests require `RUN_LIVE_PROVIDER_TESTS=1` and the relevant API key
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT — see [LICENSE](https://github.com/bradleypallen/infereval/blob/main/LICENSE).
