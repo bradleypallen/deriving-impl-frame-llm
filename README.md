@@ -1,13 +1,13 @@
 # infereval
 
 [![CI](https://github.com/bradleypallen/infereval/actions/workflows/ci.yml/badge.svg)](https://github.com/bradleypallen/infereval/actions/workflows/ci.yml)
-[![Docs](https://github.com/bradleypallen/infereval/actions/workflows/docs.yml/badge.svg)](https://bradleypallen.github.io/infereval/)
+[![Docs](https://github.com/bradleypallen/infereval/actions/workflows/docs.yml/badge.svg)](https://www.bradleypallen.org/infereval/)
 [![Release](https://img.shields.io/github/v/release/bradleypallen/infereval)](https://github.com/bradleypallen/infereval/releases)
 [![PyPI](https://img.shields.io/pypi/v/infereval)](https://pypi.org/project/infereval/)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-📖 **Documentation**: <https://bradleypallen.github.io/infereval/>
+📖 **Documentation**: <https://www.bradleypallen.org/infereval/>
 
 Inferentialist evaluation of LLMs: derive an implication frame from a language model's endorsement verdicts, then measure the model's agreement with an analyst-labeled benchmark via coverage and Cohen's / Fleiss' kappa. The agreement is **evidence bearing on** an inferential-mastery attribution — not a measurement of mastery itself (per the paper's Remark 8).
 
