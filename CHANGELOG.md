@@ -12,6 +12,110 @@ stable from 1.0 onward, regardless of the framework version.
 
 No changes yet.
 
+## [0.6.1] — 2026-05-28
+
+**R22 second leg: declared identity criterion.** Patch release responding
+to Ulf Hlobil's individuation point on the v0.6.0 reliability
+machinery. The fix strengthens v0.6.0's thesis rather than patching it:
+reliability is by definition the agreement of distinct measurements of
+*the same individual*, so a test-retest κ is uninterpretable without a
+declared identity criterion for what "the same system" means across
+the two runs. v0.6.0 built the reliability machinery correctly but
+described the config-parity check on `infereval retest` as carrying
+more conceptual weight than it can bear — that check verifies the two
+runs use the same *measurement setup*, not that they measure the
+*same system*. v0.6.1 supplies the prerequisite that makes v0.6.0's
+reliability numbers interpretable: an analyst-declared
+`IdentityCriterion` recorded in the claims file, partially
+mechanically substantiated by the parity check, and required at scope
+≥ `domain_D_as_sampled` for R22 satisfaction.
+
+The doubly-relative framing — carving (R19) + individuation (R22
+second leg) — is the methodologically complete posture: every
+load-bearing standard the methodology relativises to is now a
+stipulated commitment relative to which claims are scoped, never an
+inferred one. Hlobil's point makes visible that v0.6.0 had the
+relativity move for carving but inferred the standard for
+individuation; v0.6.1 closes that asymmetry. Thanks to Ulf Hlobil
+(Concordia / co-author of *Reasons for Logic, Logic for Reasons*) for
+the individuation point.
+
+### Added
+
+- **`infereval.report.IdentityCriterion`** — analyst-declared
+  individuation criterion for reliability claims. Per-field booleans
+  split into a *framework-substantiated* group (`same_benchmark_hash`,
+  `same_endorsement_config`, `same_paraphrase_variant`) and an
+  *analyst-substantiated* group (`same_provider_model_id`,
+  `cross_update_identity_asserted`, `same_scaffolding`), plus
+  `unverifiable_caveats` and `rationale` free-text. Same shape as the
+  leakage-audit-gap handling for R8/R9: framework records the claim,
+  applies the parts it can verify, flags the parts it cannot.
+- **`infereval.report.ReliabilityClaim`** — wraps `IdentityCriterion`
+  on `ConstructValidityClaims.reliability` (new optional sub-block
+  peer to `mastery_sense` / `scope` / `constitution` / `carving`).
+  Forward-extensible for future reliability-related commitments
+  without re-shaping the top-level claims schema.
+- **`ConstructValidityClaims.stub()`** extended with a `reliability`
+  block — framework-substantiated booleans default True,
+  analyst-substantiated booleans default False (forces the analyst to
+  consciously assert each one), free-text fields carry FILL IN
+  placeholders.
+- **`RetestResult.identity_criterion`** — optional field carrying the
+  declared criterion alongside the κ. `compute_retest` gains a
+  keyword parameter; `retest_result_to_dict` serializes the criterion
+  when present.
+- **`infereval retest --claims path/to/claims.json`** — new CLI flag
+  that loads the analyst's declared `IdentityCriterion` from the
+  claims file and threads it into the retest result.
+- **R22 second-leg verdict gate** in `compute_verdict` — at scope ≥
+  `domain_D_as_sampled`, R22 satisfaction now requires
+  `test_retest_run=True` AND a declared `IdentityCriterion` with
+  non-empty rationale. Without the criterion the verdict caps at
+  `partially_defensible`. Mirrors the R19 carving-acknowledgement
+  gate exactly.
+- **Report renderer surfacing**: section 2 test-retest κ line carries
+  "under the declared identity criterion (`<one-line summary>`)" when
+  the retest artifact carries it; section 3 gains a "**Reliability —
+  identity criterion (R22, doubly-relative)**" sub-block rendering
+  the full criterion verbatim when claims include the reliability
+  block.
+
+### Changed
+
+- **`infereval.retest._check_compatibility` docstring + all
+  `RetestConfigMismatchError` messages** relabeled (text-only — code
+  path unchanged): the check verifies the *setup-conformance
+  portion* of an individuation criterion, not the criterion itself.
+  Sameness-of-individual is a separate commitment the analyst
+  declares via `ConstructValidityClaims.reliability.identity_criterion`.
+- **`RetestResult.stability_verdict`** gains an "under the declared
+  identity criterion" clause when the criterion is present.
+- **`docs/construct_validity.md`** reframed: Context paragraph names
+  the doubly-relative framing; R22 entry gains a second-leg
+  sub-block; new Phase 0.6 "Declare the individuation criterion";
+  Phase 2 preamble clarifies that running twice is necessary but
+  not sufficient for R22; Phase 2.3 example shows `--claims`
+  threading; Phase 5 gains an R22-second-leg bullet plus the
+  (a) temporal-occasion vs. (b) identity-criterion cleanup the
+  v0.6.0 doc had conflated; "What only a research program can do"
+  section reframed accordingly; coverage table R22 row updated.
+- **`docs/glossary.md`** gains `IdentityCriterion` and
+  `ReliabilityClaim` entries; the retest-stability-verdict entry
+  extended to mention the criterion clause.
+
+### Compatibility
+
+All additions are optional fields with sane defaults. Pre-v0.6.1
+claims files (without the `reliability` block) continue to validate;
+the verdict gate only fires when `test_retest_run=True` AND the
+scope is ≥ `domain_D_as_sampled`. Pre-v0.6.1 retest result JSONs
+(without `identity_criterion`) continue to round-trip. The
+evaluation-JSON schema is untouched. `schema_version` stays `"1.0"`.
+
+`framework_version` default in `evaluation.schema.json` bumped to
+`0.6.1`.
+
 ## [0.6.0] — 2026-05-23
 
 **Reliability infrastructure (R22).** Major release adding within-run
