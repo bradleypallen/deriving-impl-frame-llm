@@ -319,7 +319,7 @@ Runs the benchmark four times — once with each value — and bundles the metri
 
 Where the framework's infrastructure meets your institutional work.
 
-**4.1 Second analyst panel (R4).** Recruit a second pulmonologist (or domain expert). Have them label the same items independently of the first (blind to the first's verdicts and to any model output). Edit the benchmark JSON to add the second panel under `analysts` and re-run `infereval describe` to see the per-panel κ_F* + cross-panel κ_C. If `cross-panel κ_C` is high (above the κ_C the model achieves against the primary panel), the primary panel's signal is corroborated by the independent reviewer — R4 is satisfied.
+**4.1 Second analyst panel (R4).** Recruit a second domain expert (independent of the first analyst's training where possible). Have them label the same items independently of the first (blind to the first's verdicts and to any model output). Edit the benchmark JSON to add the second panel under `analysts` and re-run `infereval describe` to see the per-panel κ_F* + cross-panel κ_C. If `cross-panel κ_C` is high (above the κ_C the model achieves against the primary panel), the primary panel's signal is corroborated by the independent reviewer — R4 is satisfied.
 
 **4.2 Replication (R15).** Strict reproducibility is already covered by re-running `infereval evaluate` (the SHA-256 hash confirms the benchmark didn't change) and by `infereval retest` (test-retest κ on the same benchmark+model pair). Scientific replication — fresh benchmark constructed independently by a second author following the same construction procedure, evaluated against the same model — is real research-program work the framework can't do for you.
 

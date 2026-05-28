@@ -93,9 +93,9 @@ If you have multiple natural phrasings of the same bearer, list them in `paraphr
 
 ```json
 "analysts": [
-  {"id": "physician-a", "display_name": "Dr. A (internal medicine)",
-   "notes": "Labels reflect the analyst's reading of current clinical practice."},
-  {"id": "physician-b", "display_name": "Dr. B (infectious disease)"}
+  {"id": "analyst-a", "display_name": "Analyst A",
+   "notes": "Labels reflect the analyst's reading of competent practice in domain D."},
+  {"id": "analyst-b", "display_name": "Analyst B"}
 ]
 ```
 
@@ -103,7 +103,7 @@ If you have multiple natural phrasings of the same bearer, list them in `paraphr
 
 The number of analysts matters: `κ_F*(β)`, the inter-analyst baseline, is only defined when `m ≥ 2` and the analysts are not unanimous on every item. With `m = 1` (like our stop-sign example) you have a benchmark but no baseline.
 
-**Document analyst competence in `notes`** (R1). The framework records the declaration but cannot vet the credentials — write something a domain reviewer would accept: "Board-eligible pulmonologist, 12 years bedside experience in differential diagnosis" beats "physician."
+**Document analyst competence in `notes`** (R1). The framework records the declaration but cannot vet the credentials — write something a domain reviewer would accept. The pattern is "specific credential or role + tenure/depth + scope of competence relevant to D" rather than just a job title; e.g., for a clinical-reasoning benchmark, "Board-eligible pulmonologist, 12 years bedside experience in differential diagnosis" beats "physician"; for a contract-law benchmark, "Practising commercial-contracts attorney, 8 years drafting and reviewing M&A clauses" beats "lawyer"; for a software-engineering benchmark, "Senior systems engineer, 10 years on production distributed databases" beats "engineer." The pulmonology demo bundled with the framework illustrates the pattern in the clinical-reasoning case.
 
 ### Step 4b: Declare panels (optional, R4)
 
@@ -111,9 +111,9 @@ For the independent reference check (R4), declare analysts as belonging to named
 
 ```json
 "analysts": [
-  {"id": "physician-a", "panel": "primary", "notes": "..."},
-  {"id": "physician-b", "panel": "primary", "notes": "..."},
-  {"id": "physician-c", "panel": "reviewer", "notes": "..."}
+  {"id": "analyst-a", "panel": "primary", "notes": "..."},
+  {"id": "analyst-b", "panel": "primary", "notes": "..."},
+  {"id": "analyst-c", "panel": "reviewer", "notes": "..."}
 ],
 "primary_panel": "primary"
 ```
@@ -231,10 +231,10 @@ For benchmarks intended for serious construct-validity work, every item gets a `
 
 ```json
 "construction_metadata": {
-  "authored_by": "physician-c",
+  "authored_by": "analyst-c",
   "authored_on": "2026-04-15",
   "authored_blind_to_models": ["claude-opus-4-7", "gpt-5", "gemini-2.5-pro"],
-  "source": "Sanford Guide to Antimicrobial Therapy 2025, Chapter 12"
+  "source": "<primary reference work for this item — paper, guideline, textbook, regulation, etc.>"
 }
 ```
 
