@@ -74,6 +74,17 @@ log = logging.getLogger(__name__)
     help="Optional: factor-effects model fit JSON from `infereval model`.",
 )
 @click.option(
+    "--retest",
+    "retest_path",
+    type=click.Path(exists=True, dir_okay=False, path_type=Path),
+    default=None,
+    help=(
+        "Optional: test-retest reliability JSON from `infereval retest`. "
+        "Required at scope >= domain_D_as_sampled (R22); informational "
+        "at narrower scope."
+    ),
+)
+@click.option(
     "-o", "--output",
     type=click.Path(dir_okay=False, path_type=Path),
     default=None,
@@ -97,6 +108,7 @@ def report_cmd(
     structure_path: Path | None,
     sweep_path: Path | None,
     model_fit_path: Path | None,
+    retest_path: Path | None,
     output: Path | None,
     suppress_negatives: bool = False,
 ) -> None:
@@ -153,6 +165,7 @@ def report_cmd(
         structure_report=_load_optional_json(structure_path),
         sweep_summary=_load_optional_json(sweep_path),
         model_fit=_load_optional_json(model_fit_path),
+        retest_result=_load_optional_json(retest_path),
         suppress_negatives=suppress_negatives,
     )
 

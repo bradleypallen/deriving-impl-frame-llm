@@ -113,6 +113,13 @@ class CompetingExplanationChecks(BaseModel):
     training_data_separation_verified: bool = False
     cross_domain_comparison_run: bool = False
     replication_attempted: bool = False
+    test_retest_run: bool = False
+    """R22: test-retest reliability check has been run (two independent
+    evaluations against the same benchmark have been compared via
+    `infereval retest`). Required at scope ≥ ``domain_D_as_sampled``;
+    informational at narrower scope. Per the methodology, an evaluation
+    that doesn't replicate is not evidence of anything — within-run
+    agreement statistics presuppose across-run reliability."""
 
 
 class ConstructValidityClaims(BaseModel):
@@ -178,7 +185,7 @@ class NegativeFinding:
     report.
     """
 
-    source: Literal["structure", "sweep", "model_fit"]
+    source: Literal["structure", "sweep", "model_fit", "retest"]
     summary: str
     """One-line description rendered in the Negative findings section."""
 
@@ -188,6 +195,7 @@ def collect_negative_findings(
     structure_report: dict[str, object] | None = None,
     sweep_summary: dict[str, object] | None = None,
     model_fit: dict[str, object] | None = None,
+    retest_result: dict[str, object] | None = None,
     factor_kinds: dict[str, str] | None = None,
 ) -> list[NegativeFinding]:
     """Scan the supplied Phase 2 artifacts and return their negative findings.
@@ -287,6 +295,73 @@ def collect_negative_findings(
                     )
                 )
 
+    if retest_result is not None:
+        # Corpus-level finding: stability_verdict isn't "stable".
+        retest_verdict_raw = retest_result.get("stability_verdict", "")
+        retest_verdict_str = str(retest_verdict_raw)
+        # The stability_verdict strings are: "stable" (positive),
+        # "moderately stable" (negative — replication concern flagged),
+        # "substantively unstable" (negative — verdict-gating), and
+        # "undefined ..." (κ undefined; treat as negative for hygiene).
+        is_positive = (
+            retest_verdict_str.lower().startswith("test-retest reliability is stable")
+        )
+        if retest_verdict_str and not is_positive:
+            kappa = retest_result.get("test_retest_kappa")
+            flip_rate = retest_result.get("flip_rate")
+            kappa_str = (
+                f"κ = {kappa:+.3f}" if isinstance(kappa, (int, float))
+                else "κ undefined"
+            )
+            flip_str = (
+                f", flip rate = {flip_rate * 100:.1f}%"
+                if isinstance(flip_rate, (int, float))
+                else ""
+            )
+            findings.append(
+                NegativeFinding(
+                    source="retest",
+                    summary=(
+                        f"Test-retest reliability (R22): {retest_verdict_str} "
+                        f"[{kappa_str}{flip_str}]"
+                    ),
+                )
+            )
+        # Per-item findings: each flipped item is one finding (capped to
+        # 50 so an enormous flip list doesn't overwhelm the report;
+        # the full list is in the artifact JSON).
+        flipped_raw = retest_result.get("flipped_items", []) or []
+        flipped = flipped_raw if isinstance(flipped_raw, list) else []
+        cap = 50
+        for fi in flipped[:cap]:
+            if not isinstance(fi, dict):
+                continue
+            iid = fi.get("item_id", "?")
+            va = fi.get("verdict_a", "?")
+            vb = fi.get("verdict_b", "?")
+            fl = fi.get("factor_levels") or {}
+            fl_str = (
+                f" [{', '.join(f'{k}={v}' for k, v in fl.items())}]"
+                if isinstance(fl, dict) and fl
+                else ""
+            )
+            findings.append(
+                NegativeFinding(
+                    source="retest",
+                    summary=f"`{iid}`: verdict flipped {va} → {vb}{fl_str}",
+                )
+            )
+        if len(flipped) > cap:
+            findings.append(
+                NegativeFinding(
+                    source="retest",
+                    summary=(
+                        f"... and {len(flipped) - cap} more flipped items — "
+                        "see the retest-result JSON for the full list."
+                    ),
+                )
+            )
+
     return findings
 
 
@@ -304,6 +379,7 @@ _REQUIRED_CHECKS_BY_SCOPE: dict[str, frozenset[str]] = {
         "paraphrase_sweep_run",
         "cross_panel_check_run",
         "held_out_items_used",
+        "test_retest_run",
     }),
     "general_capacity": frozenset({
         "structural_check_run",
@@ -314,6 +390,7 @@ _REQUIRED_CHECKS_BY_SCOPE: dict[str, frozenset[str]] = {
         "training_data_separation_verified",
         "cross_domain_comparison_run",
         "replication_attempted",
+        "test_retest_run",
     }),
 }
 
@@ -323,6 +400,7 @@ def compute_verdict(
     *,
     structure_report: dict[str, object] | None = None,
     benchmark: Benchmark | None = None,
+    retest_result: dict[str, object] | None = None,
 ) -> ReportVerdict:
     """Return the deterministic summary verdict for the claims + evidence.
 
@@ -436,16 +514,60 @@ def compute_verdict(
                 "partially_defensible."
             )
 
-    if structure_report is None and benchmark is None:
+    # R22 audit cap: if test_retest_run is asserted and the supplied
+    # RetestResult shows substantively-unstable reliability (or κ is
+    # undefined), cap the verdict at partially_defensible. Same shape as
+    # the v0.5.3 structural-anomaly cap.
+    retest_failed = False
+    if (
+        retest_result is not None
+        and getattr(ce, "test_retest_run", False)
+    ):
+        retest_verdict = str(retest_result.get("stability_verdict", ""))
+        retest_kappa = retest_result.get("test_retest_kappa")
+        retest_is_substantively_unstable = (
+            "substantively unstable" in retest_verdict.lower()
+        )
+        retest_undefined = retest_kappa is None
+        if retest_is_substantively_unstable or retest_undefined:
+            retest_failed = True
+            if retest_undefined:
+                rationale.append(
+                    "`test_retest_run` is marked True, but the supplied "
+                    "retest result has undefined κ (degenerate agreement "
+                    "structure on the comparison column) — the check "
+                    "ran but did not produce a usable reliability "
+                    "estimate. Verdict capped at partially_defensible."
+                )
+            else:
+                flip_rate = retest_result.get("flip_rate")
+                flip_str = (
+                    f", flip rate = {flip_rate * 100:.1f}%"
+                    if isinstance(flip_rate, (int, float))
+                    else ""
+                )
+                rationale.append(
+                    f"`test_retest_run` is marked True, but the supplied "
+                    f"retest result is substantively unstable "
+                    f"(κ = {retest_kappa:+.3f}{flip_str}) — the check ran "
+                    f"but did not pass. The headline κ_C cannot be "
+                    f"interpreted as signal under this reliability. "
+                    f"Verdict capped at partially_defensible."
+                )
+
+    if structure_report is None and benchmark is None and retest_result is None:
         rationale.append(
-            "Verdict computed unaudited: no structure_report or benchmark "
-            "supplied to compute_verdict, so 'check run' is taken at face "
-            "value and panel size is not inspected. Render through "
-            "`infereval report` (which passes both) for the audited verdict."
+            "Verdict computed unaudited: no structure_report, benchmark, "
+            "or retest_result supplied to compute_verdict, so 'check run' "
+            "is taken at face value and panel size / retest stability are "
+            "not inspected. Render through `infereval report` (which "
+            "passes all three) for the audited verdict."
         )
 
     # Decide.
-    audit_passes = not structural_failed and not panel_too_small
+    audit_passes = (
+        not structural_failed and not panel_too_small and not retest_failed
+    )
     if not missing and carving_ok and audit_passes:
         one_liner = f"Mastery claim defensible at scope={claims.scope.scope!r}."
         if panel_size is not None:
@@ -488,6 +610,7 @@ def render_markdown(
     structure_report: dict[str, object] | None = None,
     sweep_summary: dict[str, object] | None = None,
     model_fit: dict[str, object] | None = None,
+    retest_result: dict[str, object] | None = None,
     generated_at: datetime | None = None,
     suppress_negatives: bool = False,
 ) -> str:
@@ -515,6 +638,7 @@ def render_markdown(
         claims,
         structure_report=structure_report,
         benchmark=benchmark,
+        retest_result=retest_result,
     )
 
     # Collect negative findings up-front so we can both render them and
@@ -523,10 +647,13 @@ def render_markdown(
         structure_report=structure_report,
         sweep_summary=sweep_summary,
         model_fit=model_fit,
+        retest_result=retest_result,
         factor_kinds=dict(benchmark.factor_kinds) if benchmark.factor_kinds else None,
     )
     any_phase2_supplied = any(
-        x is not None for x in (structure_report, sweep_summary, model_fit)
+        x is not None for x in (
+            structure_report, sweep_summary, model_fit, retest_result
+        )
     )
 
     # If suppression is enabled, the Summary verdict downgrades one tier:
@@ -587,6 +714,17 @@ def render_markdown(
     lines.append(f"- **Cohen's κ_C (vs consensus)**: {_format_kappa(kappa_c)}")
     lines.append(f"- **Fleiss' κ_F**: {_format_kappa(kappa_f)}")
     lines.append(f"- **Inter-analyst κ_F\\***: {_format_kappa(kappa_f_star)}")
+    # Test-retest κ (R22): within-model analog of κ_F*. Always rendered
+    # when an artifact is supplied — informational at items_in_benchmark
+    # scope, verdict-gating at scope ≥ domain_D_as_sampled.
+    if retest_result is not None:
+        retest_kappa = retest_result.get("test_retest_kappa")
+        retest_kappa_v = (
+            retest_kappa if isinstance(retest_kappa, (int, float)) else None
+        )
+        lines.append(
+            f"- **Test-retest κ (R22)**: {_format_kappa(retest_kappa_v)}"
+        )
     lines.append("")
 
     # 3. Construct-validity claims (R16-R20)
@@ -654,6 +792,17 @@ def render_markdown(
         )
     else:
         lines.append("- **Factor-effects model fit** (R7, R12): NOT SUPPLIED.")
+
+    if retest_result is not None:
+        retest_verdict_str = retest_result.get("stability_verdict", "?")
+        n_flipped_raw = retest_result.get("flipped_items", [])
+        n_flipped = len(n_flipped_raw) if isinstance(n_flipped_raw, list) else 0
+        lines.append(
+            f"- **Test-retest reliability** (R22): {retest_verdict_str} "
+            f"({n_flipped} item(s) flipped between runs)."
+        )
+    else:
+        lines.append("- **Test-retest reliability** (R22): NOT SUPPLIED.")
     lines.append("")
 
     # 4b. Negative findings (Phase 3.2, R21)
@@ -687,6 +836,7 @@ def render_markdown(
             ("Structural anomalies", "structure"),
             ("Sweep instability", "sweep"),
             ("Factor-effects null findings", "model_fit"),
+            ("Test-retest anomalies (R22)", "retest"),
         ]:
             src_items = [f for f in findings if f.source == src_key]
             if not src_items:
@@ -713,6 +863,7 @@ def render_markdown(
             "training_data_separation_verified",
             "cross_domain_comparison_run",
             "replication_attempted",
+            "test_retest_run",
         )
         if not getattr(ce, name)
     ]
