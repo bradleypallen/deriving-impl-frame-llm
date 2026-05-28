@@ -7,8 +7,6 @@
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](https://github.com/bradleypallen/infereval/blob/main/LICENSE)
 
-📖 **Documentation**: <https://www.bradleypallen.org/infereval/>
-
 Inferentialist evaluation of LLMs: derive an implication frame from a language model's endorsement verdicts, then measure the model's agreement with an analyst-labeled benchmark via coverage and Cohen's / Fleiss' kappa. The agreement is **evidence bearing on** an inferential-mastery attribution — not a measurement of mastery itself (per the paper's Remark 8).
 
 `infereval` is the executable companion to *Note on Simonelli's Stop Sign Dialogue: An Implication-Space Instrument for Probing LLM Endorsement of Material Inferential Rules* (Allen, 2026), which is maintained as a separate paper. The framework formalizes the procedure β → η → (cov, κ_C, κ_F, κ_F\*) for any analyst-supplied benchmark.
@@ -19,9 +17,7 @@ Beta (0.x, pre-1.0). The public Python API and CLI surface may shift between min
 
 ## Documentation
 
-Full docs site: **<https://www.bradleypallen.org/infereval/>**.
-
-What's there: a [Concepts](https://www.bradleypallen.org/infereval/concepts/) page (methodology mental model), [Authoring benchmarks](https://www.bradleypallen.org/infereval/authoring_benchmarks/), [Interpreting metrics](https://www.bradleypallen.org/infereval/interpreting_metrics/) (κ_C / κ_F / κ_F\*, test-retest κ, decompositions, subsampling CIs, sensitivity sweeps), [Providers](https://www.bradleypallen.org/infereval/providers/) (Anthropic seed handling, DeepSeek reasoning-token budgets, OpenRouter attribution), and [Construct validity of the instrument](https://www.bradleypallen.org/infereval/construct_validity/) — the R1–R22 requirements catalogue and end-to-end workflow in one place. Four executable tutorial notebooks (quickstart, authoring, paraphrase-axis triangulation, pulmonology visualization). Plus an auto-generated [API reference](https://www.bradleypallen.org/infereval/api/), an [Architecture](https://www.bradleypallen.org/infereval/architecture/) dataflow diagram, a [Glossary](https://www.bradleypallen.org/infereval/glossary/) of paper symbols, and a [JSON-schema](https://www.bradleypallen.org/infereval/schemas/) reference.
+The docs site at <https://www.bradleypallen.org/infereval/> covers a [Concepts](https://www.bradleypallen.org/infereval/concepts/) page (methodology mental model), [Authoring benchmarks](https://www.bradleypallen.org/infereval/authoring_benchmarks/), [Interpreting metrics](https://www.bradleypallen.org/infereval/interpreting_metrics/) (κ_C / κ_F / κ_F\*, test-retest κ, decompositions, subsampling CIs, sensitivity sweeps), [Providers](https://www.bradleypallen.org/infereval/providers/) (Anthropic seed handling, DeepSeek reasoning-token budgets, OpenRouter attribution), and [Construct validity of the instrument](https://www.bradleypallen.org/infereval/construct_validity/) — the R1–R22 requirements catalogue and end-to-end workflow in one place. Four executable tutorial notebooks (quickstart, authoring, paraphrase-axis triangulation, pulmonology visualization). Plus an auto-generated [API reference](https://www.bradleypallen.org/infereval/api/), an [Architecture](https://www.bradleypallen.org/infereval/architecture/) dataflow diagram, a [Glossary](https://www.bradleypallen.org/infereval/glossary/) of paper symbols, and a [JSON-schema](https://www.bradleypallen.org/infereval/schemas/) reference.
 
 ## Findings
 
