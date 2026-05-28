@@ -226,7 +226,7 @@ class TestBaseCaseStability:
 
 
 class TestRunAllChecks:
-    def test_bundle_returns_three_checks(self) -> None:
+    def test_bundle_returns_all_checks(self) -> None:
         bench = _bench([
             {"id": "i1", "premises": ["p"], "conclusions": ["q"],
              "analyst_verdicts": ["good"]},
@@ -234,12 +234,13 @@ class TestRunAllChecks:
         eta = evaluate(bench, ScriptedProvider(responses=["GOOD"]),
                        config=EndorsementConfig(n_samples=1))
         report = run_all_checks(eta, bench)
-        assert len(report.checks) == 3
+        assert len(report.checks) == 4
         check_names = {c.name for c in report.checks}
         assert check_names == {
             "containment_closure",
             "rsr_role_consistency",
             "base_case_stability",
+            "thin_margin_agreement",
         }
         assert report.evaluation_id == eta.id
         assert report.benchmark_id == bench.id
@@ -336,7 +337,7 @@ class TestPartialEvaluationGuard:
         # Pre-fix: KeyError: 'b1' from rsr_role_consistency_check.
         report = run_all_checks(eta, bench)
         assert report.evaluation_id == eta.id
-        assert len(report.checks) == 3
+        assert len(report.checks) == 4
 
 
 # ---- CLI integration -----------------------------------------------------

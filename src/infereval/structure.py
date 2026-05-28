@@ -391,10 +391,102 @@ def base_case_stability_check(
     )
 
 
+#: Default plurality-margin cutoff below which a model-vs-analyst agreement
+#: is considered "thin" — i.e. the agreement could plausibly flip on a
+#: re-run because the model's sample distribution was not decisive.
+#: ``0.4`` catches ``3/5`` agreements (margin ``0.2`` over the runner-up)
+#: as thin while letting ``4/5`` (margin ``0.6``) through as confident.
+DEFAULT_THIN_MARGIN_THRESHOLD: float = 0.4
+
+
+def thin_margin_agreement_check(
+    evaluation: Evaluation,
+    benchmark: Benchmark | None = None,  # noqa: ARG001 - parity with other checks
+    *,
+    threshold: float = DEFAULT_THIN_MARGIN_THRESHOLD,
+) -> StructuralCheck:
+    """Flag analyst-model agreements with thin sample-margin support.
+
+    Within-run companion to the across-run :func:`infereval.retest.compute_retest`
+    check. Surfaces items where the model's verdict agrees with analyst
+    consensus *but* the agreement is supported by a thin majority over
+    the sampled verdicts (e.g. ``3/5`` good with ``2`` abstain). Such
+    agreements are vulnerable to flipping on a re-run, and counting
+    them the same as ``5/5`` agreements in the headline κ inflates the
+    apparent reliability of the measurement.
+
+    Universe of checked items: those where the model verdict is
+    substantive (``good`` / ``bad``), the analyst consensus is
+    substantive, and the two agree. Items where the model and analysts
+    disagree are not relevant to this check (a thin disagreement is
+    handled by the across-run test-retest comparator, not here).
+
+    Parameters
+    ----------
+    evaluation
+        The evaluation to check.
+    benchmark
+        Unused; accepted for API parity with the other structural
+        checks (and so that :func:`run_all_checks` can dispatch
+        uniformly).
+    threshold
+        Plurality-margin cutoff (default :data:`DEFAULT_THIN_MARGIN_THRESHOLD`).
+        An agreement counts as thin when ``verdict_distribution(item).margin
+        < threshold``.
+    """
+    # Local imports to avoid a metrics<->structure cycle at import time.
+    from .metrics import (
+        SUBSTANTIVE,
+        consensus_verdict,
+        verdict_distribution,
+    )
+
+    items_checked = 0
+    items_satisfying = 0
+    anomalies: list[StructuralAnomaly] = []
+    for it in evaluation.items:
+        consensus = consensus_verdict(it.analyst_verdicts)
+        if it.model_verdict not in SUBSTANTIVE or consensus not in SUBSTANTIVE:
+            continue
+        if it.model_verdict != consensus:
+            continue  # disagreement — not in this check's universe
+        items_checked += 1
+        dist = verdict_distribution(it)
+        if dist.margin >= threshold:
+            items_satisfying += 1
+        else:
+            anomalies.append(
+                StructuralAnomaly(
+                    item_id=it.id,
+                    expected=f"agreement margin ≥ {threshold:.2f}",
+                    actual=(
+                        f"margin = {dist.margin:.2f} "
+                        f"(good={dist.good}, bad={dist.bad}, abstain={dist.abstain}"
+                        f"{', tie-broken' if dist.tie_broken else ''})"
+                    ),
+                    explanation=(
+                        f"model agrees with analyst consensus ({consensus}) "
+                        f"but the sampled majority is thin; this agreement "
+                        f"could flip on a re-run"
+                    ),
+                )
+            )
+
+    return StructuralCheck(
+        name="thin_margin_agreement",
+        items_checked=items_checked,
+        items_satisfying=items_satisfying,
+        anomalies=tuple(anomalies),
+    )
+
+
 def run_all_checks(
-    evaluation: Evaluation, benchmark: Benchmark
+    evaluation: Evaluation,
+    benchmark: Benchmark,
+    *,
+    thin_margin_threshold: float = DEFAULT_THIN_MARGIN_THRESHOLD,
 ) -> StructuralReport:
-    """Run all three structural checks and bundle the results."""
+    """Run all four structural checks and bundle the results."""
     return StructuralReport(
         evaluation_id=evaluation.id,
         benchmark_id=evaluation.benchmark_id,
@@ -402,11 +494,15 @@ def run_all_checks(
             containment_closure_check(evaluation, benchmark),
             rsr_role_consistency_check(evaluation, benchmark),
             base_case_stability_check(evaluation, benchmark),
+            thin_margin_agreement_check(
+                evaluation, benchmark, threshold=thin_margin_threshold
+            ),
         ),
     )
 
 
 __all__ = [
+    "DEFAULT_THIN_MARGIN_THRESHOLD",
     "StructuralAnomaly",
     "StructuralCheck",
     "StructuralReport",
@@ -414,4 +510,5 @@ __all__ = [
     "containment_closure_check",
     "rsr_role_consistency_check",
     "run_all_checks",
+    "thin_margin_agreement_check",
 ]
