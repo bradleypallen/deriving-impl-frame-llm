@@ -294,3 +294,94 @@ def test_item_id_intersection_runs_over_common_items_only(
     result = compute_retest(_eval(items_a, run_id="A"), _eval(items_b, run_id="B"))
     assert result.n_items == 2  # i0, i1 common
     assert "only-in-A" in caplog.text
+
+
+# ---- v0.6.1: IdentityCriterion threading + Stage-2 framing changes -------
+
+
+def _valid_criterion():
+    from infereval.report import IdentityCriterion
+
+    return IdentityCriterion(
+        same_provider_model_id=True,
+        cross_update_identity_asserted=True,
+        same_scaffolding=True,
+        unverifiable_caveats="OpenAI snapshot fingerprint stable across runs.",
+        rationale="Two runs minutes apart on the same provider snapshot.",
+    )
+
+
+def test_v0_6_1_compute_retest_without_criterion_backward_compatible() -> None:
+    """Pre-v0.6.1 call style still works; identity_criterion is None."""
+    items = [
+        _item("a", analyst_verdicts=[Verdict.GOOD], model_verdict=Verdict.GOOD,
+              good=5, bad=0, abstain=0),
+    ]
+    result = compute_retest(_eval(items, run_id="A"), _eval(items, run_id="B"))
+    assert result.identity_criterion is None
+    # stability_verdict has no "under the declared identity criterion" clause.
+    assert "under the declared identity criterion" not in result.stability_verdict
+
+
+def test_v0_6_1_compute_retest_with_criterion_threads_it_through() -> None:
+    items = [
+        _item("a", analyst_verdicts=[Verdict.GOOD], model_verdict=Verdict.GOOD,
+              good=5, bad=0, abstain=0),
+        _item("b", analyst_verdicts=[Verdict.BAD], model_verdict=Verdict.BAD,
+              good=0, bad=5, abstain=0),
+    ]
+    crit = _valid_criterion()
+    result = compute_retest(
+        _eval(items, run_id="A"),
+        _eval(items, run_id="B"),
+        identity_criterion=crit,
+    )
+    assert result.identity_criterion is crit
+    # stability_verdict now carries the criterion clause.
+    assert "under the declared identity criterion" in result.stability_verdict
+
+
+def test_v0_6_1_retest_result_to_dict_serializes_criterion() -> None:
+    items = [
+        _item("a", analyst_verdicts=[Verdict.GOOD], model_verdict=Verdict.GOOD,
+              good=5, bad=0, abstain=0),
+        _item("b", analyst_verdicts=[Verdict.BAD], model_verdict=Verdict.BAD,
+              good=0, bad=5, abstain=0),
+    ]
+    crit = _valid_criterion()
+    result = compute_retest(
+        _eval(items, run_id="A"),
+        _eval(items, run_id="B"),
+        identity_criterion=crit,
+    )
+    payload = retest_result_to_dict(result)
+    assert "identity_criterion" in payload
+    embedded = payload["identity_criterion"]
+    assert isinstance(embedded, dict)
+    assert embedded["same_provider_model_id"] is True
+    assert embedded["rationale"].startswith("Two runs minutes apart")
+
+
+def test_v0_6_1_retest_result_to_dict_omits_criterion_when_absent() -> None:
+    """Pre-v0.6.1 retest results round-trip without the new key."""
+    items = [
+        _item("a", analyst_verdicts=[Verdict.GOOD], model_verdict=Verdict.GOOD,
+              good=5, bad=0, abstain=0),
+    ]
+    result = compute_retest(_eval(items, run_id="A"), _eval(items, run_id="B"))
+    payload = retest_result_to_dict(result)
+    assert "identity_criterion" not in payload
+
+
+def test_v0_6_1_relabel_error_message_names_setup_conformance() -> None:
+    """Stage-2 relabel: RetestConfigMismatchError messages now use the
+    setup-conformance / individuation-criterion vocabulary."""
+    items_a = [_item("a", analyst_verdicts=[Verdict.GOOD],
+                     model_verdict=Verdict.GOOD, good=5, bad=0, abstain=0)]
+    eta_a = _eval(items_a, run_id="A", benchmark_hash="aaaaaa")
+    eta_b = _eval(items_a, run_id="B", benchmark_hash="bbbbbb")
+    with pytest.raises(RetestConfigMismatchError) as exc_info:
+        compute_retest(eta_a, eta_b)
+    msg = str(exc_info.value)
+    assert "setup-conformance" in msg
+    assert "individuation criterion" in msg
