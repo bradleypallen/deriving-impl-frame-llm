@@ -12,6 +12,31 @@ stable from 1.0 onward, regardless of the framework version.
 
 No changes yet.
 
+## [0.6.3] — 2026-05-28
+
+Docs-only patch. README cleanup, no behavior, schema, or API change.
+
+### Changed
+
+- **`README.md` — deduplicate documentation-site references (PR #80).**
+  The README pointed to the docs site three separate times — the Docs
+  status badge (intentional, status indicator), a `📖 **Documentation**:
+  <URL>` stub line directly under the badges that the badge above
+  already silently linked to, and a "Full docs site: **<URL>**." lead
+  sentence opening the Documentation section. Removed the emoji stub
+  line; folded the Documentation section's lead sentence into the
+  opening of the "What's there:" paragraph so the URL appears once in
+  flowing prose rather than as a separate stub. After: status badge
+  (silent link) + one in-prose URL mention + the per-page links that
+  each embed the site root. Down from three explicit URL mentions to
+  one.
+
+### Note
+
+No code, API, or schema-content change. `framework_version` default in
+`evaluation.schema.json` bumped to `0.6.3`. `src/infereval/` is
+byte-identical to v0.6.1 / v0.6.2 apart from the `__version__` string.
+
 ## [0.6.2] — 2026-05-28
 
 Docs-only patch. Two reviewer-prompted hygiene passes on
