@@ -12,6 +12,62 @@ stable from 1.0 onward, regardless of the framework version.
 
 No changes yet.
 
+## [0.6.2] — 2026-05-28
+
+Docs-only patch. Two reviewer-prompted hygiene passes on
+`docs/construct_validity.md` and `docs/authoring_benchmarks.md`. No
+behavior, schema, or API change.
+
+### Changed
+
+- **`docs/construct_validity.md` — "cheap to do / expensive to skip"
+  rephrasing (PR #77).** The slogan was three different things in three
+  places (`cheap enough to do / expensive enough to skip` twice;
+  `cheap-to-do-it-right / expensive-to-cut-corners` once) and was
+  mis-stating the framework's actual posture in two ways. (1) The
+  "expensive" side is reputational, not mechanical: the framework
+  cannot stop a determined analyst from publishing whatever they want;
+  what it does is make the skip into a documented decision via report-
+  header banners, verdict downgrades, and the visibility of the
+  `--suppress-negatives` flag. (2) The precise structural position is
+  about *declaration*, not skipping — skipping is permitted, but
+  undeclared skipping is what the verdict gate catches. All three
+  occurrences rewritten to be precise about this; the "cut-corners"
+  variant dropped entirely (it leaked a different normative weight
+  than "skip" — cutting corners implies doing it wrong, skipping is
+  just a choice). Pre-existing "cheap/expensive" uses for the
+  `--suppress-negatives` mechanic itself (lines 138 and 373) left
+  unchanged: those describe an actual mechanism with mechanical cost,
+  not the slogan.
+- **`docs/construct_validity.md`, `docs/authoring_benchmarks.md`,
+  `docs/interpreting_metrics.md` — domain-neutral analyst language
+  (PR #78).** Several places in the user-facing docs had slipped into
+  pulmonology-specific language as if the framework's default analyst
+  role were a physician. The bundled pulmonology demo is fine; the
+  methodology guidance should not present a specific domain in how it
+  talks about analysts. Phase 4.1 "Recruit a second pulmonologist (or
+  domain expert)" → "Recruit a second domain expert (independent of
+  the first analyst's training where possible)". Authoring-guide JSON
+  snippets generalised from `physician-a/b/c` / `Dr. A (internal
+  medicine)` / `Dr. B (infectious disease)` to `analyst-a/b/c` /
+  `Analyst A` / `Analyst B`; "current clinical practice" → "competent
+  practice in domain D"; the credential-documentation prose example
+  rewritten from a single hardcoded pulmonologist case to a pattern
+  statement illustrated by three paired domain examples (clinical-
+  reasoning / contract-law / software-engineering) with the bundled
+  pulmonology demo named as the clinical-reasoning illustration.
+  `construction_metadata` example `authored_by` and `source` values
+  generalised. `infereval metrics --reference analyst:physician-a` →
+  `analyst:analyst-a`. The bundled pulmonology tutorial notebook
+  (`docs/tutorials/04_pulmonology_visualization.ipynb`) is unchanged
+  — appropriately scoped to that demo.
+
+### Note
+
+No code, API, or schema-content change. `framework_version` default in
+`evaluation.schema.json` bumped to `0.6.2`. `src/infereval/` is
+byte-identical to v0.6.1 apart from the `__version__` string.
+
 ## [0.6.1] — 2026-05-28
 
 **R22 second leg: declared identity criterion.** Patch release responding
