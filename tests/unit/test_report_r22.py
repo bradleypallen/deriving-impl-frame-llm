@@ -131,6 +131,21 @@ def _full_domain_d_claims() -> ConstructValidityClaims:
             held_out_items_used=True,
             test_retest_run=True,
         ),
+        # v0.6.1 R22 second leg: declared identity criterion required at
+        # scope >= domain_D_as_sampled when test_retest_run=True.
+        # Tests that want to exercise the *substantively-unstable* and
+        # *stable* paths use this default-fully-populated claims object;
+        # tests that want to exercise the *undeclared-criterion* path
+        # construct the claims object without the reliability block.
+        reliability={
+            "identity_criterion": {
+                "same_provider_model_id": True,
+                "cross_update_identity_asserted": True,
+                "same_scaffolding": True,
+                "unverifiable_caveats": "x",
+                "rationale": "x",
+            }
+        },
     )
 
 

@@ -685,6 +685,32 @@ def compute_verdict(
                     f"Verdict capped at partially_defensible."
                 )
 
+    # v0.6.1 R22 second leg: at scope >= domain_D_as_sampled, R22
+    # satisfaction requires `test_retest_run=True` AND a declared
+    # IdentityCriterion (`reliability.identity_criterion` populated
+    # with a non-empty rationale). Without a declared criterion the κ
+    # is uninterpretable — same shape as the R19 carving-acknowledgement
+    # gate.
+    individuation_undeclared = False
+    if (
+        claims.scope.scope != "items_in_benchmark"
+        and getattr(ce, "test_retest_run", False)
+    ):
+        reliability = getattr(claims, "reliability", None)
+        if reliability is None or not reliability.identity_criterion.rationale.strip():
+            individuation_undeclared = True
+            rationale.append(
+                f"`test_retest_run` is marked True at "
+                f"scope={claims.scope.scope!r}, but the identity "
+                f"criterion under which the test-retest κ is "
+                f"interpretable has not been declared (R22 second leg "
+                f"— `reliability.identity_criterion` missing or rationale "
+                f"empty). Without a declared criterion the κ is "
+                f"uninterpretable as a reliability number. Verdict "
+                f"capped at partially_defensible. Same shape as the R19 "
+                f"carving-acknowledgement gate."
+            )
+
     if structure_report is None and benchmark is None and retest_result is None:
         rationale.append(
             "Verdict computed unaudited: no structure_report, benchmark, "
@@ -696,7 +722,10 @@ def compute_verdict(
 
     # Decide.
     audit_passes = (
-        not structural_failed and not panel_too_small and not retest_failed
+        not structural_failed
+        and not panel_too_small
+        and not retest_failed
+        and not individuation_undeclared
     )
     if not missing and carving_ok and audit_passes:
         one_liner = f"Mastery claim defensible at scope={claims.scope.scope!r}."
@@ -846,14 +875,26 @@ def render_markdown(
     lines.append(f"- **Inter-analyst κ_F\\***: {_format_kappa(kappa_f_star)}")
     # Test-retest κ (R22): within-model analog of κ_F*. Always rendered
     # when an artifact is supplied — informational at items_in_benchmark
-    # scope, verdict-gating at scope ≥ domain_D_as_sampled.
+    # scope, verdict-gating at scope ≥ domain_D_as_sampled. v0.6.1: the
+    # κ is rendered with an explicit "under the declared identity
+    # criterion ..." suffix when the criterion is present in the
+    # supplied retest artifact, making explicit what the reliability
+    # number is relative to (Hlobil's individuation point).
     if retest_result is not None:
         retest_kappa = retest_result.get("test_retest_kappa")
         retest_kappa_v = (
             retest_kappa if isinstance(retest_kappa, (int, float)) else None
         )
+        criterion_clause = ""
+        embedded_crit = retest_result.get("identity_criterion")
+        if isinstance(embedded_crit, dict):
+            criterion_clause = (
+                " *under the declared identity criterion "
+                f"(`{_one_line_criterion_summary(embedded_crit)}`)*"
+            )
         lines.append(
-            f"- **Test-retest κ (R22)**: {_format_kappa(retest_kappa_v)}"
+            f"- **Test-retest κ (R22)**: "
+            f"{_format_kappa(retest_kappa_v)}{criterion_clause}"
         )
     lines.append("")
 
@@ -880,6 +921,39 @@ def render_markdown(
         lines.append("")
         lines.append(f"> {claims.carving.notes}")
     lines.append("")
+
+    # v0.6.1 R22 second leg: render the declared individuation
+    # criterion verbatim when claims include the reliability block.
+    # Doubly-relative framing — the reliability claim is relative to
+    # both the carving (R19, above) and the identity criterion (R22
+    # second leg, here). Same commitment-and-relativity pattern.
+    if claims.reliability is not None:
+        crit = claims.reliability.identity_criterion
+        lines.append(
+            "**Reliability — identity criterion "
+            "(R22, doubly-relative)**:"
+        )
+        lines.append("")
+        lines.append(
+            f"- Framework-substantiated: same_benchmark_hash="
+            f"`{crit.same_benchmark_hash}`, same_endorsement_config="
+            f"`{crit.same_endorsement_config}`, same_paraphrase_variant="
+            f"`{crit.same_paraphrase_variant}`."
+        )
+        lines.append(
+            f"- Analyst-substantiated: same_provider_model_id="
+            f"`{crit.same_provider_model_id}`, "
+            f"cross_update_identity_asserted="
+            f"`{crit.cross_update_identity_asserted}`, "
+            f"same_scaffolding=`{crit.same_scaffolding}`."
+        )
+        if crit.unverifiable_caveats.strip():
+            lines.append("")
+            lines.append(f"> _Unverifiable caveats:_ {crit.unverifiable_caveats}")
+        if crit.rationale.strip():
+            lines.append("")
+            lines.append(f"> _Rationale:_ {crit.rationale}")
+        lines.append("")
 
     # 4. Evidence
     lines.append("## 4. Evidence")
@@ -1042,6 +1116,29 @@ def _format_kappa(value: float | None) -> str:
 
 def _human_label_for_check(name: str) -> str:
     return name.replace("_", " ").capitalize()
+
+
+def _one_line_criterion_summary(crit: dict[str, object]) -> str:
+    """Summarise an IdentityCriterion as a single human-readable line.
+
+    Lists the analyst-substantiated booleans the criterion asserts, so
+    the section-2 test-retest κ row can render
+    ``[+0.85] under the declared identity criterion (provider+model_id,
+    cross-update identity asserted, scaffolding constant)``.
+
+    Falls back to ``"framework-substantiated only"`` when none of the
+    analyst-substantiated booleans are True.
+    """
+    asserted: list[str] = []
+    if crit.get("same_provider_model_id"):
+        asserted.append("provider+model_id")
+    if crit.get("cross_update_identity_asserted"):
+        asserted.append("cross-update identity asserted")
+    if crit.get("same_scaffolding"):
+        asserted.append("scaffolding constant")
+    if not asserted:
+        return "framework-substantiated only"
+    return ", ".join(asserted)
 
 
 __all__ = [
