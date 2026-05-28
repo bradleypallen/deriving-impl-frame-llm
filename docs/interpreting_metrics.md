@@ -51,7 +51,7 @@ The standard cautions about Landis–Koch labels apply: these are heuristic, not
 **Switching the reference**: by default the reference is the consensus, but you can compare `M` against any specific analyst:
 
 ```
-infereval metrics eta.json --reference analyst:physician-a
+infereval metrics eta.json --reference analyst:analyst-a
 ```
 
 This is informative when analysts disagree among themselves: comparing `M` to each analyst separately can show that `M` is closer to one analyst's column than the other. The paper's discussion of carving-relativity (§5) is exactly this kind of phenomenon — disagreement among competent labelers reflects different ways of carving the domain, and `M` may align with one carving more than another.
