@@ -12,6 +12,142 @@ stable from 1.0 onward, regardless of the framework version.
 
 No changes yet.
 
+## [0.6.0] — 2026-05-23
+
+**Reliability infrastructure (R22).** Major release adding within-run
+verdict-dispersion surfacing, Politis-Romano (1994) subsampling
+confidence intervals on κ, a within-run thin-margin structural check,
+the across-run `infereval retest` command with the `RetestResult`
+artifact, and the verdict-gate that requires test-retest reliability
+at scope ≥ `domain_D_as_sampled`. Substantive new behaviour in
+`src/infereval/` (unlike the 0.5.7–0.5.10 docs-only sequence). The
+framework version bump to 0.6.0 reflects that the headline metrics
+shift meaningfully: a κ_C without uncertainty quantification and
+without a test-retest check is now treated as a point estimate from
+an unknown distribution, not as the measurement.
+
+The methodology framing — articulated in the consolidated
+[`docs/construct_validity.md`](https://www.bradleypallen.org/infereval/construct_validity/):
+an evaluation that doesn't replicate is not evidence of anything,
+mastery or otherwise. R22 is not an addition to the requirements
+list — it is a precondition the existing list silently presupposed
+and shouldn't have.
+
+### Added
+
+- **`infereval.metrics.VerdictDistribution`** — per-item dispersion
+  view (good/bad/abstain counts, normalised Shannon entropy,
+  plurality margin, tie-broken flag) derived from the existing
+  `EvaluationItem.majority_vote` counts. No evaluation-schema change.
+- **`infereval.metrics.AggregateDispersion`** — corpus-level summary
+  (mean entropy, mean margin, n_thin_margin, n_tie_broken).
+- **`infereval.metrics.MetricsReport.verdict_distributions`** and
+  `aggregate_dispersion_summary` properties; `to_dict` includes the
+  new blocks by default per the locked `report_verdict_distribution =
+  true`. Pass `include_verdict_distributions=False` for the pre-0.6 shape.
+- **Confidence-weighted κ variants** — `cohens_kappa` /
+  `fleiss_kappa` / `MetricsReport.cohens_kappa` /
+  `MetricsReport.fleiss_kappa_weighted` accept an optional
+  `weights: WeightFn` parameter. `margin_weight` is the standard
+  weighting (per-item plurality margin). Off by default; the
+  unweighted κ remains the locked headline number.
+- **`infereval.metrics.subsampling_kappa_ci`** — Politis-Romano (1994)
+  item-level subsampling CIs on κ. Default subsample size
+  `round(K^0.7)`; raises `SubsamplingNotApplicableError` for
+  benchmark size K < 10. Convenience wrappers
+  `MetricsReport.cohens_kappa_with_ci` and `fleiss_kappa_with_ci`.
+  Chosen over the Efron nonparametric bootstrap because κ is a
+  non-smooth functional of count data (discrete jumps at the
+  majority-vote threshold) where the standard bootstrap can fail;
+  Politis-Romano subsampling is valid under minimal smoothness
+  assumptions.
+- **`infereval.structure.thin_margin_agreement_check`** — flags items
+  where the model agrees with analyst consensus but the agreement is
+  supported by a thin majority over the sampled verdicts.
+  `DEFAULT_THIN_MARGIN_THRESHOLD = 0.4` (catches 3/5; lets 4/5
+  through). Wired into `run_all_checks` so `infereval structure`
+  picks it up by default.
+- **`infereval retest <eta_a.json> <eta_b.json>` (new CLI subcommand)**
+  + **`infereval.retest` module** — across-run test-retest comparator.
+  `compute_retest(eta_a, eta_b, benchmark=None) -> RetestResult`;
+  validates `benchmark_hash` / `endorsement_config` /
+  `paraphrase_variant` parity (raises `RetestConfigMismatchError`
+  otherwise — retest variability cannot be conflated with
+  parameter-change effects); pairs items by id; computes Cohen's κ
+  over the two collapsed-verdict columns; records per-item flips
+  with optional `factor_levels` annotations; records per-item
+  entropy/margin deltas. `RetestResult.stability_verdict` ladder:
+  κ ≥ 0.8 stable; ≥ 0.6 moderately stable; < 0.6 substantively
+  unstable (explicitly tells the reader the headline κ_C cannot be
+  interpreted as signal under that reliability level).
+- **`CompetingExplanationChecks.test_retest_run: bool = False`** —
+  new claims-file field. Required at scope ≥ `domain_D_as_sampled`
+  per the locked `test_retest_required_at_scope =
+  "domain_D_as_sampled"`. The `report --init-claims` stub includes
+  it default-False, like every other competing-explanation check.
+- **R22 verdict-gate audit cap** in `compute_verdict`: if
+  `test_retest_run` is asserted but the supplied `RetestResult` is
+  substantively unstable or has undefined κ, the verdict caps at
+  `partially_defensible`. Same shape as the v0.5.3 structural-anomaly
+  and m<2 caps.
+- **Report renderer integration**: section 2 (Summary metrics) gets
+  a Test-retest κ (R22) row when a retest artifact is supplied;
+  section 4 (Evidence) gets a Test-retest reliability (R22) row
+  (NOT SUPPLIED otherwise); section 4b (Negative findings) gets a
+  new "Test-retest anomalies (R22)" subsection that lists the
+  corpus-level stability_verdict and the per-item flips (capped at
+  50 with an overflow line pointing at the artifact JSON).
+- **CLI flags**:
+  - `infereval metrics --ci [--ci-iterations N] [--ci-subsample-size B] [--ci-seed N]`
+    — opt into the subsampling CI on κ_C and κ_F.
+  - `infereval metrics --weight-by-margin` — opt into the
+    margin-weighted κ variants.
+  - `infereval structure --thin-margin-threshold F` — override the
+    thin-margin cutoff.
+  - `infereval report --retest <retest-result.json>` — supply the
+    retest artifact to the report renderer.
+- **`docs/construct_validity.md`** — consolidated source of truth for
+  the construct-validity methodology, replacing the prior
+  `construct_validity_workflow.md` + `closing_the_construct_validity_gap.md`
+  pair. Present-tense, version-marker-free. R22 integrated as a
+  Tier 1 requirement; both bundled demos (stop-sign cross-family +
+  pulmonology) used as worked examples.
+
+### Changed
+
+- **`experiments/results/cross-family/`** renamed to
+  **`experiments/results/stop_sign/`** (peer-symmetric with
+  `experiments/results/pulmonology/` — domain-named).
+- **`experiments/results/cross_family_2026-05-18.md`** renamed to
+  **`experiments/results/stop_sign_2026-05-18.md`** (same pattern).
+- **`NegativeFinding.source` Literal** extended with `"retest"`.
+- **`_REQUIRED_CHECKS_BY_SCOPE`** — `test_retest_run` added at
+  `domain_D_as_sampled` and `general_capacity` scopes. Not required
+  at `items_in_benchmark`; informational only at that scope.
+- **`MetricsReport.to_dict`** gains `include_verdict_distributions`
+  and `thin_margin_threshold` keyword arguments. Defaults preserve
+  the post-0.6 surfacing; setting `include_verdict_distributions=False`
+  reproduces the pre-0.6 JSON shape exactly.
+- **`docs/` consolidation** removed
+  `closing_the_construct_validity_gap.md` and
+  `construct_validity_workflow.md` (their content is integrated into
+  `docs/construct_validity.md`). Cross-references in
+  `docs/concepts.md`, `docs/authoring_benchmarks.md`,
+  `docs/interpreting_metrics.md`, `docs/glossary.md`, and the
+  per-page index in `docs/README.md` updated to point at the
+  consolidated doc. `mkdocs.yml` nav updated.
+
+### Note
+
+`framework_version` default in `evaluation.schema.json` bumped to
+`0.6.0`. All additions to `evaluation.schema.json`,
+`benchmark.schema.json`, and the in-memory claims schema are
+optional fields with sane defaults; pre-0.6 artifacts continue to
+validate. The retest result is a new artifact shape pinned by tests
+and by `retest_result_to_dict`; the dataclasses live in
+`infereval.retest` (not Pydantic models) so the static-schema
+emission pipeline at `schemas/__init__.py` is unaffected.
+
 ## [0.5.10] — 2026-05-23
 
 **First publication to real PyPI.** Earlier 0.5.x releases were tagged

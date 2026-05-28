@@ -7,7 +7,7 @@ inferential-mastery attribution — not a measurement of mastery itself
 (see Remark 8 of Allen, 2026).
 """
 
-__version__ = "0.5.10"
+__version__ = "0.6.0"
 
 from .frame import DerivedFrame
 from .types import Bearer, Implication, Verdict
