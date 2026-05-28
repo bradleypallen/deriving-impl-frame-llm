@@ -192,6 +192,173 @@ def margin_weight(item: EvaluationItem) -> float:
     return verdict_distribution(item).margin
 
 
+# ---- Confidence intervals on κ (Politis-Romano subsampling) ----------------
+
+
+#: Minimum benchmark size for which subsampling-based CIs are defined.
+#: The framework's :func:`subsampling_kappa_ci` raises below this; the
+#: rule-of-thumb subsample-size default ``round(K^0.7)`` collapses to
+#: degenerate sizes (``round(9^0.7) = 5``, ``round(5^0.7) = 3``) before
+#: this threshold, and Politis-Romano's large-sample guarantees are
+#: visibly fragile at small ``K`` regardless of the chosen ``b``.
+MIN_K_FOR_SUBSAMPLING_CI: int = 10
+
+
+class SubsamplingNotApplicableError(ValueError):
+    """Raised when :func:`subsampling_kappa_ci` is invoked on a benchmark too
+    small for the subsampling procedure to be meaningful.
+
+    The framework reports point estimates only at that scale; the analyst
+    should report the κ value without a CI and note the benchmark size as
+    a limitation.
+    """
+
+
+def _default_subsample_size(k: int) -> int:
+    """Politis-Romano rule-of-thumb subsample size: ``round(K^0.7)``.
+
+    Satisfies the conditions ``b → ∞`` and ``b/K → 0`` as ``K → ∞``. For
+    typical benchmark sizes (``K = 20–60``) this gives ``b ≈ 8–18``.
+    """
+    return max(2, int(round(k**0.7)))
+
+
+def subsampling_kappa_ci(
+    kappa_fn: Callable[[Evaluation], float | None],
+    eta: Evaluation,
+    *,
+    iterations: int = 1000,
+    subsample_size: int | None = None,
+    confidence: float = 0.95,
+    seed: int | None = None,
+) -> tuple[float, float, float]:
+    """Subsampling confidence interval for κ on an :class:`Evaluation`.
+
+    Procedure: Politis & Romano (1994), *Large sample confidence regions
+    based on sub-samples under minimal assumptions* (Ann. Statist. 22(4),
+    pp. 2031–2050).
+
+    Draws ``iterations`` subsamples of ``subsample_size`` items from the
+    ``K = eta.n`` benchmark items WITHOUT replacement; recomputes
+    ``kappa_fn`` on each subsample; constructs a basic percentile CI
+    from the subsampling distribution, with the standard ``√(b/K)``
+    rate correction that brings the spread of the subsampling
+    distribution onto the scale of the full-sample statistic.
+
+    Valid under minimal smoothness assumptions on the statistic. Suited
+    to κ, which is a non-smooth functional of count data (discrete
+    jumps at the majority-vote threshold) where the standard Efron
+    nonparametric bootstrap can fail.
+
+    Subsamples on which ``kappa_fn`` returns ``None`` (e.g. degenerate
+    p_e=1, empty substantive subset) are dropped from the subsampling
+    distribution. If fewer than 10% of subsamples produce defined κ
+    values, the CI is widened with a logged warning to reflect that
+    the procedure is operating near the edge of its applicability.
+
+    Parameters
+    ----------
+    kappa_fn
+        Function from :class:`Evaluation` to ``float | None`` — e.g.
+        ``lambda e: cohens_kappa(e, consensus_reference(e))`` or
+        :func:`fleiss_kappa`.
+    eta
+        Evaluation. Must have ``eta.n >= MIN_K_FOR_SUBSAMPLING_CI``;
+        otherwise :class:`SubsamplingNotApplicableError` is raised.
+    iterations
+        Number of subsamples drawn (default 1000).
+    subsample_size
+        Items per subsample. Default ``round(K^0.7)``. Must satisfy
+        ``2 <= subsample_size < K``.
+    confidence
+        Two-sided coverage (default 0.95).
+    seed
+        Optional RNG seed for reproducibility.
+
+    Returns
+    -------
+    tuple[float, float, float]
+        ``(point_estimate, lo, hi)`` — the κ on the full evaluation,
+        plus the lower and upper bounds of the confidence interval.
+
+    Raises
+    ------
+    SubsamplingNotApplicableError
+        If ``eta.n < MIN_K_FOR_SUBSAMPLING_CI``.
+    ValueError
+        If ``subsample_size`` is out of range, or the point estimate
+        itself is undefined.
+    """
+    # Local import keeps the module importable without dragging Evaluation in.
+    import random
+
+    k = eta.n
+    if k < MIN_K_FOR_SUBSAMPLING_CI:
+        raise SubsamplingNotApplicableError(
+            f"subsampling_kappa_ci requires at least {MIN_K_FOR_SUBSAMPLING_CI} "
+            f"items; got K = {k}. Report the point estimate without a CI and "
+            f"note the benchmark size as a limitation."
+        )
+
+    b = subsample_size if subsample_size is not None else _default_subsample_size(k)
+    if b < 2 or b >= k:
+        raise ValueError(
+            f"subsample_size must be in [2, K); got {b} with K = {k}"
+        )
+
+    point = kappa_fn(eta)
+    if point is None:
+        raise ValueError(
+            "subsampling_kappa_ci: point estimate is undefined on the full "
+            "evaluation (kappa_fn returned None); CI cannot be constructed"
+        )
+
+    rng = random.Random(seed)
+    indices = list(range(k))
+    sub_kappas: list[float] = []
+    for _ in range(iterations):
+        idx = rng.sample(indices, b)
+        sub_eta = eta.model_copy(
+            update={"items": [eta.items[i] for i in idx]}
+        )
+        kb = kappa_fn(sub_eta)
+        if kb is not None:
+            sub_kappas.append(kb)
+
+    if not sub_kappas:
+        log.warning(
+            "subsampling_kappa_ci: all subsamples produced undefined κ; "
+            "returning point estimate with degenerate CI"
+        )
+        return point, point, point
+
+    defined_fraction = len(sub_kappas) / iterations
+    if defined_fraction < 0.10:
+        log.warning(
+            "subsampling_kappa_ci: only %.1f%% of %d subsamples produced "
+            "defined κ values; the CI is operating near the edge of its "
+            "applicability — consider a larger benchmark or a different κ variant",
+            100 * defined_fraction,
+            iterations,
+        )
+
+    # Basic-percentile construction with the √(b/K) rate correction:
+    # the spread of the subsampling distribution around the subsampling
+    # mean is rescaled to the full-sample scale before being added to the
+    # point estimate.
+    sub_kappas.sort()
+    alpha = (1.0 - confidence) / 2.0
+    lo_idx = int(alpha * len(sub_kappas))
+    hi_idx = max(0, int((1.0 - alpha) * len(sub_kappas)) - 1)
+    quantile_lo = sub_kappas[lo_idx]
+    quantile_hi = sub_kappas[hi_idx]
+    sub_mean = sum(sub_kappas) / len(sub_kappas)
+    scale = math.sqrt(b / k)
+    lo = point + scale * (quantile_lo - sub_mean)
+    hi = point + scale * (quantile_hi - sub_mean)
+    return point, lo, hi
+
+
 # ---- Coverage --------------------------------------------------------------
 
 
@@ -780,6 +947,51 @@ class MetricsReport:
     def inter_analyst_fleiss(self) -> float | None:
         return inter_analyst_fleiss(self.eta)
 
+    # ---- Confidence intervals (subsampling, Politis-Romano) ----
+
+    def cohens_kappa_with_ci(
+        self,
+        reference: ReferenceFn | None = None,
+        *,
+        iterations: int = 1000,
+        subsample_size: int | None = None,
+        confidence: float = 0.95,
+        seed: int | None = None,
+    ) -> tuple[float, float, float]:
+        """:math:`\\kappa_C` with a Politis-Romano subsampling CI.
+
+        Convenience wrapper around :func:`subsampling_kappa_ci`. See its
+        docstring for the procedure, the subsample-size default, and
+        the raises behaviour for too-small benchmarks.
+        """
+        ref = reference if reference is not None else consensus_reference(self.eta)
+        return subsampling_kappa_ci(
+            lambda e: cohens_kappa(e, ref),
+            self.eta,
+            iterations=iterations,
+            subsample_size=subsample_size,
+            confidence=confidence,
+            seed=seed,
+        )
+
+    def fleiss_kappa_with_ci(
+        self,
+        *,
+        iterations: int = 1000,
+        subsample_size: int | None = None,
+        confidence: float = 0.95,
+        seed: int | None = None,
+    ) -> tuple[float, float, float]:
+        """:math:`\\kappa_F` with a Politis-Romano subsampling CI."""
+        return subsampling_kappa_ci(
+            fleiss_kappa,
+            self.eta,
+            iterations=iterations,
+            subsample_size=subsample_size,
+            confidence=confidence,
+            seed=seed,
+        )
+
     # ---- Dispersion (per-item and aggregate) ----
 
     @property
@@ -912,10 +1124,12 @@ class MetricsReport:
 
 
 __all__ = [
+    "MIN_K_FOR_SUBSAMPLING_CI",
     "SUBSTANTIVE",
     "AggregateDispersion",
     "MetricsReport",
     "ReferenceFn",
+    "SubsamplingNotApplicableError",
     "VerdictDistribution",
     "WeightFn",
     "analyst_reference",
@@ -929,5 +1143,6 @@ __all__ = [
     "inter_analyst_fleiss",
     "margin_weight",
     "substantive_index",
+    "subsampling_kappa_ci",
     "verdict_distribution",
 ]
