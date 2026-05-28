@@ -36,6 +36,7 @@ from . import __version__
 if TYPE_CHECKING:
     from .benchmark import Benchmark
     from .evaluation import Evaluation
+    from .report import IdentityCriterion
 
 log = logging.getLogger(__name__)
 
@@ -111,6 +112,13 @@ class RetestResult:
     the report-renderer integration in
     :mod:`infereval.report` can consume it via the same pattern as the
     other analytical artifacts (``structure``, ``sweep``, ``model``).
+
+    The ``identity_criterion`` field (added in v0.6.1) carries the
+    analyst's declared individuation criterion under which the
+    ``test_retest_kappa`` is interpretable. ``None`` when the
+    pre-v0.6.1 ``compute_retest`` API is used; the report renderer
+    treats absence as "criterion not declared" and the verdict gate
+    caps accordingly at scope ≥ ``domain_D_as_sampled``.
     """
 
     schema_version: Literal["1.0"]
@@ -125,6 +133,7 @@ class RetestResult:
     test_retest_kappa: float | None
     flipped_items: tuple[FlippedItem, ...] = field(default_factory=tuple)
     item_deltas: tuple[ItemDelta, ...] = field(default_factory=tuple)
+    identity_criterion: IdentityCriterion | None = None
 
     @property
     def agreement_rate(self) -> float:
@@ -160,27 +169,37 @@ class RetestResult:
         """
         k = self.test_retest_kappa
         flip_pct = self.flip_rate * 100
+        # v0.6.1: when an identity criterion is declared, append "under
+        # the declared identity criterion" to make explicit what the
+        # reliability number is relative to. This is the carving-
+        # relativity pattern applied to individuation (Hlobil).
+        crit_clause = (
+            " under the declared identity criterion"
+            if self.identity_criterion is not None
+            else ""
+        )
         if k is None:
             return (
-                "test-retest κ is undefined on this comparison (degenerate "
-                "agreement structure); reliability cannot be assessed from "
-                "this run pair"
+                f"test-retest κ is undefined on this comparison "
+                f"(degenerate agreement structure); reliability cannot be "
+                f"assessed from this run pair{crit_clause}"
             )
         if k >= 0.8:
             return (
-                f"test-retest reliability is stable (κ = {k:+.3f}); "
-                f"verdict-flip rate {flip_pct:.1f}%."
+                f"test-retest reliability is stable{crit_clause} "
+                f"(κ = {k:+.3f}); verdict-flip rate {flip_pct:.1f}%."
             )
         if k >= 0.6:
             return (
-                f"test-retest reliability is moderately stable (κ = {k:+.3f}); "
-                f"{flip_pct:.1f}% of items flipped between runs."
+                f"test-retest reliability is moderately stable{crit_clause} "
+                f"(κ = {k:+.3f}); {flip_pct:.1f}% of items flipped between runs."
             )
         return (
-            f"test-retest reliability is substantively unstable "
-            f"(κ = {k:+.3f}); {flip_pct:.1f}% of items flipped between "
-            f"runs — model output for this benchmark is not reliable "
-            f"enough for the headline κ_C to be interpreted as signal."
+            f"test-retest reliability is substantively unstable"
+            f"{crit_clause} (κ = {k:+.3f}); {flip_pct:.1f}% of items "
+            f"flipped between runs — model output for this benchmark is "
+            f"not reliable enough for the headline κ_C to be interpreted "
+            f"as signal."
         )
 
 
@@ -190,12 +209,36 @@ class RetestResult:
 def _check_compatibility(
     eta_a: Evaluation, eta_b: Evaluation
 ) -> None:
-    """Raise :class:`RetestConfigMismatchError` if the two evals can't be compared."""
+    """Verify the *setup-conformance* portion of an individuation criterion.
+
+    Two evaluations must agree on benchmark hash, endorsement config,
+    and paraphrase variant before they can be paired for a retest.
+    This is a *necessary-but-not-sufficient* condition for the two
+    runs to be treated as measurements of the same individual:
+    sameness-of-individual is a separate commitment the analyst
+    declares via
+    :attr:`infereval.report.ConstructValidityClaims.reliability.identity_criterion`,
+    and the analyst-substantiated portion of that criterion
+    (provider-snapshot stability, scaffolding constancy, etc.) is
+    something the framework records but cannot mechanically verify.
+
+    Per Hlobil's individuation point: a passing parity check tells you
+    the two runs use the same *measurement setup*. It does not tell
+    you they measure the *same system*. The framework treats this
+    distinction explicitly in v0.6.1; this function covers only the
+    setup-conformance leg.
+
+    Raises :class:`RetestConfigMismatchError` if the two evaluations
+    fail setup-conformance.
+    """
     if eta_a.benchmark_id != eta_b.benchmark_id:
         raise RetestConfigMismatchError(
             f"benchmark_id mismatch: run A used {eta_a.benchmark_id!r}, "
-            f"run B used {eta_b.benchmark_id!r}; retest comparison requires "
-            f"the same benchmark"
+            f"run B used {eta_b.benchmark_id!r}; the supplied artifacts do "
+            f"not conform to the setup-conformance portion of an "
+            f"individuation criterion (same benchmark required). "
+            f"Sameness-of-individual is declared separately in the claims "
+            f"file via ConstructValidityClaims.reliability.identity_criterion."
         )
     if (
         eta_a.benchmark_hash is not None
@@ -205,23 +248,28 @@ def _check_compatibility(
         raise RetestConfigMismatchError(
             f"benchmark_hash mismatch: run A = {eta_a.benchmark_hash[:12]}…, "
             f"run B = {eta_b.benchmark_hash[:12]}…; the benchmark was edited "
-            f"between runs (or one of the artifacts was tampered with)"
+            f"between runs (or one of the artifacts was tampered with). The "
+            f"supplied artifacts do not conform to the setup-conformance "
+            f"portion of an individuation criterion."
         )
     if eta_a.endorsement_config != eta_b.endorsement_config:
         raise RetestConfigMismatchError(
             f"endorsement_config mismatch: run A = "
             f"{eta_a.endorsement_config}, run B = {eta_b.endorsement_config}; "
-            f"retest variability would be conflated with parameter-change "
-            f"effects (use `infereval sweep` for parameter sensitivity instead)"
+            f"the supplied artifacts do not conform to the setup-conformance "
+            f"portion of an individuation criterion. Reliability variability "
+            f"would be conflated with parameter-change effects (use "
+            f"`infereval sweep` for parameter sensitivity instead)."
         )
     if eta_a.paraphrase_variant != eta_b.paraphrase_variant:
         raise RetestConfigMismatchError(
             f"paraphrase_variant mismatch: run A = "
             f"{eta_a.paraphrase_variant}, run B = {eta_b.paraphrase_variant}; "
-            f"retest variability would be conflated with paraphrase-axis "
-            f"effects (use `infereval evaluate --paraphrase-cycle` for "
-            f"paraphrase-axis runs and `infereval retest` within a single "
-            f"variant)"
+            f"the supplied artifacts do not conform to the setup-conformance "
+            f"portion of an individuation criterion. Reliability variability "
+            f"would be conflated with paraphrase-axis effects (use "
+            f"`infereval evaluate --paraphrase-cycle` for paraphrase-axis "
+            f"runs and `infereval retest` within a single variant)."
         )
 
 
@@ -261,27 +309,40 @@ def compute_retest(
     eta_a: Evaluation,
     eta_b: Evaluation,
     benchmark: Benchmark | None = None,
+    *,
+    identity_criterion: IdentityCriterion | None = None,
 ) -> RetestResult:
     """Compare two evaluations and return a :class:`RetestResult`.
 
     Parameters
     ----------
     eta_a, eta_b
-        The two evaluations. Must share the same benchmark hash, the
-        same endorsement configuration, and the same paraphrase
-        variant; otherwise :class:`RetestConfigMismatchError` is
-        raised.
+        The two evaluations. Must conform to the setup-conformance
+        portion of the individuation criterion (same benchmark hash,
+        same endorsement configuration, same paraphrase variant);
+        otherwise :class:`RetestConfigMismatchError` is raised. See
+        :func:`_check_compatibility` for the setup-vs-system
+        distinction.
     benchmark
         Optional :class:`infereval.benchmark.Benchmark`. When supplied,
         each :class:`FlippedItem` is annotated with the item's
         ``factor_levels`` so downstream analysis can correlate flips
         with design factors.
+    identity_criterion
+        Optional :class:`infereval.report.IdentityCriterion`. When
+        supplied (v0.6.1+), travels with the result so the κ is
+        explicitly relativised to the declared individuation
+        criterion. When ``None``, the result is byte-compatible with
+        pre-v0.6.1 callers and the report-renderer treats it as
+        "criterion not declared" (which the verdict gate caps on at
+        scope ≥ ``domain_D_as_sampled``).
 
     Returns
     -------
     RetestResult
         Includes the per-item flips, per-item dispersion deltas, the
-        test-retest κ, and the stability verdict.
+        test-retest κ, the stability verdict, and the declared
+        identity criterion (if any).
     """
     from .metrics import verdict_distribution
 
@@ -363,6 +424,7 @@ def compute_retest(
         test_retest_kappa=kappa,
         flipped_items=tuple(flipped),
         item_deltas=tuple(deltas),
+        identity_criterion=identity_criterion,
     )
 
 
@@ -370,9 +432,11 @@ def retest_result_to_dict(result: RetestResult) -> dict[str, object]:
     """Render :class:`RetestResult` as a JSON-friendly dict.
 
     Stable shape — consumed by the report renderer and persisted as
-    ``retest-result.json`` by the CLI.
+    ``retest-result.json`` by the CLI. ``identity_criterion`` (added
+    in v0.6.1) is included only when present; legacy retest result
+    JSONs without the key remain valid for the report-loader path.
     """
-    return {
+    out: dict[str, object] = {
         "schema_version": result.schema_version,
         "framework_version": result.framework_version,
         "benchmark_id": result.benchmark_id,
@@ -410,6 +474,11 @@ def retest_result_to_dict(result: RetestResult) -> dict[str, object]:
             for d in result.item_deltas
         ],
     }
+    if result.identity_criterion is not None:
+        out["identity_criterion"] = result.identity_criterion.model_dump(
+            mode="json"
+        )
+    return out
 
 
 __all__ = [

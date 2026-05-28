@@ -19,6 +19,7 @@ import click
 
 from infereval.benchmark import Benchmark
 from infereval.evaluation import Evaluation
+from infereval.report import ConstructValidityClaims
 from infereval.retest import (
     RetestConfigMismatchError,
     compute_retest,
@@ -55,6 +56,25 @@ log = logging.getLogger(__name__)
     ),
 )
 @click.option(
+    "--claims",
+    "claims_path",
+    type=click.Path(exists=True, dir_okay=False, path_type=Path),
+    default=None,
+    help=(
+        "Optional claims JSON (the same file consumed by `infereval "
+        "report`). When supplied, the analyst's declared identity "
+        "criterion (from `reliability.identity_criterion`) is "
+        "threaded into the RetestResult so the test-retest κ travels "
+        "with what it's reliability-of. Required at scope >= "
+        "domain_D_as_sampled to satisfy R22; the setup-conformance "
+        "portion of the criterion is verified mechanically by the "
+        "parity check on the two evaluation artifacts, while the "
+        "analyst-substantiated portion (provider snapshot stability, "
+        "scaffolding constancy) is recorded with caveats per the "
+        "leakage-audit-gap pattern."
+    ),
+)
+@click.option(
     "-o",
     "--output",
     "output_path",
@@ -71,6 +91,7 @@ def retest_cmd(
     eta_a_path: Path,
     eta_b_path: Path,
     benchmark_path: Path | None,
+    claims_path: Path | None,
     output_path: Path | None,
 ) -> None:
     """Run the test-retest comparison and print a summary."""
@@ -96,8 +117,34 @@ def retest_cmd(
             click.echo(f"ERROR: could not load benchmark: {exc}", err=True)
             sys.exit(2)
 
+    # v0.6.1: load the analyst's declared identity criterion from the
+    # claims file when --claims is supplied. The criterion is what
+    # makes the test-retest κ interpretable per Hlobil's individuation
+    # point — without it, the κ is just a number; with it, the κ
+    # explicitly travels with the standard it's reliability-of.
+    identity_criterion = None
+    if claims_path is not None:
+        try:
+            claims_raw = json.loads(claims_path.read_text(encoding="utf-8"))
+            claims = ConstructValidityClaims.model_validate(claims_raw)
+        except Exception as exc:  # noqa: BLE001
+            click.echo(f"ERROR: could not parse claims file: {exc}", err=True)
+            sys.exit(2)
+        if claims.reliability is not None:
+            identity_criterion = claims.reliability.identity_criterion
+        else:
+            click.echo(
+                "NOTE: --claims was supplied but the claims file does not "
+                "declare reliability.identity_criterion; the retest will run "
+                "without it, and the report's verdict gate may cap the "
+                "verdict at scope >= domain_D_as_sampled.",
+                err=True,
+            )
+
     try:
-        result = compute_retest(eta_a, eta_b, benchmark=bench)
+        result = compute_retest(
+            eta_a, eta_b, benchmark=bench, identity_criterion=identity_criterion
+        )
     except RetestConfigMismatchError as exc:
         click.echo(f"ERROR: incompatible runs — {exc}", err=True)
         sys.exit(1)
