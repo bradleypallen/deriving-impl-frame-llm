@@ -170,6 +170,7 @@ class TestComputeVerdict:
                 training_data_separation_verified=True,
                 cross_domain_comparison_run=True,
                 replication_attempted=True,
+                test_retest_run=True,
             ),
         )
         assert compute_verdict(claims).label == "defensible"
@@ -604,6 +605,7 @@ class TestComputeVerdictAuditCaps:
                 paraphrase_sweep_run=True,
                 cross_panel_check_run=True,
                 held_out_items_used=True,
+                test_retest_run=True,
             ),
         )
         bench = Benchmark.load(STOP_SIGN_PATH)  # m=1
