@@ -93,6 +93,100 @@ class CarvingClaim(BaseModel):
     document the carving used or pointers to the discussion."""
 
 
+class IdentityCriterion(BaseModel):
+    """R22, second leg: analyst-declared individuation criterion for reliability claims.
+
+    Hlobil's individuation point: reliability is by definition agreement
+    of distinct measurements of *the same individual*, so an identity
+    criterion has to be declared *before* a test-retest κ can be
+    interpreted. This object records that declaration in the same
+    commitment-and-relativity pattern the framework already uses for
+    ``carving`` (R19), ``scope`` (R17), ``mastery_sense`` (R16), and
+    ``constitution`` (R18).
+
+    Per-field booleans split into two groups:
+
+    - **Framework-substantiated** (top group): the framework
+      mechanically verifies these via the parity check on
+      ``infereval retest``. The analyst asserts them; if the supplied
+      evaluation artifacts don't conform,
+      :class:`infereval.retest.RetestConfigMismatchError` fires.
+    - **Analyst-substantiated** (middle group): the framework records
+      these as commitments but cannot mechanically verify them. Same
+      shape as the leakage-audit-gap handling for R8 / R9 — the
+      ``unverifiable_caveats`` text is where the analyst documents
+      what they're committing to without framework backup.
+
+    The ``rationale`` field documents *why* these are the right
+    individuation choices for the evaluation at hand, parallel to
+    :attr:`ScopeClaim.justification` and
+    :attr:`ConstitutionClaim.justification`.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    # Framework-substantiated (the setup-conformance portion the parity
+    # check actually covers — these were what v0.6.0 was implicitly
+    # asserting):
+    same_benchmark_hash: bool = True
+    """Asserts that the two evaluations were against the same benchmark
+    hash. Framework verifies via :func:`infereval.retest._check_compatibility`."""
+    same_endorsement_config: bool = True
+    """Asserts that the two evaluations used the same ``EndorsementConfig``
+    (n_samples, tie_break). Framework verifies."""
+    same_paraphrase_variant: bool = True
+    """Asserts that the two evaluations used the same paraphrase
+    variant. Framework verifies."""
+
+    # Analyst-substantiated (the parts beyond setup conformance — these
+    # are what v0.6.0 silently presupposed without recording):
+    same_provider_model_id: bool
+    """Asserts that the provider + model_id is the same in both runs.
+    The evaluation JSON records this metadata; the framework can spot a
+    bare mismatch (e.g. ``openai/gpt-5.5`` vs. ``openai/gpt-5.6``) but
+    cannot distinguish a stable model from one whose provider-side
+    weights rotated under the same id."""
+    cross_update_identity_asserted: bool
+    """Asserts that the model-version was stable across the run window
+    — no silent provider-side weight rotation. Not mechanically
+    verifiable for providers that don't expose snapshot/fingerprint
+    metadata; recorded as commitment with caveat."""
+    same_scaffolding: bool
+    """Asserts that any framework-external scaffolding (system message,
+    prompt wrapping outside the verification prompt, retry policy) was
+    constant across the two runs. The framework records its own prompt
+    and config; this field is the analyst's commitment on the
+    framework-external parts."""
+
+    # Free-text commitments:
+    unverifiable_caveats: str
+    """What the analyst is committing to without framework
+    verification. Should explicitly name the provider's known
+    limitations on individuation (e.g. ``"Anthropic does not currently
+    expose a snapshot fingerprint; cross-update identity here is
+    asserted on the basis of the runs being 4 hours apart with no
+    announced model update in the interval"``)."""
+    rationale: str
+    """Why these are the right individuation choices for this
+    evaluation. Parallel to :attr:`ScopeClaim.justification`.
+    One to three sentences."""
+
+
+class ReliabilityClaim(BaseModel):
+    """R22 claims-file block: declared identity criterion plus any
+    other reliability-related commitments.
+
+    Currently wraps only :class:`IdentityCriterion`; future
+    reliability-related commitments (e.g. choice of stability
+    threshold, declared replication design) can land here without
+    re-shaping the top-level :class:`ConstructValidityClaims`.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    identity_criterion: IdentityCriterion
+
+
 class CompetingExplanationChecks(BaseModel):
     """R4, R8, R9, R11, R13, R14, R15: which checks were actually run.
 
@@ -134,6 +228,14 @@ class ConstructValidityClaims(BaseModel):
     competing_explanations: CompetingExplanationChecks = Field(
         default_factory=CompetingExplanationChecks
     )
+    reliability: ReliabilityClaim | None = None
+    """R22, second leg: declared individuation criterion for the
+    reliability claim. Optional at the top level so pre-0.6.1 claims
+    files validate; required at scope ≥ ``domain_D_as_sampled`` for
+    R22 satisfaction (the verdict gate in :func:`compute_verdict`
+    caps the verdict at ``partially_defensible`` when it's missing
+    AND ``competing_explanations.test_retest_run`` is True, mirroring
+    the R19 carving-acknowledgement gate)."""
 
     @classmethod
     def stub(cls) -> ConstructValidityClaims:
@@ -156,6 +258,34 @@ class ConstructValidityClaims(BaseModel):
                 notes="FILL IN if acknowledges_carving_indexed=true.",
             ),
             competing_explanations=CompetingExplanationChecks(),
+            reliability=ReliabilityClaim(
+                identity_criterion=IdentityCriterion(
+                    # Framework-substantiated booleans default to True.
+                    # The analyst can deny them (set to False) only by
+                    # also deciding not to do a retest; otherwise
+                    # `infereval retest` would reject the run pair.
+                    same_benchmark_hash=True,
+                    same_endorsement_config=True,
+                    same_paraphrase_variant=True,
+                    # Analyst-substantiated booleans — these are real
+                    # commitments the analyst has to think about. The
+                    # stub leaves them as False to force the analyst
+                    # to consciously assert each one.
+                    same_provider_model_id=False,
+                    cross_update_identity_asserted=False,
+                    same_scaffolding=False,
+                    unverifiable_caveats=(
+                        "FILL IN: what individuation commitments are being made "
+                        "without framework-mechanical verification (e.g. "
+                        "provider snapshot stability, scaffolding constancy)."
+                    ),
+                    rationale=(
+                        "FILL IN: why these individuation choices are right for "
+                        "this evaluation. Required at scope >= "
+                        "domain_D_as_sampled for R22 satisfaction."
+                    ),
+                )
+            ),
         )
 
 
@@ -919,8 +1049,10 @@ __all__ = [
     "CompetingExplanationChecks",
     "ConstitutionClaim",
     "ConstructValidityClaims",
+    "IdentityCriterion",
     "MasterySenseClaim",
     "NegativeFinding",
+    "ReliabilityClaim",
     "ReportVerdict",
     "ScopeClaim",
     "collect_negative_findings",
