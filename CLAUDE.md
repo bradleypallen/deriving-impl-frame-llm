@@ -17,8 +17,7 @@ The docs render as a live MkDocs Material site at **<https://www.bradleypallen.o
 - `docs/authoring_benchmarks.md` — writing a `benchmark.json` for a new domain.
 - `docs/interpreting_metrics.md` — reading κ_C / κ_F / κ_F\* output, by-tag and factor-effects decompositions, sensitivity-sweep verdicts.
 - `docs/providers.md` — per-provider quirks (Anthropic seed ignore, DeepSeek silent reasoning tokens, etc.).
-- `docs/construct_validity_workflow.md` — end-to-end practitioner's guide for producing reproducible mastery-claim evidence.
-- `docs/closing_the_construct_validity_gap.md` — implementation-annotated R1–R21 coverage record; which release closed which requirement.
+- `docs/construct_validity.md` — single source of truth for the construct-validity methodology: the R1–R22 requirements catalogue, how the framework supports each, the end-to-end workflow, and the disposition the instrument embodies. (Consolidated from the former `construct_validity_workflow.md` + `closing_the_construct_validity_gap.md` pair in v0.6.0; the docs there now present the methodology as a coherent integrated whole, without version-by-version history markers.)
 - `docs/architecture.md` — Mermaid dataflow diagram (analyst → β → η → analytical commands → report) with a layer-by-layer tour.
 - `docs/glossary.md` — every paper symbol (B, δ, ctx_Γ, ctx_Δ, E_M, β, η, κ_C, κ_F, κ_F\*, RSR, …) with its in-code counterpart and a one-liner. The analyst-vs-annotator distinction lives here.
 - `docs/schemas.md` — hand-written field-table reference for `benchmark.schema.json` + `evaluation.schema.json`, including cross-field validation rules.
@@ -118,7 +117,7 @@ These are framework defaults, overridable per evaluation:
 
 ## Construct-validity infrastructure (v0.3.0–v0.5.4)
 
-The nine-feature programme shipped over eleven patch/minor releases addresses the R1–R21 requirements catalogued in [`docs/closing_the_construct_validity_gap.md`](docs/closing_the_construct_validity_gap.md). Practitioner walk-through is in [`docs/construct_validity_workflow.md`](docs/construct_validity_workflow.md). Quick map for future work:
+The construct-validity programme addresses the R1–R22 requirements catalogued in [`docs/construct_validity.md`](docs/construct_validity.md) (the consolidated methodology doc that replaced the former `construct_validity_workflow.md` + `closing_the_construct_validity_gap.md` pair in v0.6.0). Quick map for future work:
 
 **Optional benchmark schema fields added (all additive):**
 

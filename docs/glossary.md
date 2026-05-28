@@ -56,10 +56,8 @@ load-bearing distinction in the Fleiss definition (paper's Definition 10).
 
 ## Construct-validity terminology
 
-Introduced in the v0.3.0–v0.5.x series. See
-[Construct-validity workflow](construct_validity_workflow.md) and
-[Closing the gap](closing_the_construct_validity_gap.md) for the
-end-to-end story.
+See [Construct validity of the instrument](construct_validity.md) for the
+end-to-end requirements catalogue and workflow.
 
 | Term | In code | Meaning |
 |---|---|---|
@@ -69,6 +67,13 @@ end-to-end story.
 | **Constitution** | `ConstitutionClaim.position` | One of `evidence_of_mastery` / `constitutive_of_mastery`. The philosophical position the analyst is taking. |
 | **Carving-indexed claim** | `CarvingClaim.acknowledges_carving_indexed` | Required `True` at non-`items_in_benchmark` scopes — in-principle claims must take the carving-indexed form (paper's Remark 10). |
 | **`κ_F^*`-stability** | `SweepResult.stability_verdict` | The sensitivity-sweep verdict: `stable` / `moderately sensitive` / `substantively variable`. |
+| **Verdict distribution** | `VerdictDistribution` (in `infereval.metrics`) | Per-item (good, bad, abstain) count over the n_samples model verdicts, plus the post-tie-break verdict and derived `entropy` (normalised Shannon) and `margin` (plurality margin). Surfaces the within-run dispersion the standard majority-vote pipeline collapses. |
+| **Plurality margin** | `VerdictDistribution.margin` | `(top - runner_up) / n_samples` in `[0, 1]`. 0 on ties; 1 on unanimous sampling. Used as the per-item confidence weight in the `--weight-by-margin` κ variants. |
+| **Verdict entropy** | `VerdictDistribution.entropy` | Normalised Shannon entropy of the verdict distribution, in `[0, 1]`. 0 for single-class, 1 for uniform 3-way distribution. |
+| **Aggregate dispersion** | `AggregateDispersion` | Corpus-level summary: mean entropy, mean margin, `n_thin_margin` (count of items below the thin-margin threshold), `n_tie_broken`. |
+| **Subsampling CI** | `subsampling_kappa_ci` | Politis-Romano (1994) item-level subsampling CI on κ. Resamples items WITHOUT replacement at size `b = round(K^0.7)`, recomputes κ on each subsample, constructs a basic-percentile CI with the `√(b/K)` rate correction. Valid for κ's non-smooth functional form where the Efron bootstrap can fail. |
+| **Test-retest κ** | `RetestResult.test_retest_kappa` | Cohen's κ between the collapsed-verdict columns of two evaluations of the same benchmark+model pair. Within-model analog of κ_F* — quantifies how much of the headline κ_C is shared signal across replications vs. run-specific noise. |
+| **Retest stability verdict** | `RetestResult.stability_verdict` | The R22 reliability ladder: κ ≥ 0.8 stable; ≥ 0.6 moderately stable; < 0.6 substantively unstable (at which point the headline κ_C cannot be interpreted as signal). |
 
 ## Role tags (RSR-targeted benchmarks)
 
@@ -86,7 +91,7 @@ compares `M`'s verdict to the role-predicted verdict.
 ## Construction-metadata fields
 
 Per-item provenance for the construct-validity audit (paper-aligned with
-R5 / R8 / R9 in [Closing the gap](closing_the_construct_validity_gap.md)).
+R5 / R8 / R9 in [Construct validity](construct_validity.md)).
 
 | Field | Type | Meaning |
 |---|---|---|

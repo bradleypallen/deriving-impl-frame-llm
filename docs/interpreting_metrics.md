@@ -97,7 +97,7 @@ If your benchmark declares **reference panels** (per-analyst `panel` plus a benc
 | Metric | What it is | Why it matters |
 |---|---|---|
 | `inter_analyst_fleiss_per_panel` | `κ_F*` computed within each declared panel | Tells you how internally coherent each panel is on its own. A primary panel with `κ_F* = 0.10` and a check panel with `κ_F* = 0.70` means the primary panel is the one to inspect for analyst-disagreement. |
-| `cross_panel_kappa` | Cohen's `κ_C` between the two panels' per-item consensuses (default `primary` vs the first declared check panel; override with `--check`) | The construct-validity convergence check (R4 in `closing_the_construct_validity_gap.md`). A high cross-panel `κ_C` plus a high `κ_C(η, primary-consensus)` is the convergent half of a multi-trait/multi-method argument. A model that agrees with `primary` but disagrees with `check` is a warning sign that the `primary` consensus is panel-specific rather than carving-specific. |
+| `cross_panel_kappa` | Cohen's `κ_C` between the two panels' per-item consensuses (default `primary` vs the first declared check panel; override with `--check`) | The construct-validity convergence check (R4 in `construct_validity.md`). A high cross-panel `κ_C` plus a high `κ_C(η, primary-consensus)` is the convergent half of a multi-trait/multi-method argument. A model that agrees with `primary` but disagrees with `check` is a warning sign that the `primary` consensus is panel-specific rather than carving-specific. |
 
 The same `undefined` rules apply as for the corresponding base metrics (empty substantive intersection, `p_e = 1`, single-analyst panel).
 
@@ -190,7 +190,7 @@ Two interactions to be aware of:
 - **Suppression asymmetry**: if `negative_findings_suppressed: true` is set in the claims file, the verdict downgrades one tier. This makes silence about negative findings explicitly costly in the headline number.
 - **Sweep instability penalty**: any sweep verdict other than "stable" triggers a one-tier downgrade with a logged rationale.
 
-The full mapping from claims and evidence to verdict tier is documented in [`closing_the_construct_validity_gap.md`](closing_the_construct_validity_gap.md); the practitioner's walk-through is in [`construct_validity_workflow.md`](construct_validity_workflow.md).
+The full mapping from claims and evidence to verdict tier is documented in [`construct_validity.md`](construct_validity.md); the practitioner's walk-through is in [`construct_validity.md`](construct_validity.md).
 
 ## Edge cases the framework reports rather than hides
 
@@ -245,7 +245,7 @@ If the kappa numbers don't match your prior intuition for the model, the order o
 
 - [`concepts.md`](concepts.md) for the methodology's terms.
 - [`authoring_benchmarks.md`](authoring_benchmarks.md) if your interpretation suggests you need a richer benchmark — especially the panel/factor/construction-metadata fields that feed the new analytical commands.
-- [`construct_validity_workflow.md`](construct_validity_workflow.md) for the end-to-end practitioner's guide: how to chain `structure` → `metrics` → `model` → `sweep` → `report` into reproducible evidence for an inferential-mastery claim.
-- [`closing_the_construct_validity_gap.md`](closing_the_construct_validity_gap.md) for which construct-validity requirements (R1–R21) each metric speaks to.
+- [`construct_validity.md`](construct_validity.md) for the end-to-end practitioner's guide: how to chain `structure` → `metrics` → `model` → `sweep` → `report` into reproducible evidence for an inferential-mastery claim.
+- [`construct_validity.md`](construct_validity.md) for which construct-validity requirements (R1–R21) each metric speaks to.
 - [`providers.md`](providers.md) for per-provider quirks (specifically, what to set `--max-tokens` to).
 - `experiments/paraphrase_axis_triangulation.py` for a worked example of the diagnostic chain above.

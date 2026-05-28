@@ -56,9 +56,7 @@ nav:
   - Authoring benchmarks: authoring_benchmarks.md
   - Interpreting metrics: interpreting_metrics.md
   - Providers: providers.md
-  - Construct-validity:
-      - Workflow: construct_validity_workflow.md
-      - Closing the gap: closing_the_construct_validity_gap.md
+  - Construct validity: construct_validity.md
   - Tutorials:
       - Quickstart: tutorials/01_quickstart.ipynb
       - Authoring a benchmark: tutorials/02_authoring_a_benchmark.ipynb
