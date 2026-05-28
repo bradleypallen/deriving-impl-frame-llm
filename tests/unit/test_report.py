@@ -172,6 +172,17 @@ class TestComputeVerdict:
                 replication_attempted=True,
                 test_retest_run=True,
             ),
+            # v0.6.1 R22 second leg: declared identity criterion required at
+            # scope >= domain_D_as_sampled when test_retest_run=True.
+            reliability={
+                "identity_criterion": {
+                    "same_provider_model_id": True,
+                    "cross_update_identity_asserted": True,
+                    "same_scaffolding": True,
+                    "unverifiable_caveats": "x",
+                    "rationale": "x",
+                }
+            },
         )
         assert compute_verdict(claims).label == "defensible"
 
@@ -607,6 +618,17 @@ class TestComputeVerdictAuditCaps:
                 held_out_items_used=True,
                 test_retest_run=True,
             ),
+            # v0.6.1 R22 second leg: declared identity criterion required at
+            # scope >= domain_D_as_sampled when test_retest_run=True.
+            reliability={
+                "identity_criterion": {
+                    "same_provider_model_id": True,
+                    "cross_update_identity_asserted": True,
+                    "same_scaffolding": True,
+                    "unverifiable_caveats": "x",
+                    "rationale": "x",
+                }
+            },
         )
         bench = Benchmark.load(STOP_SIGN_PATH)  # m=1
         v = compute_verdict(claims, benchmark=bench)
