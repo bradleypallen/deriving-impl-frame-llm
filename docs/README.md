@@ -10,8 +10,7 @@ The README is the front door. This directory has the longer-form material.
 | [**Authoring benchmarks**](authoring_benchmarks.md) | Writing your own `benchmark.json` for a new domain — bearer carving, expression functions, RSR targets, factorial design, construction provenance, reference panels, validation. |
 | [**Interpreting metrics**](interpreting_metrics.md) | What κ_C, κ_F, κ_F\* (per-panel and cross-panel) tell you; reading by-tag and factor-effects decompositions; sensitivity-sweep stability verdicts; what to do about low coverage. |
 | [**Providers**](providers.md) | Per-provider quirks: Anthropic's seed ignore, DeepSeek's silent reasoning tokens, OpenRouter attribution headers, the OpenAI Chat-Completions choice. |
-| [**Construct-validity workflow**](construct_validity_workflow.md) | End-to-end practitioner's guide for producing reproducible, well-founded evidence for a claim of inferential mastery against a carving. Covers the framework's nine analytical capabilities plus the research-program responsibilities that remain outside the tool. |
-| [**Closing the construct-validity gap**](closing_the_construct_validity_gap.md) | Implementation-annotated companion to the workflow guide — which requirements (R1–R21) each release closed, what remains research-program work, and the as-shipped coverage table. |
+| [**Construct validity of the instrument**](construct_validity.md) | The methodology in one place: the R1–R22 requirements catalogue, what the framework supports for each, the end-to-end workflow (validate → evaluate-twice → analytical checks → claims → report), and the disposition the instrument embodies toward what it can and cannot certify. |
 
 ## Tutorials (Jupyter notebooks)
 

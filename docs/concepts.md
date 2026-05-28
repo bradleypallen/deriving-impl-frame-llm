@@ -171,7 +171,7 @@ Each metric returns `None` (with a logged warning) rather than raising when unde
               └─────────────────────────────────────────┘
 ```
 
-The four analytical commands (`metrics`, `structure`, `model`, `sweep`) all consume the evaluation JSON; their outputs are the inputs to `report`, which combines them with the analyst's claim declarations into a structured Markdown report with a deterministic mastery verdict. The construct-validity workflow document ([`construct_validity_workflow.md`](construct_validity_workflow.md)) walks all of this end-to-end.
+The four analytical commands (`metrics`, `structure`, `model`, `sweep`) all consume the evaluation JSON; their outputs are the inputs to `report`, which combines them with the analyst's claim declarations into a structured Markdown report with a deterministic mastery verdict. The construct-validity workflow document ([`construct_validity.md`](construct_validity.md)) walks all of this end-to-end.
 
 ## What the methodology buys you (and what it doesn't)
 
@@ -193,6 +193,6 @@ It does not buy you:
 - Author your own benchmark: [`authoring_benchmarks.md`](authoring_benchmarks.md).
 - Run an existing one and read the numbers: [`interpreting_metrics.md`](interpreting_metrics.md).
 - Run it against real LLMs: [`providers.md`](providers.md).
-- Produce defensible evidence for an inferential-mastery claim: [`construct_validity_workflow.md`](construct_validity_workflow.md) — end-to-end practitioner's guide covering the framework's nine analytical capabilities plus the research-program responsibilities outside the tool's scope.
-- See what was shipped to make that workflow possible: [`closing_the_construct_validity_gap.md`](closing_the_construct_validity_gap.md) — requirement-by-requirement implementation record.
+- Produce defensible evidence for an inferential-mastery claim: [`construct_validity.md`](construct_validity.md) — end-to-end practitioner's guide covering the framework's nine analytical capabilities plus the research-program responsibilities outside the tool's scope.
+- See what was shipped to make that workflow possible: [`construct_validity.md`](construct_validity.md) — requirement-by-requirement implementation record.
 - The README's 60-second quickstart pulls the basic measurement loop together, against the bundled stop-sign benchmark, with no API key required.

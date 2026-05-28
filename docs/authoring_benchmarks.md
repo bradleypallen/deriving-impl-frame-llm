@@ -87,7 +87,7 @@ If you have multiple natural phrasings of the same bearer, list them in `paraphr
 }
 ```
 
-**Paraphrases are runtime-active as of v0.3.1.** `infereval evaluate --paraphrase-variant K` runs against `paraphrases[K-1]` for each bearer that has it (falling back to `expression` for bearers that don't reach that variant). `infereval evaluate --paraphrase-cycle` runs once per variant and writes one `eta-vN.json` per variant. This is what addresses R10 (paraphrase variation under fixed inferential content) — content-vs-form robustness becomes a one-flag operation. See [`construct_validity_workflow.md`](construct_validity_workflow.md) §2.2 for the full workflow.
+**Paraphrases are runtime-active as of v0.3.1.** `infereval evaluate --paraphrase-variant K` runs against `paraphrases[K-1]` for each bearer that has it (falling back to `expression` for bearers that don't reach that variant). `infereval evaluate --paraphrase-cycle` runs once per variant and writes one `eta-vN.json` per variant. This is what addresses R10 (paraphrase variation under fixed inferential content) — content-vs-form robustness becomes a one-flag operation. See [`construct_validity.md`](construct_validity.md) §2.2 for the full workflow.
 
 ## Step 4: Declare the analyst panel
 
@@ -242,7 +242,7 @@ All four fields are optional but each addresses a specific construct-validity re
 
 - **`authored_by`** (R5): who authored the item. Used in the `infereval describe` provenance summary.
 - **`authored_on`** (R9): ISO date the item was authored. Required for temporal training-data separation arguments.
-- **`authored_blind_to_models`** (R8): every model the author had not observed on a draft of this item. The key declaration for *held-out* items — see [`construct_validity_workflow.md`](construct_validity_workflow.md) §0.5 on why blindness has to be decided up front.
+- **`authored_blind_to_models`** (R8): every model the author had not observed on a draft of this item. The key declaration for *held-out* items — see [`construct_validity.md`](construct_validity.md) §0.5 on why blindness has to be decided up front.
 - **`source`**: the primary material the author worked from (distinct from `references`, which records the literature *supporting* the verdict).
 
 The framework validates structure (Pydantic types, `extra="forbid"`) but does not enforce that `authored_on` post-dates any training cutoff — content is the analyst's responsibility, but its *presence* is auditable.
@@ -377,5 +377,5 @@ infereval metrics medical-eta.json --benchmark path/to/your-benchmark.json \
 
 - Run a real evaluation: [`providers.md`](providers.md).
 - Read the output: [`interpreting_metrics.md`](interpreting_metrics.md).
-- Use the full construct-validity toolchain (structure / model / sweep / report) to produce a defensible mastery claim: [`construct_validity_workflow.md`](construct_validity_workflow.md).
+- Use the full construct-validity toolchain (structure / model / sweep / report) to produce a defensible mastery claim: [`construct_validity.md`](construct_validity.md).
 - See the conceptual framework that makes all this coherent: [`concepts.md`](concepts.md) and the paper.
