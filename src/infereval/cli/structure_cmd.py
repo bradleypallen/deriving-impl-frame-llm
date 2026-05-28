@@ -16,7 +16,11 @@ import click
 
 from infereval.benchmark import Benchmark
 from infereval.evaluation import Evaluation
-from infereval.structure import StructuralCheck, run_all_checks
+from infereval.structure import (
+    DEFAULT_THIN_MARGIN_THRESHOLD,
+    StructuralCheck,
+    run_all_checks,
+)
 
 log = logging.getLogger(__name__)
 
@@ -47,7 +51,23 @@ def _format_rate(check: StructuralCheck) -> str:
     "structural checks need per-item rsr_target / role-tag metadata "
     "that isn't propagated into the evaluation file.",
 )
-def structure_cmd(evaluation_path: Path, benchmark_path: Path) -> None:
+@click.option(
+    "--thin-margin-threshold",
+    type=float,
+    default=DEFAULT_THIN_MARGIN_THRESHOLD,
+    show_default=True,
+    help=(
+        "Plurality-margin cutoff below which model-vs-analyst agreements "
+        "are flagged as thin (could flip on a re-run). Catches 3/5 "
+        "agreements at the default 0.4; raise to be stricter, lower to "
+        "be more permissive."
+    ),
+)
+def structure_cmd(
+    evaluation_path: Path,
+    benchmark_path: Path,
+    thin_margin_threshold: float,
+) -> None:
     """Run the three Phase 2.1 structural coherence checks and print the report."""
     log.info(
         "structure.cli.start evaluation=%s benchmark=%s",
@@ -75,7 +95,9 @@ def structure_cmd(evaluation_path: Path, benchmark_path: Path) -> None:
         )
         sys.exit(2)
 
-    report = run_all_checks(evaluation, benchmark)
+    report = run_all_checks(
+        evaluation, benchmark, thin_margin_threshold=thin_margin_threshold
+    )
 
     click.echo("structural coherence report")
     click.echo("===========================")
@@ -140,6 +162,34 @@ def structure_cmd(evaluation_path: Path, benchmark_path: Path) -> None:
                         click.echo(
                             textwrap.fill(
                                 f"    - {a.item_id}: {a.explanation}",
+                                width=_WRAP,
+                                subsequent_indent="      ",
+                                break_long_words=False,
+                                break_on_hyphens=False,
+                            )
+                        )
+        elif check.name == "thin_margin_agreement":
+            click.echo(
+                f"Thin-margin agreements (threshold {thin_margin_threshold:.2f}):"
+            )
+            if check.items_checked == 0:
+                click.echo(
+                    "  No model-vs-analyst agreements in scope — "
+                    "check vacuously satisfied."
+                )
+            else:
+                click.echo(
+                    f"  Confidently-supported agreements: {_format_rate(check)}"
+                )
+                if check.anomalies:
+                    click.echo(
+                        f"  Thin agreements ({len(check.anomalies)}, "
+                        "could flip on a re-run):"
+                    )
+                    for a in check.anomalies:
+                        click.echo(
+                            textwrap.fill(
+                                f"    - {a.item_id}: {a.actual}",
                                 width=_WRAP,
                                 subsequent_indent="      ",
                                 break_long_words=False,
