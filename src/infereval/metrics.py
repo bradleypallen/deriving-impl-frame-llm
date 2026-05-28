@@ -27,6 +27,7 @@ into a single object suitable for JSON-printing, with ``by_tag`` and
 from __future__ import annotations
 
 import logging
+import math
 from collections import Counter
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
@@ -36,15 +37,159 @@ from .types import Verdict
 
 if TYPE_CHECKING:
     from .benchmark import Benchmark
-    from .evaluation import Evaluation
+    from .evaluation import Evaluation, EvaluationItem
 
 log = logging.getLogger(__name__)
 
 #: Type alias: a reference verdict function ``r(i) -> Verdict``.
 ReferenceFn = Callable[[int], Verdict]
 
+#: Type alias: a per-item weight function. Returns a non-negative weight
+#: for each :class:`~infereval.evaluation.EvaluationItem`. Used by the
+#: weighted variants of Cohen's / Fleiss' kappa to discount items where
+#: the model's verdict is uncertain (e.g. thin sample-margin) so that
+#: agreements driven by 3/5-with-2-abstain samples don't count the same
+#: as agreements driven by 5/5 samples.
+WeightFn = Callable[["EvaluationItem"], float]
+
 #: Verdicts that count as "substantive" for the kappa definitions.
 SUBSTANTIVE: frozenset[Verdict] = frozenset({Verdict.GOOD, Verdict.BAD})
+
+
+# ---- Verdict-distribution (per-item dispersion summary) -------------------
+
+
+@dataclass(frozen=True, slots=True)
+class VerdictDistribution:
+    """Per-item distribution of model sample verdicts before majority-vote collapse.
+
+    Captures the dispersion that the standard ``E_M`` majority-vote pipeline
+    discards. Two items can both collapse to ``E_M = good`` with very different
+    evidence strength (5/5 vs. 3/5-with-2-abstain). Surfacing the dispersion
+    lets downstream analysis distinguish confident agreements from thin ones
+    (see also :func:`margin_weight` and the
+    :class:`~infereval.structure.ThinMarginAgreementCheck`).
+    """
+
+    good: int
+    bad: int
+    abstain: int
+    #: Post-tie-break majority verdict (the value of
+    #: :attr:`infereval.evaluation.EvaluationItem.model_verdict`).
+    verdict: Verdict
+    #: Whether the majority vote required tie-break to resolve.
+    tie_broken: bool = False
+
+    @property
+    def n_samples(self) -> int:
+        """Total sample count: ``good + bad + abstain``."""
+        return self.good + self.bad + self.abstain
+
+    @property
+    def entropy(self) -> float:
+        """Shannon entropy of the verdict distribution, normalised to ``[0, 1]``.
+
+        Normalisation divides by :math:`\\log 3` so a uniform distribution
+        over the three verdicts gives ``1.0`` regardless of ``n_samples``.
+        A single-class distribution (``5/0/0``) gives ``0.0``.
+        """
+        n = self.n_samples
+        if n == 0:
+            return 0.0
+        h = 0.0
+        for c in (self.good, self.bad, self.abstain):
+            if c > 0:
+                p = c / n
+                h -= p * math.log(p)
+        return h / math.log(3)
+
+    @property
+    def margin(self) -> float:
+        """Plurality margin in ``[0, 1]``: ``(top - runner_up) / n_samples``.
+
+        For ties at the top (e.g. ``2/2/1`` good/bad/abstain), ``top == runner_up``
+        so the margin is ``0``. The post-tie-break :attr:`verdict` is still
+        well-defined; the margin captures the fact that the vote was not
+        decisive on its own.
+        """
+        n = self.n_samples
+        if n == 0:
+            return 0.0
+        counts = sorted([self.good, self.bad, self.abstain], reverse=True)
+        return (counts[0] - counts[1]) / n
+
+
+@dataclass(frozen=True, slots=True)
+class AggregateDispersion:
+    """Corpus-level summary of per-item :class:`VerdictDistribution` statistics.
+
+    Aggregates the dispersion across all items in an evaluation so a single
+    line can convey "how confident was the model on average, and how many
+    items were on a knife edge?"
+    """
+
+    n_items: int
+    mean_entropy: float
+    mean_margin: float
+    #: Count of items whose :attr:`VerdictDistribution.margin` is strictly
+    #: below the thin-margin threshold (default ``0.4``).
+    n_thin_margin: int
+    thin_margin_threshold: float
+    #: Number of items where the majority vote required tie-break.
+    n_tie_broken: int
+
+    @property
+    def fraction_thin_margin(self) -> float:
+        """``n_thin_margin / n_items`` (``0.0`` if no items)."""
+        return self.n_thin_margin / self.n_items if self.n_items else 0.0
+
+
+def verdict_distribution(item: EvaluationItem) -> VerdictDistribution:
+    """Build a :class:`VerdictDistribution` from an evaluation item.
+
+    Uses the pre-computed :attr:`~infereval.evaluation.EvaluationItem.majority_vote`
+    counts when present (the standard case for items produced by
+    :func:`~infereval.endorsement.endorse`); falls back to counting the raw
+    :attr:`~infereval.evaluation.EvaluationItem.samples` list (for items
+    constructed by tests or external producers that didn't populate
+    ``majority_vote``).
+    """
+    mv = item.majority_vote
+    if mv is not None:
+        return VerdictDistribution(
+            good=mv.good,
+            bad=mv.bad,
+            abstain=mv.abstain,
+            verdict=item.model_verdict,
+            tie_broken=mv.tie_broken,
+        )
+    good = bad = abstain = 0
+    for s in item.samples:
+        if s.parsed_verdict == Verdict.GOOD:
+            good += 1
+        elif s.parsed_verdict == Verdict.BAD:
+            bad += 1
+        else:
+            abstain += 1
+    return VerdictDistribution(
+        good=good,
+        bad=bad,
+        abstain=abstain,
+        verdict=item.model_verdict,
+        tie_broken=False,
+    )
+
+
+def margin_weight(item: EvaluationItem) -> float:
+    """Standard per-item weight: the plurality margin in ``[0, 1]``.
+
+    Pass to :func:`cohens_kappa`, :func:`fleiss_kappa`, or
+    :func:`inter_analyst_fleiss` as the ``weights`` parameter to compute
+    the confidence-weighted variants. An item with a 5/0/0 verdict
+    distribution gets full weight; a 3/2/0 item gets ``0.2``; a 2/2/1
+    tie-broken item gets ``0.0``.
+    """
+    return verdict_distribution(item).margin
 
 
 # ---- Coverage --------------------------------------------------------------
@@ -142,12 +287,34 @@ def substantive_index(eta: Evaluation, reference: ReferenceFn) -> set[int]:
 # ---- Cohen's kappa --------------------------------------------------------
 
 
-def cohens_kappa(eta: Evaluation, reference: ReferenceFn) -> float | None:
+def cohens_kappa(
+    eta: Evaluation,
+    reference: ReferenceFn,
+    *,
+    weights: WeightFn | None = None,
+) -> float | None:
     """:math:`\\kappa_C(\\eta, r) = (p_o - p_e) / (1 - p_e)`.
 
     Returns :data:`None` when :math:`S(\\eta, r)` is empty or
     :math:`p_e = 1` (degenerate distribution). Logs a warning in both
     cases so the user sees why the value is undefined.
+
+    Parameters
+    ----------
+    eta
+        The evaluation.
+    reference
+        Per-item reference verdict function (typically the analyst
+        consensus :math:`c_i`).
+    weights
+        Optional per-item weight function. When ``None`` (default), all
+        substantive items count equally and the result is byte-identical
+        to the unweighted formulation. When provided, observed and
+        chance-expected agreement are computed as weighted relative
+        frequencies — items with low weight contribute less to the
+        agreement statistic. See :func:`margin_weight` for the standard
+        confidence weighting. Items with zero weight are dropped from
+        the substantive subset for numerical stability.
     """
     S = sorted(substantive_index(eta, reference))
     if not S:
@@ -156,16 +323,56 @@ def cohens_kappa(eta: Evaluation, reference: ReferenceFn) -> float | None:
         )
         return None
 
-    n_S = len(S)
-    p_o = sum(1 for i in S if eta.items[i].model_verdict == reference(i)) / n_S
-
-    p_M: dict[Verdict, float] = {}
-    p_r: dict[Verdict, float] = {}
-    for c in (Verdict.GOOD, Verdict.BAD):
-        p_M[c] = sum(1 for i in S if eta.items[i].model_verdict == c) / n_S
-        p_r[c] = sum(1 for i in S if reference(i) == c) / n_S
-
-    p_e = sum(p_M[c] * p_r[c] for c in (Verdict.GOOD, Verdict.BAD))
+    if weights is None:
+        # Unweighted path: behaviour preserved exactly.
+        n_S = len(S)
+        p_o = sum(1 for i in S if eta.items[i].model_verdict == reference(i)) / n_S
+        p_M: dict[Verdict, float] = {}
+        p_r: dict[Verdict, float] = {}
+        for c in (Verdict.GOOD, Verdict.BAD):
+            p_M[c] = sum(1 for i in S if eta.items[i].model_verdict == c) / n_S
+            p_r[c] = sum(1 for i in S if reference(i) == c) / n_S
+        p_e = sum(p_M[c] * p_r[c] for c in (Verdict.GOOD, Verdict.BAD))
+    else:
+        # Weighted path: each item contributes its weight to numerator
+        # and denominator. Items with zero weight are dropped.
+        w_S = [weights(eta.items[i]) for i in S]
+        w_total = sum(w_S)
+        if w_total <= 0:
+            log.warning(
+                "kappa_C undefined: total weight over the substantive subset is "
+                "non-positive (all items have zero weight under the supplied "
+                "weight function)"
+            )
+            return None
+        p_o = (
+            sum(
+                w
+                for i, w in zip(S, w_S, strict=True)
+                if eta.items[i].model_verdict == reference(i)
+            )
+            / w_total
+        )
+        p_M_w: dict[Verdict, float] = {}
+        p_r_w: dict[Verdict, float] = {}
+        for c in (Verdict.GOOD, Verdict.BAD):
+            p_M_w[c] = (
+                sum(
+                    w
+                    for i, w in zip(S, w_S, strict=True)
+                    if eta.items[i].model_verdict == c
+                )
+                / w_total
+            )
+            p_r_w[c] = (
+                sum(
+                    w
+                    for i, w in zip(S, w_S, strict=True)
+                    if reference(i) == c
+                )
+                / w_total
+            )
+        p_e = sum(p_M_w[c] * p_r_w[c] for c in (Verdict.GOOD, Verdict.BAD))
 
     if abs(1.0 - p_e) < 1e-12:
         log.warning(
@@ -180,12 +387,22 @@ def cohens_kappa(eta: Evaluation, reference: ReferenceFn) -> float | None:
 # ---- Fleiss' kappa --------------------------------------------------------
 
 
-def _fleiss_over_tuples(verdict_tuples: Sequence[Sequence[Verdict]]) -> float | None:
+def _fleiss_over_tuples(
+    verdict_tuples: Sequence[Sequence[Verdict]],
+    *,
+    tuple_weights: Sequence[float] | None = None,
+) -> float | None:
     """Fleiss' kappa over a list of equal-length annotator tuples.
 
     Items with any non-substantive verdict are dropped (matching the
     ``S_F`` filtering of the paper's Definition 10, and the substantive-index
     restriction of Definition 7).
+
+    When ``tuple_weights`` is supplied, the per-item agreement
+    contributions ``P_i`` and the cross-item category totals are
+    aggregated as weighted averages rather than equal-weight means.
+    Behaviour with ``tuple_weights=None`` is byte-identical to the
+    unweighted formulation.
     """
     if not verdict_tuples:
         log.warning("Fleiss kappa undefined: no items")
@@ -197,35 +414,56 @@ def _fleiss_over_tuples(verdict_tuples: Sequence[Sequence[Verdict]]) -> float | 
         return None
     if any(len(vs) != n_annotators for vs in verdict_tuples):
         raise ValueError("All annotator tuples must have the same length")
+    if tuple_weights is not None and len(tuple_weights) != len(verdict_tuples):
+        raise ValueError(
+            "tuple_weights length must match verdict_tuples length"
+        )
 
-    # Filter to fully-substantive items
-    S_F = [
-        vs
-        for vs in verdict_tuples
-        if all(v in SUBSTANTIVE for v in vs)
-    ]
-    n_F = len(S_F)
+    # Filter to fully-substantive items, carrying weights through if supplied.
+    if tuple_weights is None:
+        S_F_pairs: list[tuple[Sequence[Verdict], float]] = [
+            (vs, 1.0)
+            for vs in verdict_tuples
+            if all(v in SUBSTANTIVE for v in vs)
+        ]
+    else:
+        S_F_pairs = [
+            (vs, w)
+            for vs, w in zip(verdict_tuples, tuple_weights, strict=True)
+            if all(v in SUBSTANTIVE for v in vs)
+        ]
+    n_F = len(S_F_pairs)
     if n_F == 0:
         log.warning("Fleiss kappa undefined: no items with all-substantive annotations")
         return None
 
-    cat_totals: dict[Verdict, int] = {Verdict.GOOD: 0, Verdict.BAD: 0}
-    per_item_P: list[float] = []
+    w_total = sum(w for _, w in S_F_pairs)
+    if w_total <= 0:
+        log.warning(
+            "Fleiss kappa undefined: total weight over the substantive subset "
+            "is non-positive (all items have zero weight)"
+        )
+        return None
+
+    cat_totals: dict[Verdict, float] = {Verdict.GOOD: 0.0, Verdict.BAD: 0.0}
+    weighted_P: float = 0.0
     pair_denom = n_annotators * (n_annotators - 1)
 
-    for vs in S_F:
+    for vs, w in S_F_pairs:
         n_ic = {
             Verdict.GOOD: sum(1 for v in vs if v == Verdict.GOOD),
             Verdict.BAD: sum(1 for v in vs if v == Verdict.BAD),
         }
         for c, count in n_ic.items():
-            cat_totals[c] += count
+            cat_totals[c] += w * count
         P_i = sum(n * (n - 1) for n in n_ic.values()) / pair_denom
-        per_item_P.append(P_i)
+        weighted_P += w * P_i
 
-    P_bar = sum(per_item_P) / n_F
+    P_bar = weighted_P / w_total
 
-    total_annotations = n_F * n_annotators
+    # In the weighted formulation, each item contributes ``w_i * n_annotators``
+    # to the total-annotation count for chance-expected agreement.
+    total_annotations = w_total * n_annotators
     p_c = {c: cat_totals[c] / total_annotations for c in (Verdict.GOOD, Verdict.BAD)}
     P_bar_e = sum(p * p for p in p_c.values())
 
@@ -239,18 +477,37 @@ def _fleiss_over_tuples(verdict_tuples: Sequence[Sequence[Verdict]]) -> float | 
     return (P_bar - P_bar_e) / (1.0 - P_bar_e)
 
 
-def fleiss_kappa(eta: Evaluation) -> float | None:
+def fleiss_kappa(
+    eta: Evaluation,
+    *,
+    weights: WeightFn | None = None,
+) -> float | None:
     """:math:`\\kappa_F(\\eta)` with :math:`M` as the :math:`(m+1)`-th annotator.
 
     The annotators on each item are the analyst verdicts followed by
     ``model_verdict``. Items where any annotator (analyst or model) is
     non-substantive are excluded from :math:`S_F` per the paper's
     Definition 10.
+
+    Parameters
+    ----------
+    eta
+        The evaluation.
+    weights
+        Optional per-item weight function. When ``None`` (default), each
+        item contributes equally and the result is byte-identical to the
+        unweighted formulation. When provided, each item's contribution
+        to ``P_bar`` and to the chance-expected agreement is scaled by
+        ``weights(item)`` — pass :func:`margin_weight` to compute the
+        confidence-weighted variant.
     """
     tuples = [
         [*item.analyst_verdicts, item.model_verdict] for item in eta.items
     ]
-    return _fleiss_over_tuples(tuples)
+    tuple_weights = (
+        [weights(item) for item in eta.items] if weights is not None else None
+    )
+    return _fleiss_over_tuples(tuples, tuple_weights=tuple_weights)
 
 
 def inter_analyst_fleiss(source: Evaluation | Benchmark) -> float | None:
@@ -479,22 +736,87 @@ class MetricsReport:
 
     # ---- Kappa ----
 
-    def cohens_kappa(self, reference: ReferenceFn | None = None) -> float | None:
-        """:math:`\\kappa_C(\\eta, r)`. Default reference is the analyst consensus :math:`c_i`."""
-        ref = reference if reference is not None else consensus_reference(self.eta)
-        return cohens_kappa(self.eta, ref)
+    def cohens_kappa(
+        self,
+        reference: ReferenceFn | None = None,
+        *,
+        weights: WeightFn | None = None,
+    ) -> float | None:
+        """:math:`\\kappa_C(\\eta, r)`. Default reference is the analyst consensus :math:`c_i`.
 
-    def cohens_kappa_analyst(self, analyst_index: int) -> float | None:
+        Pass ``weights=margin_weight`` for the confidence-weighted variant.
+        """
+        ref = reference if reference is not None else consensus_reference(self.eta)
+        return cohens_kappa(self.eta, ref, weights=weights)
+
+    def cohens_kappa_analyst(
+        self,
+        analyst_index: int,
+        *,
+        weights: WeightFn | None = None,
+    ) -> float | None:
         """:math:`\\kappa_C(\\eta, v_{:,j})`: M vs. one specific analyst."""
-        return cohens_kappa(self.eta, analyst_reference(self.eta, analyst_index))
+        return cohens_kappa(
+            self.eta,
+            analyst_reference(self.eta, analyst_index),
+            weights=weights,
+        )
 
     @property
     def fleiss_kappa(self) -> float | None:
         return fleiss_kappa(self.eta)
 
+    def fleiss_kappa_weighted(self, weights: WeightFn) -> float | None:
+        """Weighted :math:`\\kappa_F(\\eta)` — pass :func:`margin_weight` for the standard variant.
+
+        Exposed as a method (not a property) because weighting is an
+        opt-in methodological choice that needs to be made explicitly,
+        per the locked-default that the unweighted κ remains the
+        headline number.
+        """
+        return fleiss_kappa(self.eta, weights=weights)
+
     @property
     def inter_analyst_fleiss(self) -> float | None:
         return inter_analyst_fleiss(self.eta)
+
+    # ---- Dispersion (per-item and aggregate) ----
+
+    @property
+    def verdict_distributions(self) -> dict[str, VerdictDistribution]:
+        """Per-item :class:`VerdictDistribution` keyed by item id.
+
+        Always computed (cheap); included in :meth:`to_dict` output so
+        downstream consumers can read the dispersion without re-running
+        majority-vote logic.
+        """
+        return {
+            item.id: verdict_distribution(item) for item in self.eta.items
+        }
+
+    def aggregate_dispersion_summary(
+        self, *, thin_margin_threshold: float = 0.4
+    ) -> AggregateDispersion:
+        """Corpus-level summary of per-item dispersion."""
+        dists = list(self.verdict_distributions.values())
+        n = len(dists)
+        if n == 0:
+            return AggregateDispersion(
+                n_items=0,
+                mean_entropy=0.0,
+                mean_margin=0.0,
+                n_thin_margin=0,
+                thin_margin_threshold=thin_margin_threshold,
+                n_tie_broken=0,
+            )
+        return AggregateDispersion(
+            n_items=n,
+            mean_entropy=sum(d.entropy for d in dists) / n,
+            mean_margin=sum(d.margin for d in dists) / n,
+            n_thin_margin=sum(1 for d in dists if d.margin < thin_margin_threshold),
+            thin_margin_threshold=thin_margin_threshold,
+            n_tie_broken=sum(1 for d in dists if d.tie_broken),
+        )
 
     # ---- Filters ----
 
@@ -527,8 +849,28 @@ class MetricsReport:
 
     # ---- Reporting ----
 
-    def to_dict(self) -> dict[str, Any]:
-        """Render as a JSON-friendly dict (None where a kappa is undefined)."""
+    def to_dict(
+        self,
+        *,
+        include_verdict_distributions: bool = True,
+        thin_margin_threshold: float = 0.4,
+    ) -> dict[str, Any]:
+        """Render as a JSON-friendly dict (None where a kappa is undefined).
+
+        Parameters
+        ----------
+        include_verdict_distributions
+            When ``True`` (default, the ``report_verdict_distribution = true``
+            locked methodology default), include per-item
+            :class:`VerdictDistribution` entries plus the aggregate
+            dispersion summary. Pass ``False`` to suppress for
+            consumers that want the pre-dispersion shape exactly.
+        thin_margin_threshold
+            Plurality-margin cutoff for the aggregate-dispersion
+            "thin-margin" count. Default ``0.4`` matches the
+            :class:`~infereval.structure.ThinMarginAgreementCheck`
+            default.
+        """
         out: dict[str, Any] = {
             "n": self.n,
             "coverage": self.coverage,
@@ -539,13 +881,43 @@ class MetricsReport:
         }
         if self.benchmark is not None:
             out["coverage_per_analyst_named"] = self.coverage_per_analyst_named()
+        if include_verdict_distributions:
+            distributions = self.verdict_distributions
+            out["verdict_distributions"] = {
+                item_id: {
+                    "good": d.good,
+                    "bad": d.bad,
+                    "abstain": d.abstain,
+                    "n_samples": d.n_samples,
+                    "verdict": d.verdict.value,
+                    "tie_broken": d.tie_broken,
+                    "entropy": d.entropy,
+                    "margin": d.margin,
+                }
+                for item_id, d in distributions.items()
+            }
+            agg = self.aggregate_dispersion_summary(
+                thin_margin_threshold=thin_margin_threshold
+            )
+            out["aggregate_dispersion"] = {
+                "n_items": agg.n_items,
+                "mean_entropy": agg.mean_entropy,
+                "mean_margin": agg.mean_margin,
+                "n_thin_margin": agg.n_thin_margin,
+                "fraction_thin_margin": agg.fraction_thin_margin,
+                "thin_margin_threshold": agg.thin_margin_threshold,
+                "n_tie_broken": agg.n_tie_broken,
+            }
         return out
 
 
 __all__ = [
     "SUBSTANTIVE",
+    "AggregateDispersion",
     "MetricsReport",
     "ReferenceFn",
+    "VerdictDistribution",
+    "WeightFn",
     "analyst_reference",
     "cohens_kappa",
     "consensus_reference",
@@ -555,5 +927,7 @@ __all__ = [
     "coverage_per_analyst",
     "fleiss_kappa",
     "inter_analyst_fleiss",
+    "margin_weight",
     "substantive_index",
+    "verdict_distribution",
 ]
