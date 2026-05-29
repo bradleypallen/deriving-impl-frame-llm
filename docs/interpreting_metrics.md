@@ -10,7 +10,7 @@ coverage (M)           : 1.0000
 coverage (per analyst) : 1.0000
 κ_C(η, consensus)      : +1.0000
 κ_F(η)                 : +1.0000
-κ_F*(β) (inter-analyst): undefined
+κ_F*(β) (inter-analyst, all): undefined
 ```
 
 ### `coverage` — the participation gate
@@ -69,9 +69,11 @@ Reading `κ_F`: same scale as `κ_C`. What you compare it to is the next metric.
 
 ### `κ_F*(β)` — the inter-analyst baseline
 
-This is **the most important reference number** when `m ≥ 2`. It's Fleiss' kappa computed over the analysts alone (no `M`).
+This is **the most important reference number** when `m ≥ 2`. It's Fleiss' kappa computed over the analysts alone (no `M`), across the full analyst pool whose verdicts the benchmark records.
 
 The paper's Remark 4 makes the point: `κ_F*(β)` tells you how well the analysts agree with each other before `M` is in the picture. It's the ceiling above which `M` is doing something the analysts don't do. It's also the floor: if `κ_F*(β) = 0.6`, then `M` reaching `κ_F = 0.5` is participating in the practice at a level not far from the analysts' own internal agreement — which is a strong result.
+
+> **What changed in v0.7.0 ([#82](https://github.com/bradleypallen/infereval/issues/82)).** On panelled benchmarks (those declaring `analysts[*].panel` + `primary_panel`), the pre-v0.7.0 default silently restricted κ_F\*(β) to the primary panel — which inflated the headline number when the primary panel was internally unanimous, even if the second panel disagreed on several items. The methodology says otherwise: the Remark 4 baseline is over the full analyst pool you've recruited, and panels are an *additive* convergent-validity device (per-panel decomposition + cross-panel Cohen's κ) rather than a way to narrow the baseline. From v0.7.0, `inter_analyst_fleiss(bench)` returns the all-analyst figure by default; the construct-validity report's section 2 renders both the headline (all analysts) and the primary-panel sub-figure on panelled benchmarks. The primary-panel value remains reachable via `inter_analyst_fleiss_per_panel(bench)[bench.resolved_primary_panel()]` or by passing `analyst_indices=bench.analyst_indices_in_panel(primary_name)`.
 
 | Comparison | What it tells you |
 |---|---|
@@ -213,7 +215,7 @@ n (items)              : 4
 coverage (M)           : 1.0000
 κ_C(η, consensus)      : +0.2000
 κ_F(η)                 : +0.0000
-κ_F*(β) (inter-analyst): undefined        // m = 1
+κ_F*(β) (inter-analyst, all): undefined        // m = 1
 
 By tag: base-inference         κ_C undefined  (n=1; only one substantive item — p_e = 1)
 By tag: irrelevant-addition    κ_F = -1.0000  (n=2; perfect anti-correlation!)

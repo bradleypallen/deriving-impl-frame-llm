@@ -30,7 +30,9 @@ The requirements derive from the question: *what would need to be true of an eva
 
 - **R2. Computed and reported inter-analyst baseline.** The methodology computes κ_F*(β) and reports it alongside any agreement statistic involving M, with the baseline meeting the conditions for being defined (m ≥ 2 analysts, non-unanimous benchmark items). *(Fleiss, 1971; Allen, 2026 Remark 4 and Def. 10)*
 
-  > **How the framework addresses this:** `infereval.metrics.inter_analyst_fleiss` computes κ_F* over the analyst panel, surfaced by `infereval describe` (top-level baseline line) and `infereval metrics` (per-decomposition). Returns `None` with a logged warning in the conditions Remark 4 calls out (m < 2 or unanimous analysts). For panelled benchmarks, `inter_analyst_fleiss_per_panel` returns the κ_F* per declared panel.
+  > **How the framework addresses this:** `infereval.metrics.inter_analyst_fleiss` computes κ_F* over the full analyst pool whose verdicts the benchmark records — surfaced by `infereval describe` (top-level baseline line), `infereval metrics` (per-decomposition), and section 2 of the construct-validity report. Returns `None` with a logged warning in the conditions Remark 4 calls out (m < 2 or unanimous analysts). For panelled benchmarks, `inter_analyst_fleiss_per_panel` returns the κ_F* per declared panel, and the construct-validity report's section 2 renders both the headline all-analyst figure and the primary-panel sub-figure so the methodological distinction is visible. `cross_panel_kappa` computes the Cohen's κ between two panels' per-item consensus columns; that's the R4 convergent check, separate from the baseline.
+  >
+  > **v0.7.0 behaviour change (closes [#82](https://github.com/bradleypallen/infereval/issues/82)).** Pre-v0.7.0, `inter_analyst_fleiss(benchmark)` silently restricted to the primary panel on panelled benchmarks — which inflated the headline number when the primary panel was internally unanimous (returning +1.0 even when the reviewer panel disagreed on several items). The methodological reading underwriting v0.7.0's default change: panels are an additive convergent-validity device, not a way to restrict the baseline. The full pool of analysts whose verdicts the benchmark records is the pool the Remark 4 baseline is over. The primary-panel value remains reachable via `inter_analyst_fleiss_per_panel(bench)[bench.resolved_primary_panel()]` and is rendered as an explicit sub-bullet in the report's section 2; callers who want it programmatically can pass `inter_analyst_fleiss(bench, analyst_indices=bench.analyst_indices_in_panel(bench.resolved_primary_panel()))`.
 
 - **R3. Interpretive framing relative to the baseline.** The methodology frames agreement claims in explicit relation to κ_F*(β) — neither in isolation nor against an unstated absolute threshold — so that "strong agreement" is operationalised as a specific relationship to the analyst-internal ceiling rather than as an arbitrary kappa value. *(Landis & Koch, 1977; Allen, 2026 Remark 4)*
 
@@ -397,7 +399,7 @@ Writing up the result is yours alone. Three discipline points the framework's ou
 | Requirement | Current posture | How addressed |
 |---|---|---|
 | R1 documented analyst competence | Partial | Free-text `notes` field; presence validated, content is analyst's responsibility |
-| R2 inter-analyst baseline | Full | `inter_analyst_fleiss`, per-panel variant for panelled benchmarks |
+| R2 inter-analyst baseline | Full | `inter_analyst_fleiss` (all-analyst default in v0.7.0+), `inter_analyst_fleiss_per_panel` for the per-panel breakdown; report section 2 renders both on panelled benchmarks |
 | R3 baseline-relative framing | Full | κ_F* surfaced alongside κ_C / κ_F in every report surface |
 | R4 independent reference | Full (tooling); research-program (recruitment) | `cross_panel_kappa`, `inter_analyst_fleiss_per_panel` |
 | R5 documented construction | Full | `construction_metadata` per item |
