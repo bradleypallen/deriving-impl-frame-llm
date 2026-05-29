@@ -677,7 +677,11 @@ def fleiss_kappa(
     return _fleiss_over_tuples(tuples, tuple_weights=tuple_weights)
 
 
-def inter_analyst_fleiss(source: Evaluation | Benchmark) -> float | None:
+def inter_analyst_fleiss(
+    source: Evaluation | Benchmark,
+    *,
+    analyst_indices: Sequence[int] | None = None,
+) -> float | None:
     """:math:`\\kappa_F^*(\\beta)`: Fleiss' kappa over analyst verdicts alone.
 
     Accepts either an :class:`~infereval.evaluation.Evaluation` or a
@@ -686,23 +690,45 @@ def inter_analyst_fleiss(source: Evaluation | Benchmark) -> float | None:
     unanimous on every item -- the two conditions Remark 4 calls out as
     making the baseline unavailable.
 
-    For panelled benchmarks (Issue #36, Phase 1.4), this returns the
-    κ_F* of the *primary* panel only — see
-    :func:`inter_analyst_fleiss_per_panel` for per-panel breakdown and
-    :func:`cross_panel_kappa` for the cross-panel agreement metric.
-    """
-    # Late import to avoid the metrics <-> benchmark cycle.
-    from .benchmark import Benchmark as _Benchmark
+    By default Fleiss' kappa is computed over **all** analyst columns
+    declared on ``source.analysts``. This is the methodological reading
+    of Remark 4: the inter-analyst baseline is the agreement of the
+    full analyst pool whose verdicts the benchmark records.
 
-    if isinstance(source, _Benchmark) and source.panel_names():
-        primary = source.resolved_primary_panel()
-        if primary is None:
-            return None
-        indices = source.analyst_indices_in_panel(primary)
-        tuples = [[it.analyst_verdicts[j] for j in indices] for it in source.items]
-        return _fleiss_over_tuples(tuples)
+    For panelled benchmarks, the per-panel decomposition is available
+    via :func:`inter_analyst_fleiss_per_panel`; the cross-panel Cohen's
+    kappa is in :func:`cross_panel_kappa`. Those exist alongside the
+    all-analyst figure here, not in place of it.
+
+    Parameters
+    ----------
+    source
+        :class:`Evaluation` or :class:`Benchmark`.
+    analyst_indices
+        Optional positional indices into ``source.analysts``. When
+        supplied, Fleiss' kappa is computed only over those columns.
+        Useful for computing the figure over any subset (e.g.
+        ``analyst_indices=benchmark.analyst_indices_in_panel(
+        benchmark.resolved_primary_panel())`` reproduces the
+        primary-panel-only behaviour the pre-v0.7.0 default returned
+        on panelled benchmarks).
+
+    Notes
+    -----
+    .. versionchanged:: 0.7.0
+        On panelled benchmarks, the default behaviour changed from
+        "primary panel only" to "all analysts". The previous default
+        silently inflated κ_F* when the primary panel was internally
+        unanimous; per :gh-issue:`82`, the all-analyst figure is the
+        methodologically correct Remark 4 baseline. The
+        ``analyst_indices`` parameter is the explicit migration path
+        for the rare caller who wants the pre-0.7.0 narrowed value.
+    """
     items = source.items
-    tuples = [list(it.analyst_verdicts) for it in items]
+    if analyst_indices is None:
+        tuples = [list(it.analyst_verdicts) for it in items]
+    else:
+        tuples = [[it.analyst_verdicts[j] for j in analyst_indices] for it in items]
     return _fleiss_over_tuples(tuples)
 
 

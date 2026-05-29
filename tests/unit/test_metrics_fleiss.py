@@ -206,8 +206,21 @@ class TestPanelMetrics:
         assert per_panel["primary"] is not None
         assert 0 < per_panel["primary"] < 1
 
-    def test_inter_analyst_fleiss_uses_primary_panel_when_panelled(self) -> None:
-        from infereval.metrics import inter_analyst_fleiss, inter_analyst_fleiss_per_panel
+    def test_inter_analyst_fleiss_returns_all_analyst_value_on_panelled_bench(
+        self,
+    ) -> None:
+        """v0.7.0 (closes #82): on a panelled benchmark, the default
+        returns Fleiss across all analyst columns, not the primary
+        panel's. The previous narrowing default silently inflated κ_F*
+        when the primary panel was internally unanimous and obscured
+        the methodological role of the second panel (which is a
+        convergent-validity check, not a replacement for the baseline).
+        """
+        from infereval.metrics import (
+            _fleiss_over_tuples,
+            inter_analyst_fleiss,
+            inter_analyst_fleiss_per_panel,
+        )
 
         bench = self._panelled_bench([
             ["good", "good", "good", "good"],
@@ -217,7 +230,65 @@ class TestPanelMetrics:
             ["good", "good", "good", "good"],
         ])
         per_panel = inter_analyst_fleiss_per_panel(bench)
-        assert inter_analyst_fleiss(bench) == per_panel["primary"]
+        # Hand-computed all-analyst value (the new default):
+        all_tuples = [list(it.analyst_verdicts) for it in bench.items]
+        expected_all = _fleiss_over_tuples(all_tuples)
+        assert inter_analyst_fleiss(bench) == expected_all
+        # And it must differ from the primary-panel value (the
+        # fixture's panels disagree on item i4, so the two numbers
+        # cannot coincide).
+        assert inter_analyst_fleiss(bench) != per_panel["primary"]
+
+    def test_inter_analyst_fleiss_analyst_indices_reproduces_v0_6_x_narrowing(
+        self,
+    ) -> None:
+        """The v0.7.0 ``analyst_indices`` keyword is the migration path
+        for any caller who wants the pre-0.7.0 behaviour (primary panel
+        only) explicitly. Threading ``benchmark.analyst_indices_in_panel(
+        primary)`` through it reproduces ``per_panel[primary]``.
+        """
+        from infereval.metrics import (
+            inter_analyst_fleiss,
+            inter_analyst_fleiss_per_panel,
+        )
+
+        bench = self._panelled_bench([
+            ["good", "good", "good", "good"],
+            ["good", "good", "bad", "bad"],
+            ["bad", "bad", "bad", "bad"],
+            ["good", "bad", "good", "good"],
+            ["good", "good", "good", "good"],
+        ])
+        per_panel = inter_analyst_fleiss_per_panel(bench)
+        primary = bench.resolved_primary_panel()
+        assert primary is not None
+        primary_idx = bench.analyst_indices_in_panel(primary)
+        assert (
+            inter_analyst_fleiss(bench, analyst_indices=primary_idx)
+            == per_panel[primary]
+        )
+
+    def test_inter_analyst_fleiss_analyst_indices_arbitrary_subset(self) -> None:
+        """``analyst_indices`` also works for arbitrary subsets — e.g.
+        first and third analyst, computed independently of any panel
+        declaration."""
+        from infereval.metrics import (
+            _fleiss_over_tuples,
+            inter_analyst_fleiss,
+        )
+
+        bench = self._panelled_bench([
+            ["good", "good", "good", "good"],
+            ["good", "good", "bad", "bad"],
+            ["bad", "bad", "bad", "bad"],
+            ["good", "bad", "good", "good"],
+            ["good", "good", "good", "good"],
+        ])
+        subset = [0, 2]  # analyst-a (primary) + analyst-c (reviewer)
+        expected = _fleiss_over_tuples(
+            [[it.analyst_verdicts[j] for j in subset] for it in bench.items]
+        )
+        assert inter_analyst_fleiss(bench, analyst_indices=subset) == expected
 
     def test_cross_panel_kappa_hand_calculation(self) -> None:
         from infereval.metrics import cross_panel_kappa
