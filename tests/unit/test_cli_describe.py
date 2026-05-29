@@ -84,7 +84,7 @@ class TestDescribeMultiAnalyst:
         assert result.exit_code == 0, result.output
         assert "m (analysts):   2" in result.output
         # κ_F* should be a numeric value (not "undefined")
-        assert "κ_F*(β) (inter-analyst baseline):" in result.output
+        assert "κ_F*(β) (all analysts):" in result.output
         kappa_line = next(
             line for line in result.output.splitlines() if line.startswith("κ_F*(β)")
         )

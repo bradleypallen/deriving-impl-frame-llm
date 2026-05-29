@@ -677,13 +677,16 @@ def describe_cmd(path: Path, show_items: bool = False) -> None:
     click.echo("")
 
     # Inter-analyst Fleiss baseline. Skip the call when m < 2 so the
-    # metrics module's WARNING doesn't bleed into CLI output.
+    # metrics module's WARNING doesn't bleed into CLI output. v0.7.0
+    # (#82): the value is the all-analyst κ_F* even on panelled
+    # benchmarks; per-panel breakdown is rendered separately by
+    # _render_analyst_panels_section above.
     if bench.m < 2:
-        click.echo("κ_F*(β) (inter-analyst baseline): undefined")
+        click.echo("κ_F*(β) (all analysts): undefined")
         click.echo("  (undefined: requires m ≥ 2 analysts)")
     else:
         kappa_star = inter_analyst_fleiss(bench)
-        click.echo(f"κ_F*(β) (inter-analyst baseline): {_format_kappa(kappa_star)}")
+        click.echo(f"κ_F*(β) (all analysts): {_format_kappa(kappa_star)}")
         if kappa_star is None:
             click.echo("  (undefined: analysts are unanimous or all-non-substantive)")
     click.echo("")
