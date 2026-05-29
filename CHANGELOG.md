@@ -12,6 +12,87 @@ stable from 1.0 onward, regardless of the framework version.
 
 No changes yet.
 
+## [0.7.0] — 2026-05-28
+
+**Behaviour change: `inter_analyst_fleiss` returns the all-analyst κ_F\*
+on panelled benchmarks** (closes [#82](https://github.com/bradleypallen/infereval/issues/82)).
+This is a backward-incompatible change to the κ_F\* number reported by
+the construct-validity report's section 2, `infereval describe`, and
+`infereval metrics` on benchmarks that declare `analysts[*].panel` +
+`primary_panel`. Verdict labels are unaffected — the verdict gate
+consumes κ_F\* only for display, with no numerical threshold.
+
+### Why the change
+
+Pre-v0.7.0, `inter_analyst_fleiss(bench)` silently restricted to the
+primary panel on panelled benchmarks. When the primary panel happened
+to be internally unanimous, the function returned +1.0 even if the
+second panel disagreed on several items — actively misleading for any
+caller reading the value as the Remark 4 inter-analyst baseline. The
+narrowing was documented in the docstring but invisible at the call
+site and at the report's section 2 where the number is rendered as the
+methodologically load-bearing baseline.
+
+The methodological reading underwriting the v0.7.0 default: panels are
+an *additive* convergent-validity device, not a way to restrict the
+baseline. The Remark 4 baseline is the inter-analyst agreement across
+the analyst pool whose verdicts the benchmark records. Recruiting a
+second panel and writing those analysts' labels into `analyst_verdicts`
+makes them part of that pool; excluding them silently to inflate the
+headline number is the failure mode #82 surfaced.
+
+### Migration
+
+Most callers see no change — on non-panelled benchmarks the function
+already computed Fleiss over all analysts. Callers who explicitly want
+the pre-v0.7.0 narrowed value have three paths:
+
+- `inter_analyst_fleiss_per_panel(bench)[bench.resolved_primary_panel()]`
+  — public since v0.3.3, returns the primary-panel κ_F\* exactly.
+- `inter_analyst_fleiss(bench, analyst_indices=bench.analyst_indices_in_panel(bench.resolved_primary_panel()))`
+  — new in v0.7.0, threads explicit analyst indices through.
+- Read the primary-panel sub-bullet under the headline in the
+  construct-validity report's section 2 (rendered automatically when
+  the benchmark has panels declared).
+
+### Added
+
+- **`inter_analyst_fleiss` gains an `analyst_indices: Sequence[int] | None
+  = None` keyword.** When `None`, the default, Fleiss is computed over
+  all analyst columns. When supplied, restricted to those columns.
+  Lets callers compute κ_F\* over any subset (primary panel, reviewer
+  panel, an arbitrary slice).
+- **Construct-validity report section 2 dual rendering on panelled
+  benchmarks.** The headline reads "Inter-analyst κ_F\* (all
+  analysts): …"; an indented sub-bullet reads "Primary panel
+  (`<name>`) κ_F\* = …" so the methodological distinction (the v0.6.x
+  default vs. the v0.7.0 default) is visible at the surface where it
+  was previously hidden.
+
+### Changed
+
+- `infereval metrics` text format label: `κ_F*(β) (inter-analyst):` →
+  `κ_F*(β) (inter-analyst, all):`.
+- `infereval metrics` markdown format label: `κ_F*(β)` →
+  `κ_F*(β) (all analysts)`.
+- `infereval describe` top-line label: `κ_F*(β) (inter-analyst
+  baseline):` → `κ_F*(β) (all analysts):`. The existing per-panel
+  decomposition block earlier in the describe output is unchanged.
+- `docs/construct_validity.md`, `docs/interpreting_metrics.md`,
+  `docs/glossary.md`, `docs/authoring_benchmarks.md`, `CLAUDE.md` —
+  all updated to describe the new default and the migration path; the
+  v0.7.0 change is called out with explicit `What changed in v0.7.0`
+  / `Locked-defaults update` framing in the construct-validity and
+  interpreting-metrics docs.
+
+### Note
+
+No schema-content change; `framework_version` default in
+`evaluation.schema.json` bumped to `0.7.0`. `src/infereval/metrics.py`
+loses the v0.3.3 panel-narrowing branch (lines 697–703 in v0.6.3) and
+gains the `analyst_indices` keyword on the same function. The
+Evaluation path was already all-analyst and is unchanged.
+
 ## [0.6.3] — 2026-05-28
 
 Docs-only patch. README cleanup, no behavior, schema, or API change.

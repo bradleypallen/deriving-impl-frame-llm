@@ -476,7 +476,7 @@
       "$ref": "#/$defs/EndorsementConfig"
     },
     "framework_version": {
-      "default": "0.6.3",
+      "default": "0.7.0",
       "title": "Framework Version",
       "type": "string"
     },
