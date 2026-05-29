@@ -785,13 +785,25 @@ def render_markdown(
         coverage,
         fleiss_kappa,
         inter_analyst_fleiss,
+        inter_analyst_fleiss_per_panel,
     )
 
     generated_at = generated_at or datetime.now(timezone.utc)
 
     kappa_c = cohens_kappa(evaluation, consensus_reference(evaluation))
     kappa_f = fleiss_kappa(evaluation)
+    # v0.7.0 (#82): inter_analyst_fleiss returns the all-analyst κ_F*
+    # by default. On panelled benchmarks the primary-panel value is
+    # rendered as a sub-bullet below for methodological transparency.
     kappa_f_star = inter_analyst_fleiss(benchmark)
+    panel_names = benchmark.panel_names() if benchmark is not None else []
+    primary_panel_kappa: float | None = None
+    primary_panel_name: str | None = None
+    if panel_names:
+        primary_panel_name = benchmark.resolved_primary_panel()
+        if primary_panel_name is not None:
+            per_panel = inter_analyst_fleiss_per_panel(benchmark)
+            primary_panel_kappa = per_panel.get(primary_panel_name)
     cov = coverage(evaluation)
     verdict = compute_verdict(
         claims,
@@ -872,7 +884,24 @@ def render_markdown(
     lines.append(f"- **Coverage**: {cov:.4f}")
     lines.append(f"- **Cohen's κ_C (vs consensus)**: {_format_kappa(kappa_c)}")
     lines.append(f"- **Fleiss' κ_F**: {_format_kappa(kappa_f)}")
-    lines.append(f"- **Inter-analyst κ_F\\***: {_format_kappa(kappa_f_star)}")
+    # v0.7.0 (#82): on panelled benchmarks the headline κ_F* is the
+    # all-analyst figure; the primary panel's value is rendered as a
+    # sub-bullet so the methodological distinction (panels are an
+    # additive convergent-validity device, not a replacement for the
+    # baseline) is visible at the surface where the reader looks for
+    # the Remark 4 number.
+    if panel_names:
+        lines.append(
+            f"- **Inter-analyst κ_F\\* (all analysts)**: "
+            f"{_format_kappa(kappa_f_star)}"
+        )
+        if primary_panel_name is not None:
+            lines.append(
+                f"  - *Primary panel (`{primary_panel_name}`) κ_F\\* = "
+                f"{_format_kappa(primary_panel_kappa)}*"
+            )
+    else:
+        lines.append(f"- **Inter-analyst κ_F\\***: {_format_kappa(kappa_f_star)}")
     # Test-retest κ (R22): within-model analog of κ_F*. Always rendered
     # when an artifact is supplied — informational at items_in_benchmark
     # scope, verdict-gating at scope ≥ domain_D_as_sampled. v0.6.1: the

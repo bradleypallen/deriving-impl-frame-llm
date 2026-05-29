@@ -58,7 +58,7 @@ class TestTextFormat:
             cli, ["metrics", str(stop_sign_eta_file), "--benchmark", str(STOP_SIGN_PATH)]
         )
         # Single-analyst stop-sign benchmark -> κ_F* undefined
-        assert "κ_F*(β) (inter-analyst): undefined" in result.output
+        assert "κ_F*(β) (inter-analyst, all): undefined" in result.output
 
 
 # ---- Markdown format ------------------------------------------------------

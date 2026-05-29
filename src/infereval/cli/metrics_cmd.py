@@ -107,7 +107,10 @@ def _format_text(
         f"κ_F(η)                 : "
         f"{_format_kappa(report.fleiss_kappa)}{_format_ci(kappa_F_ci)}"
     )
-    lines.append(f"κ_F*(β) (inter-analyst): {_format_kappa(report.inter_analyst_fleiss)}")
+    lines.append(
+        f"κ_F*(β) (inter-analyst, all): "
+        f"{_format_kappa(report.inter_analyst_fleiss)}"
+    )
     return "\n".join(lines)
 
 
@@ -139,7 +142,9 @@ def _format_markdown(
     lines.append(
         f"| κ_F(η) | {_format_kappa(report.fleiss_kappa)}{_format_ci(kappa_F_ci)} |"
     )
-    lines.append(f"| κ_F*(β) | {_format_kappa(report.inter_analyst_fleiss)} |")
+    lines.append(
+        f"| κ_F*(β) (all analysts) | {_format_kappa(report.inter_analyst_fleiss)} |"
+    )
     return "\n".join(lines)
 
 
